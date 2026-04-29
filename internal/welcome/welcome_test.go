@@ -37,10 +37,11 @@ func TestOptions_Stable(t *testing.T) {
 		{Key: 2, Label: "Eliminar activo"},
 		{Key: 3, Label: "Engadir nova transacción"},
 		{Key: 4, Label: "Eliminar transacción"},
-		{Key: 5, Label: "Engadir resultado mensual"},
-		{Key: 6, Label: "Engadir dividendo mensual"},
-		{Key: 7, Label: "Ver informe mensual dun activo"},
-		{Key: 8, Label: "Ver historial dun activo"},
+		{Key: 5, Label: "Pechar mes (resultados)"},
+		{Key: 6, Label: "Engadir resultado mensual"},
+		{Key: 7, Label: "Engadir dividendo mensual"},
+		{Key: 8, Label: "Ver informe mensual dun activo"},
+		{Key: 9, Label: "Ver historial dun activo"},
 		{Key: 0, Label: "Saír"},
 	}
 	got := Options()
