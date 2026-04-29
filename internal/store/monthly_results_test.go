@@ -117,3 +117,91 @@ func TestStore_RejectsInvalidResultMonth(t *testing.T) {
 		t.Errorf("esperabamos erro de constraint, got: %v", err)
 	}
 }
+
+func TestStore_ListMonthlyResultsByAsset(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	for _, mr := range []domain.MonthlyResult{
+		{AssetID: assetID, ResultUSD: 1300, Month: 5, Year: 2026},
+		{AssetID: assetID, ResultUSD: 1100, Month: 4, Year: 2026},
+		{AssetID: assetID, ResultUSD: 1500, Month: 11, Year: 2025},
+	} {
+		if _, err := s.InsertMonthlyResult(mr); err != nil {
+			t.Fatalf("InsertMonthlyResult: %v", err)
+		}
+	}
+
+	got, err := s.ListMonthlyResultsByAsset(assetID)
+	if err != nil {
+		t.Fatalf("ListMonthlyResultsByAsset: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d filas, esperabamos 3", len(got))
+	}
+	want := []struct{ year, month int }{
+		{2025, 11},
+		{2026, 4},
+		{2026, 5},
+	}
+	for i, w := range want {
+		if got[i].Year != w.year || got[i].Month != w.month {
+			t.Errorf("fila[%d] = %d/%d, queremos %d/%d",
+				i, got[i].Year, got[i].Month, w.year, w.month)
+		}
+	}
+}
+
+func TestStore_DeleteMonthlyResult(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	id1, err := s.InsertMonthlyResult(domain.MonthlyResult{
+		AssetID: assetID, ResultUSD: 1100, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertMonthlyResult[1]: %v", err)
+	}
+	id2, err := s.InsertMonthlyResult(domain.MonthlyResult{
+		AssetID: assetID, ResultUSD: 1200, Month: 5, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertMonthlyResult[2]: %v", err)
+	}
+
+	if err := s.DeleteMonthlyResult(id1); err != nil {
+		t.Fatalf("DeleteMonthlyResult: %v", err)
+	}
+
+	got, err := s.ListMonthlyResultsByAsset(assetID)
+	if err != nil {
+		t.Fatalf("ListMonthlyResultsByAsset: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d filas, esperabamos 1", len(got))
+	}
+	if got[0].ID != id2 {
+		t.Errorf("permanece id=%d, esperabamos id=%d", got[0].ID, id2)
+	}
+}
+
+func TestStore_DeleteMonthlyResult_NoRow(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	err = s.DeleteMonthlyResult(999)
+	if err == nil {
+		t.Fatal("esperabamos erro por id inexistente")
+	}
+}
