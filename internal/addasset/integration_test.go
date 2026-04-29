@@ -37,9 +37,9 @@ func TestRun_EndToEnd_PersistsToSQLite(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s2.Close() })
 
-	list, err := s2.ListInvestments()
+	list, err := s2.ListAssets()
 	if err != nil {
-		t.Fatalf("ListInvestments: %v", err)
+		t.Fatalf("ListAssets: %v", err)
 	}
 	if len(list) != 1 {
 		t.Fatalf("got %d filas, esperabamos 1", len(list))
@@ -49,7 +49,7 @@ func TestRun_EndToEnd_PersistsToSQLite(t *testing.T) {
 	if got.ID <= 0 {
 		t.Errorf("ID = %d, esperabamos > 0", got.ID)
 	}
-	want := domain.Investment{
+	want := domain.Asset{
 		ID:        got.ID,
 		Type:      domain.CopyTrading,
 		Name:      "Copy Trader X",

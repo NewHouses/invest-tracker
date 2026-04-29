@@ -8,13 +8,13 @@ import (
 	"invest-tracker/internal/store"
 )
 
-func seedInvestment(t *testing.T, s *store.Store) int64 {
+func seedAsset(t *testing.T, s *store.Store) int64 {
 	t.Helper()
-	id, err := s.InsertInvestment(domain.Investment{
+	id, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err != nil {
-		t.Fatalf("seed InsertInvestment: %v", err)
+		t.Fatalf("seed InsertAsset: %v", err)
 	}
 	return id
 }
@@ -26,11 +26,11 @@ func TestStore_InsertAndListTransaction(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID := seedInvestment(t, s)
+	assetID := seedAsset(t, s)
 
 	want := []domain.Transaction{
-		{InvestmentID: invID, AmountUSD: 250.50, Month: 2, Year: 2026},
-		{InvestmentID: invID, AmountUSD: 100.00, Month: 3, Year: 2026},
+		{AssetID: assetID, AmountUSD: 250.50, Month: 2, Year: 2026},
+		{AssetID: assetID, AmountUSD: 100.00, Month: 3, Year: 2026},
 	}
 	for i := range want {
 		id, err := s.InsertTransaction(want[i])
@@ -43,12 +43,12 @@ func TestStore_InsertAndListTransaction(t *testing.T) {
 		want[i].ID = id
 	}
 
-	got, err := s.ListTransactionsByInvestment(invID)
+	got, err := s.ListTransactionsByAsset(assetID)
 	if err != nil {
-		t.Fatalf("ListTransactionsByInvestment: %v", err)
+		t.Fatalf("ListTransactionsByAsset: %v", err)
 	}
 	if len(got) != len(want) {
-		t.Fatalf("ListTransactionsByInvestment devolveu %d filas, esperabamos %d", len(got), len(want))
+		t.Fatalf("ListTransactionsByAsset devolveu %d filas, esperabamos %d", len(got), len(want))
 	}
 	for i, w := range want {
 		if got[i] != w {
@@ -65,7 +65,7 @@ func TestStore_RejectsOrphanTransaction(t *testing.T) {
 	t.Cleanup(func() { _ = s.Close() })
 
 	_, err = s.InsertTransaction(domain.Transaction{
-		InvestmentID: 999, AmountUSD: 100, Month: 1, Year: 2026,
+		AssetID: 999, AmountUSD: 100, Month: 1, Year: 2026,
 	})
 	if err == nil {
 		t.Fatal("esperabamos erro de FK orfa")
@@ -82,9 +82,9 @@ func TestStore_RejectsInvalidTransactionMonth(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID := seedInvestment(t, s)
+	assetID := seedAsset(t, s)
 	_, err = s.InsertTransaction(domain.Transaction{
-		InvestmentID: invID, AmountUSD: 100, Month: 13, Year: 2026,
+		AssetID: assetID, AmountUSD: 100, Month: 13, Year: 2026,
 	})
 	if err == nil {
 		t.Fatal("esperabamos erro do CHECK constraint do mes")

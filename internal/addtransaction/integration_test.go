@@ -21,11 +21,11 @@ func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 
-	invID, err := s.InsertInvestment(domain.Investment{
+	assetID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err != nil {
-		t.Fatalf("InsertInvestment: %v", err)
+		t.Fatalf("InsertAsset: %v", err)
 	}
 
 	input := "1\n550.75\n5\n2026\n"
@@ -44,9 +44,9 @@ func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s2.Close() })
 
-	list, err := s2.ListTransactionsByInvestment(invID)
+	list, err := s2.ListTransactionsByAsset(assetID)
 	if err != nil {
-		t.Fatalf("ListTransactionsByInvestment: %v", err)
+		t.Fatalf("ListTransactionsByAsset: %v", err)
 	}
 	if len(list) != 1 {
 		t.Fatalf("got %d filas, esperabamos 1", len(list))
@@ -57,11 +57,11 @@ func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
 		t.Errorf("ID = %d, esperabamos > 0", got.ID)
 	}
 	want := domain.Transaction{
-		ID:           got.ID,
-		InvestmentID: invID,
-		AmountUSD:    550.75,
-		Month:        5,
-		Year:         2026,
+		ID:        got.ID,
+		AssetID:   assetID,
+		AmountUSD: 550.75,
+		Month:     5,
+		Year:      2026,
 	}
 	if got != want {
 		t.Errorf("fila gardada = %+v, queremos %+v", got, want)

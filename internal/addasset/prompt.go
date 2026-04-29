@@ -10,7 +10,7 @@ import (
 )
 
 type Saver interface {
-	InsertInvestment(domain.Investment) (int64, error)
+	InsertAsset(domain.Asset) (int64, error)
 }
 
 func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
@@ -37,24 +37,24 @@ func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
 		return err
 	}
 
-	inv := domain.Investment{
+	a := domain.Asset{
 		Type:      typ,
 		Name:      name,
 		AmountUSD: amount,
 		Month:     month,
 		Year:      year,
 	}
-	id, err := saver.InsertInvestment(inv)
+	id, err := saver.InsertAsset(a)
 	if err != nil {
-		return fmt.Errorf("gardando investimento: %w", err)
+		return fmt.Errorf("gardando activo: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Investimento gardado #%d: %s — %s — %.2f USD — %02d/%d\n",
+	fmt.Fprintf(w, "✓ Activo gardado #%d: %s — %s — %.2f USD — %02d/%d\n",
 		id, typ.Display(), name, amount, month, year)
 	return nil
 }
 
-func promptType(r *bufio.Reader, w io.Writer) (domain.InvestmentType, error) {
+func promptType(r *bufio.Reader, w io.Writer) (domain.AssetType, error) {
 	fmt.Fprint(w, "Tipo de investimento:\n")
 	fmt.Fprint(w, "  [1] Acción\n")
 	fmt.Fprint(w, "  [2] Índice\n")

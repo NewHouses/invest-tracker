@@ -24,14 +24,14 @@ func TestRun_EndToEnd_PersistsAndShowsCalculations(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 
-	invID, err := s.InsertInvestment(domain.Investment{
+	assetID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err != nil {
-		t.Fatalf("InsertInvestment: %v", err)
+		t.Fatalf("InsertAsset: %v", err)
 	}
 	if _, err := s.InsertTransaction(domain.Transaction{
-		InvestmentID: invID, AmountUSD: 500, Month: 2, Year: 2026,
+		AssetID: assetID, AmountUSD: 500, Month: 2, Year: 2026,
 	}); err != nil {
 		t.Fatalf("InsertTransaction: %v", err)
 	}
@@ -64,24 +64,24 @@ func TestRun_EndToEnd_PersistsAndShowsCalculations(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 
 	var (
-		gotID        int64
-		gotInvID     int64
-		gotResult    float64
-		gotMonth     int
-		gotYear      int
+		gotID      int64
+		gotAssetID int64
+		gotResult  float64
+		gotMonth   int
+		gotYear    int
 	)
 	row := db.QueryRow(
-		`SELECT id, investment_id, result_usd, month, year FROM monthly_results WHERE investment_id = ?`,
-		invID,
+		`SELECT id, asset_id, result_usd, month, year FROM monthly_results WHERE asset_id = ?`,
+		assetID,
 	)
-	if err := row.Scan(&gotID, &gotInvID, &gotResult, &gotMonth, &gotYear); err != nil {
+	if err := row.Scan(&gotID, &gotAssetID, &gotResult, &gotMonth, &gotYear); err != nil {
 		t.Fatalf("QueryRow: %v", err)
 	}
 	if gotID <= 0 {
 		t.Errorf("id = %d, esperabamos > 0", gotID)
 	}
-	if gotInvID != invID || gotResult != 1800 || gotMonth != 5 || gotYear != 2026 {
+	if gotAssetID != assetID || gotResult != 1800 || gotMonth != 5 || gotYear != 2026 {
 		t.Errorf("fila = (%d, %d, %v, %d, %d); queremos (%d, %d, 1800, 5, 2026)",
-			gotID, gotInvID, gotResult, gotMonth, gotYear, gotID, invID)
+			gotID, gotAssetID, gotResult, gotMonth, gotYear, gotID, assetID)
 	}
 }

@@ -1,0 +1,65 @@
+package store
+
+import (
+	"database/sql"
+	"errors"
+
+	"invest-tracker/internal/domain"
+)
+
+func (s *Store) MonthlySummary(assetID int64, year, month int) (domain.MonthlySummary, error) {
+	var summary domain.MonthlySummary
+
+	err := s.db.QueryRow(
+		`SELECT
+			COALESCE(
+				(SELECT amount_usd FROM assets
+				 WHERE id = ?1 AND (year * 12 + month) <= (?2 * 12 + ?3)),
+				0
+			) +
+			COALESCE(
+				(SELECT SUM(amount_usd) FROM transactions
+				 WHERE asset_id = ?1 AND (year * 12 + month) <= (?2 * 12 + ?3)),
+				0
+			)`,
+		assetID, year, month,
+	).Scan(&summary.TotalInvestedUpTo)
+	if err != nil {
+		return summary, err
+	}
+
+	err = s.db.QueryRow(
+		`SELECT
+			COALESCE(
+				(SELECT amount_usd FROM assets
+				 WHERE id = ?1 AND year = ?2 AND month = ?3),
+				0
+			) +
+			COALESCE(
+				(SELECT SUM(amount_usd) FROM transactions
+				 WHERE asset_id = ?1 AND year = ?2 AND month = ?3),
+				0
+			)`,
+		assetID, year, month,
+	).Scan(&summary.InvestedInMonth)
+	if err != nil {
+		return summary, err
+	}
+
+	err = s.db.QueryRow(
+		`SELECT result_usd FROM monthly_results
+		 WHERE asset_id = ? AND year = ? AND month = ?
+		 ORDER BY id DESC LIMIT 1`,
+		assetID, year, month,
+	).Scan(&summary.Result)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			summary.Result = 0
+			summary.HasResult = false
+			return summary, nil
+		}
+		return summary, err
+	}
+	summary.HasResult = true
+	return summary, nil
+}
