@@ -45,7 +45,8 @@ func TestOptions_Stable(t *testing.T) {
 		{Key: 10, Label: "Eliminar dividendo mensual"},
 		{Key: 11, Label: "Ver informe mensual dun activo"},
 		{Key: 12, Label: "Ver informe mensual por tipo"},
-		{Key: 13, Label: "Ver historial dun activo"},
+		{Key: 13, Label: "Ver informe mensual total"},
+		{Key: 14, Label: "Ver historial dun activo"},
 		{Key: 0, Label: "Saír"},
 	}
 	got := Options()
