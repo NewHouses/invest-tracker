@@ -14,6 +14,7 @@ import (
 	"invest-tracker/internal/addtransaction"
 	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/deleteasset"
+	"invest-tracker/internal/deletedividend"
 	"invest-tracker/internal/deleteresult"
 	"invest-tracker/internal/deletetransaction"
 	"invest-tracker/internal/store"
@@ -87,10 +88,14 @@ func main() {
 				fmt.Fprintln(os.Stderr, "⚠ erro engadindo dividendo:", err)
 			}
 		case 9:
+			if err := deletedividend.Run(reader, os.Stdout, s); err != nil {
+				fmt.Fprintln(os.Stderr, "⚠ erro eliminando dividendo:", err)
+			}
+		case 10:
 			if err := viewreport.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe:", err)
 			}
-		case 10:
+		case 11:
 			if err := viewassethistory.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando historial:", err)
 			}
