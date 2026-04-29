@@ -15,10 +15,10 @@ func TestStore_InsertMonthlyResult(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID := seedInvestment(t, s)
+	assetID := seedAsset(t, s)
 
 	id, err := s.InsertMonthlyResult(domain.MonthlyResult{
-		InvestmentID: invID, ResultUSD: 1100.50, Month: 4, Year: 2026,
+		AssetID: assetID, ResultUSD: 1100.50, Month: 4, Year: 2026,
 	})
 	if err != nil {
 		t.Fatalf("InsertMonthlyResult: %v", err)
@@ -35,14 +35,14 @@ func TestStore_TotalInvested_OnlyInitial(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID, err := s.InsertInvestment(domain.Investment{
+	assetID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err != nil {
-		t.Fatalf("InsertInvestment: %v", err)
+		t.Fatalf("InsertAsset: %v", err)
 	}
 
-	total, err := s.TotalInvested(invID)
+	total, err := s.TotalInvested(assetID)
 	if err != nil {
 		t.Fatalf("TotalInvested: %v", err)
 	}
@@ -58,21 +58,21 @@ func TestStore_TotalInvested_WithTransactions(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID, err := s.InsertInvestment(domain.Investment{
+	assetID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err != nil {
-		t.Fatalf("InsertInvestment: %v", err)
+		t.Fatalf("InsertAsset: %v", err)
 	}
 	for _, amt := range []float64{250.50, 500.00} {
 		if _, err := s.InsertTransaction(domain.Transaction{
-			InvestmentID: invID, AmountUSD: amt, Month: 2, Year: 2026,
+			AssetID: assetID, AmountUSD: amt, Month: 2, Year: 2026,
 		}); err != nil {
 			t.Fatalf("InsertTransaction: %v", err)
 		}
 	}
 
-	total, err := s.TotalInvested(invID)
+	total, err := s.TotalInvested(assetID)
 	if err != nil {
 		t.Fatalf("TotalInvested: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestStore_RejectsOrphanResult(t *testing.T) {
 	t.Cleanup(func() { _ = s.Close() })
 
 	_, err = s.InsertMonthlyResult(domain.MonthlyResult{
-		InvestmentID: 999, ResultUSD: 1000, Month: 1, Year: 2026,
+		AssetID: 999, ResultUSD: 1000, Month: 1, Year: 2026,
 	})
 	if err == nil {
 		t.Fatal("esperabamos erro de FK orfa")
@@ -106,9 +106,9 @@ func TestStore_RejectsInvalidResultMonth(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	invID := seedInvestment(t, s)
+	assetID := seedAsset(t, s)
 	_, err = s.InsertMonthlyResult(domain.MonthlyResult{
-		InvestmentID: invID, ResultUSD: 1000, Month: 13, Year: 2026,
+		AssetID: assetID, ResultUSD: 1000, Month: 13, Year: 2026,
 	})
 	if err == nil {
 		t.Fatal("esperabamos erro do CHECK constraint do mes")

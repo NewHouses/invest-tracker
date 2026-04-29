@@ -37,7 +37,7 @@ func TestOptions_Stable(t *testing.T) {
 		{Key: 2, Label: "Engadir nova transacción"},
 		{Key: 3, Label: "Engadir resultado mensual"},
 		{Key: 4, Label: "Engadir dividendo mensual"},
-		{Key: 5, Label: "Ver informe mensual"},
+		{Key: 5, Label: "Ver informe mensual dun activo"},
 		{Key: 6, Label: "Exportar (CSV / HTML)"},
 		{Key: 0, Label: "Saír"},
 	}

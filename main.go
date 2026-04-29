@@ -13,6 +13,7 @@ import (
 	"invest-tracker/internal/addresult"
 	"invest-tracker/internal/addtransaction"
 	"invest-tracker/internal/store"
+	"invest-tracker/internal/viewreport"
 	"invest-tracker/internal/welcome"
 )
 
@@ -63,6 +64,10 @@ func main() {
 		case 4:
 			if err := adddividend.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro engadindo dividendo:", err)
+			}
+		case 5:
+			if err := viewreport.Run(reader, os.Stdout, s); err != nil {
+				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe:", err)
 			}
 		default:
 			fmt.Printf("Seleccionaches: %s (placeholder, aínda non implementado)\n", opt.Label)

@@ -13,15 +13,15 @@ import (
 )
 
 type fakeSaver struct {
-	saved []domain.Investment
+	saved []domain.Asset
 	err   error
 }
 
-func (f *fakeSaver) InsertInvestment(inv domain.Investment) (int64, error) {
+func (f *fakeSaver) InsertAsset(a domain.Asset) (int64, error) {
 	if f.err != nil {
 		return 0, f.err
 	}
-	f.saved = append(f.saved, inv)
+	f.saved = append(f.saved, a)
 	return int64(len(f.saved)), nil
 }
 
@@ -72,7 +72,7 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "✓ Investimento gardado") {
+	if !strings.Contains(out, "✓ Activo gardado") {
 		t.Errorf("saída non contén a confirmación:\n%s", out)
 	}
 	if !strings.Contains(out, "AAPL") {
@@ -86,7 +86,7 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 	}
 }
 
-func TestRun_HappyPath_SavesCorrectInvestment(t *testing.T) {
+func TestRun_HappyPath_SavesCorrectAsset(t *testing.T) {
 	_, saver, err := runWith("2\nVanguard S&P 500\n1500.50\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -95,7 +95,7 @@ func TestRun_HappyPath_SavesCorrectInvestment(t *testing.T) {
 		t.Fatalf("saver.saved tamaño = %d, esperabamos 1", len(saver.saved))
 	}
 	got := saver.saved[0]
-	want := domain.Investment{
+	want := domain.Asset{
 		Type:      domain.Indice,
 		Name:      "Vanguard S&P 500",
 		AmountUSD: 1500.50,

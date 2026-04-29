@@ -1,15 +1,15 @@
 package domain
 
-type InvestmentType string
+type AssetType string
 
 const (
-	Accion      InvestmentType = "accion"
-	Indice      InvestmentType = "indice"
-	CopyTrading InvestmentType = "copy_trading"
-	Fondo       InvestmentType = "fondo"
+	Accion      AssetType = "accion"
+	Indice      AssetType = "indice"
+	CopyTrading AssetType = "copy_trading"
+	Fondo       AssetType = "fondo"
 )
 
-func (t InvestmentType) Valid() bool {
+func (t AssetType) Valid() bool {
 	switch t {
 	case Accion, Indice, CopyTrading, Fondo:
 		return true
@@ -17,7 +17,7 @@ func (t InvestmentType) Valid() bool {
 	return false
 }
 
-func (t InvestmentType) Display() string {
+func (t AssetType) Display() string {
 	switch t {
 	case Accion:
 		return "Acción"
@@ -31,9 +31,9 @@ func (t InvestmentType) Display() string {
 	return string(t)
 }
 
-type Investment struct {
+type Asset struct {
 	ID        int64
-	Type      InvestmentType
+	Type      AssetType
 	Name      string
 	AmountUSD float64
 	Month     int

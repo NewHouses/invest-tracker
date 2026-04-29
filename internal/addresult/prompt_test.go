@@ -13,7 +13,7 @@ import (
 )
 
 type fakeRepo struct {
-	invs    []domain.Investment
+	assets  []domain.Asset
 	totals  map[int64]float64
 	saved   []domain.MonthlyResult
 	listEr  error
@@ -21,11 +21,11 @@ type fakeRepo struct {
 	saveEr  error
 }
 
-func (f *fakeRepo) ListInvestments() ([]domain.Investment, error) {
+func (f *fakeRepo) ListAssets() ([]domain.Asset, error) {
 	if f.listEr != nil {
 		return nil, f.listEr
 	}
-	return f.invs, nil
+	return f.assets, nil
 }
 
 func (f *fakeRepo) TotalInvested(id int64) (float64, error) {
@@ -43,15 +43,15 @@ func (f *fakeRepo) InsertMonthlyResult(m domain.MonthlyResult) (int64, error) {
 	return int64(len(f.saved)), nil
 }
 
-func runWith(invs []domain.Investment, totals map[int64]float64, input string) (string, *fakeRepo, error) {
-	repo := &fakeRepo{invs: invs, totals: totals}
+func runWith(assets []domain.Asset, totals map[int64]float64, input string) (string, *fakeRepo, error) {
+	repo := &fakeRepo{assets: assets, totals: totals}
 	var buf bytes.Buffer
 	r := bufio.NewReader(strings.NewReader(input))
 	err := addresult.Run(r, &buf, repo)
 	return buf.String(), repo, err
 }
 
-var sampleInvs = []domain.Investment{
+var sampleAssets = []domain.Asset{
 	{ID: 10, Type: domain.Accion, Name: "AAPL"},
 	{ID: 11, Type: domain.Indice, Name: "Vanguard S&P 500"},
 }
@@ -64,7 +64,7 @@ var sampleTotals = map[int64]float64{
 const validInput = "1\n1100\n4\n2026\n"
 
 func TestRun_PrintsHeader(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, validInput)
+	out, _, err := runWith(sampleAssets, sampleTotals, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -73,8 +73,8 @@ func TestRun_PrintsHeader(t *testing.T) {
 	}
 }
 
-func TestRun_PrintsInvestmentList(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, validInput)
+func TestRun_PrintsAssetList(t *testing.T) {
+	out, _, err := runWith(sampleAssets, sampleTotals, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestRun_PrintsInvestmentList(t *testing.T) {
 }
 
 func TestRun_PrintsTotalInvested(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, validInput)
+	out, _, err := runWith(sampleAssets, sampleTotals, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestRun_PrintsTotalInvested(t *testing.T) {
 }
 
 func TestRun_PromptsAllFields(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, validInput)
+	out, _, err := runWith(sampleAssets, sampleTotals, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestRun_PromptsAllFields(t *testing.T) {
 }
 
 func TestRun_PrintsConfirmation(t *testing.T) {
-	out, repo, err := runWith(sampleInvs, sampleTotals, validInput)
+	out, repo, err := runWith(sampleAssets, sampleTotals, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 }
 
 func TestRun_HappyPath_SavesCorrectResult(t *testing.T) {
-	_, repo, err := runWith(sampleInvs, sampleTotals, "2\n2200\n5\n2026\n")
+	_, repo, err := runWith(sampleAssets, sampleTotals, "2\n2200\n5\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -144,10 +144,10 @@ func TestRun_HappyPath_SavesCorrectResult(t *testing.T) {
 	}
 	got := repo.saved[0]
 	want := domain.MonthlyResult{
-		InvestmentID: 11,
-		ResultUSD:    2200,
-		Month:        5,
-		Year:         2026,
+		AssetID:   11,
+		ResultUSD: 2200,
+		Month:     5,
+		Year:      2026,
 	}
 	if got != want {
 		t.Errorf("guardado = %+v, queremos %+v", got, want)
@@ -155,7 +155,7 @@ func TestRun_HappyPath_SavesCorrectResult(t *testing.T) {
 }
 
 func TestRun_AcceptsCommaDecimal(t *testing.T) {
-	_, repo, err := runWith(sampleInvs, sampleTotals, "1\n1100,50\n4\n2026\n")
+	_, repo, err := runWith(sampleAssets, sampleTotals, "1\n1100,50\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestRun_AcceptsCommaDecimal(t *testing.T) {
 }
 
 func TestRun_PrintsErrorOnInvalidSelection(t *testing.T) {
-	out, repo, err := runWith(sampleInvs, sampleTotals, "99\n1\n1100\n4\n2026\n")
+	out, repo, err := runWith(sampleAssets, sampleTotals, "99\n1\n1100\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -178,11 +178,11 @@ func TestRun_PrintsErrorOnInvalidSelection(t *testing.T) {
 }
 
 func TestRun_RecoversFromInvalidSelection(t *testing.T) {
-	_, repo, err := runWith(sampleInvs, sampleTotals, "99\n2\n2200\n5\n2026\n")
+	_, repo, err := runWith(sampleAssets, sampleTotals, "99\n2\n2200\n5\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if len(repo.saved) != 1 || repo.saved[0].InvestmentID != 11 {
+	if len(repo.saved) != 1 || repo.saved[0].AssetID != 11 {
 		t.Errorf("expected save sobre id=11, got %+v", repo.saved)
 	}
 }
@@ -192,7 +192,7 @@ func TestRun_EmptyList_PrintsHint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "Aínda non hai investimentos") {
+	if !strings.Contains(out, "Aínda non hai activos") {
 		t.Errorf("saída non contén a suxestión:\n%s", out)
 	}
 	if len(repo.saved) != 0 {
@@ -201,7 +201,7 @@ func TestRun_EmptyList_PrintsHint(t *testing.T) {
 }
 
 func TestRun_ShowsGain(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, "1\n1100\n4\n2026\n")
+	out, _, err := runWith(sampleAssets, sampleTotals, "1\n1100\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestRun_ShowsGain(t *testing.T) {
 }
 
 func TestRun_ShowsLoss(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, "1\n900\n4\n2026\n")
+	out, _, err := runWith(sampleAssets, sampleTotals, "1\n900\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestRun_ShowsLoss(t *testing.T) {
 }
 
 func TestRun_ShowsBreakeven(t *testing.T) {
-	out, _, err := runWith(sampleInvs, sampleTotals, "1\n1000\n4\n2026\n")
+	out, _, err := runWith(sampleAssets, sampleTotals, "1\n1000\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -241,7 +241,7 @@ func TestRun_ShowsBreakeven(t *testing.T) {
 
 func TestRun_HandlesZeroInvested(t *testing.T) {
 	totals := map[int64]float64{10: 0, 11: 0}
-	out, _, err := runWith(sampleInvs, totals, "1\n100\n4\n2026\n")
+	out, _, err := runWith(sampleAssets, totals, "1\n100\n4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestRun_HandlesZeroInvested(t *testing.T) {
 }
 
 func TestRun_EOFMidFlow_ReturnsError(t *testing.T) {
-	_, repo, err := runWith(sampleInvs, sampleTotals, "1\n1100\n4\n")
+	_, repo, err := runWith(sampleAssets, sampleTotals, "1\n1100\n4\n")
 	if err == nil {
 		t.Fatal("esperabamos erro por entrada truncada")
 	}
