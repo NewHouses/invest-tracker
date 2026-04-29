@@ -1,6 +1,9 @@
 package store
 
 import (
+	"database/sql"
+	"fmt"
+
 	"invest-tracker/internal/domain"
 )
 
@@ -34,4 +37,19 @@ func (s *Store) ListTransactionsByAsset(assetID int64) ([]domain.Transaction, er
 		out = append(out, t)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) DeleteTransaction(id int64) error {
+	res, err := s.db.Exec(`DELETE FROM transactions WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("transacción id=%d: %w", id, sql.ErrNoRows)
+	}
+	return nil
 }
