@@ -62,10 +62,15 @@ var sampleAssets = []domain.Asset{
 	{ID: 11, Type: domain.Indice, Name: "Vanguard S&P 500"},
 }
 
-func summariesFor(year, month int, totals map[int64]float64) map[summaryKey]domain.MonthlySummary {
+// summariesForHolding constrúe summaries onde EstimatedHolding == holding
+// (sen previo, equivalente ao caso onde non hai resultado anterior).
+func summariesForHolding(year, month int, holdings map[int64]float64) map[summaryKey]domain.MonthlySummary {
 	out := make(map[summaryKey]domain.MonthlySummary)
-	for id, total := range totals {
-		out[summaryKey{id, year, month}] = domain.MonthlySummary{TotalInvestedUpTo: total}
+	for id, h := range holdings {
+		out[summaryKey{id, year, month}] = domain.MonthlySummary{
+			TotalInvestedUpTo: h,
+			EstimatedHolding:  h,
+		}
 	}
 	return out
 }
@@ -74,7 +79,7 @@ func summariesFor(year, month int, totals map[int64]float64) map[summaryKey]doma
 const validInput = "4\n2026\n1\n1100\n"
 
 func TestRun_PrintsHeader(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000, 11: 2000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000, 11: 2000})
 	out, _, err := runWith(sampleAssets, sums, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -85,7 +90,7 @@ func TestRun_PrintsHeader(t *testing.T) {
 }
 
 func TestRun_PromptsMonthAndYearFirst(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000, 11: 2000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000, 11: 2000})
 	out, _, err := runWith(sampleAssets, sums, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -103,16 +108,16 @@ func TestRun_PromptsMonthAndYearFirst(t *testing.T) {
 	}
 }
 
-func TestRun_PrintsAssetListWithCumulativeInvested(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000, 11: 2000})
+func TestRun_PrintsAssetListWithHolding(t *testing.T) {
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000, 11: 2000})
 	out, _, err := runWith(sampleAssets, sums, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	for _, want := range []string{
 		"Investimentos:",
-		"[1] Acción — AAPL (investido: 1000.00 USD)",
-		"[2] Índice — Vanguard S&P 500 (investido: 2000.00 USD)",
+		"[1] Acción — AAPL (no activo: 1000.00 USD)",
+		"[2] Índice — Vanguard S&P 500 (no activo: 2000.00 USD)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -120,8 +125,8 @@ func TestRun_PrintsAssetListWithCumulativeInvested(t *testing.T) {
 	}
 }
 
-func TestRun_FiltersAssetsWithZeroInvested(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000}) // só id=10 con capital
+func TestRun_FiltersAssetsWithZeroHolding(t *testing.T) {
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000}) // só id=10 con capital
 	out, _, err := runWith(sampleAssets, sums, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -138,7 +143,7 @@ func TestRun_FiltersAssetsWithZeroInvested(t *testing.T) {
 }
 
 func TestRun_NoEligibleAssets_PrintsHint(t *testing.T) {
-	out, repo, err := runWith(sampleAssets, summariesFor(2026, 4, nil), "4\n2026\n")
+	out, repo, err := runWith(sampleAssets, summariesForHolding(2026, 4, nil), "4\n2026\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -151,7 +156,7 @@ func TestRun_NoEligibleAssets_PrintsHint(t *testing.T) {
 }
 
 func TestRun_PromptsAllFields(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000, 11: 2000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000, 11: 2000})
 	out, _, err := runWith(sampleAssets, sums, validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -169,13 +174,16 @@ func TestRun_PromptsAllFields(t *testing.T) {
 }
 
 func TestRun_PrintsConfirmation(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, repo, err := runWith(sampleAssets, sums, "4\n2026\n1\n1100\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if !strings.Contains(out, "✓ Resultado gardado") {
 		t.Errorf("saída non contén a confirmación:\n%s", out)
+	}
+	if !strings.Contains(out, "No activo: 1000.00 USD") {
+		t.Errorf("saída non contén o detalle 'No activo':\n%s", out)
 	}
 	if !strings.Contains(out, "Ganhanzas/Perdas:") {
 		t.Errorf("saída non contén Ganhanzas/Perdas:\n%s", out)
@@ -186,7 +194,7 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 }
 
 func TestRun_HappyPath_SavesCorrectResult(t *testing.T) {
-	sums := summariesFor(2026, 5, map[int64]float64{10: 1000, 11: 2000})
+	sums := summariesForHolding(2026, 5, map[int64]float64{10: 1000, 11: 2000})
 	_, repo, err := runWith(sampleAssets, sums, "5\n2026\n2\n2200\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -207,7 +215,7 @@ func TestRun_HappyPath_SavesCorrectResult(t *testing.T) {
 }
 
 func TestRun_AcceptsCommaDecimal(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	_, repo, err := runWith(sampleAssets, sums, "4\n2026\n1\n1100,50\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -218,7 +226,7 @@ func TestRun_AcceptsCommaDecimal(t *testing.T) {
 }
 
 func TestRun_PrintsErrorOnInvalidSelection(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, repo, err := runWith(sampleAssets, sums, "4\n2026\n99\n1\n1100\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -232,7 +240,7 @@ func TestRun_PrintsErrorOnInvalidSelection(t *testing.T) {
 }
 
 func TestRun_RecoversFromInvalidSelection(t *testing.T) {
-	sums := summariesFor(2026, 5, map[int64]float64{10: 1000, 11: 2000})
+	sums := summariesForHolding(2026, 5, map[int64]float64{10: 1000, 11: 2000})
 	_, repo, err := runWith(sampleAssets, sums, "5\n2026\n99\n2\n2200\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -256,7 +264,7 @@ func TestRun_EmptyAssets_PrintsHint(t *testing.T) {
 }
 
 func TestRun_ShowsGain(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, _, err := runWith(sampleAssets, sums, "4\n2026\n1\n1100\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -270,7 +278,7 @@ func TestRun_ShowsGain(t *testing.T) {
 }
 
 func TestRun_ShowsLoss(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, _, err := runWith(sampleAssets, sums, "4\n2026\n1\n900\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -284,7 +292,7 @@ func TestRun_ShowsLoss(t *testing.T) {
 }
 
 func TestRun_ShowsBreakeven(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, _, err := runWith(sampleAssets, sums, "4\n2026\n1\n1000\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -297,26 +305,34 @@ func TestRun_ShowsBreakeven(t *testing.T) {
 	}
 }
 
-func TestRun_UsesTimeAwareTotal(t *testing.T) {
-	// O mesmo activo ten distinto total en 04/2026 (1000) que en 05/2026 (1500)
+func TestRun_UsesPrevResultPlusInvested(t *testing.T) {
+	// Resultado anterior 1100 + investido este mes 200 = no activo 1300.
+	// Ganhanza con resultado actual 1500: 1500-1300 = 200 (+15.38%).
 	sums := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 4}: {TotalInvestedUpTo: 1000},
-		{10, 2026, 5}: {TotalInvestedUpTo: 1500},
+		{10, 2026, 4}: {
+			TotalInvestedUpTo: 1200,
+			InvestedInMonth:   200,
+			EstimatedHolding:  1300,
+			HasPrevResult:     true,
+		},
 	}
-	out, _, err := runWith(sampleAssets, sums, "5\n2026\n1\n1800\n")
+	out, _, err := runWith(sampleAssets, sums, "4\n2026\n1\n1500\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "investido: 1500.00 USD") {
-		t.Errorf("saída non usa o total de 05/2026:\n%s", out)
+	if !strings.Contains(out, "no activo: 1300.00 USD") {
+		t.Errorf("saída non mostra holding (prev result + invested):\n%s", out)
 	}
-	if !strings.Contains(out, "+300.00 USD") {
-		t.Errorf("saída non mostra ganhanza calculada con total time-aware:\n%s", out)
+	if !strings.Contains(out, "+200.00 USD") {
+		t.Errorf("saída non mostra ganhanza calculada contra holding:\n%s", out)
+	}
+	if !strings.Contains(out, "+15.38%") {
+		t.Errorf("saída non mostra %% calculada contra holding:\n%s", out)
 	}
 }
 
 func TestRun_EOFMidFlow_ReturnsError(t *testing.T) {
-	sums := summariesFor(2026, 4, map[int64]float64{10: 1000})
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	_, repo, err := runWith(sampleAssets, sums, "4\n2026\n1\n")
 	if err == nil {
 		t.Fatal("esperabamos erro por entrada truncada")

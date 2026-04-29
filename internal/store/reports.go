@@ -46,6 +46,23 @@ func (s *Store) MonthlySummary(assetID int64, year, month int) (domain.MonthlySu
 		return summary, err
 	}
 
+	var prevResult sql.NullFloat64
+	err = s.db.QueryRow(
+		`SELECT result_usd FROM monthly_results
+		 WHERE asset_id = ? AND (year * 12 + month) < (? * 12 + ?)
+		 ORDER BY year DESC, month DESC, id DESC LIMIT 1`,
+		assetID, year, month,
+	).Scan(&prevResult)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return summary, err
+	}
+	if prevResult.Valid {
+		summary.HasPrevResult = true
+		summary.EstimatedHolding = prevResult.Float64 + summary.InvestedInMonth
+	} else {
+		summary.EstimatedHolding = summary.TotalInvestedUpTo
+	}
+
 	err = s.db.QueryRow(
 		`SELECT result_usd FROM monthly_results
 		 WHERE asset_id = ? AND year = ? AND month = ?

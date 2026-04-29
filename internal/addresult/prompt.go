@@ -18,8 +18,8 @@ type Repo interface {
 }
 
 type eligibleEntry struct {
-	asset domain.Asset
-	total float64
+	asset   domain.Asset
+	holding float64
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
@@ -49,8 +49,8 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		if err != nil {
 			return fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
-		if sum.TotalInvestedUpTo > 0 {
-			eligible = append(eligible, eligibleEntry{asset: a, total: sum.TotalInvestedUpTo})
+		if sum.EstimatedHolding > 0 {
+			eligible = append(eligible, eligibleEntry{asset: a, holding: sum.EstimatedHolding})
 		}
 	}
 
@@ -82,10 +82,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	fmt.Fprintf(w, "✓ Resultado gardado #%d sobre %s — %s: %.2f USD — %02d/%d\n",
 		id, chosen.asset.Type.Display(), chosen.asset.Name, result, month, year)
-	fmt.Fprintf(w, "Investido total: %.2f USD\n", chosen.total)
-	gain := result - chosen.total
-	if chosen.total > 0 {
-		pct := gain / chosen.total * 100
+	fmt.Fprintf(w, "No activo: %.2f USD\n", chosen.holding)
+	gain := result - chosen.holding
+	if chosen.holding > 0 {
+		pct := gain / chosen.holding * 100
 		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (%+.2f%%)\n", gain, pct)
 	} else {
 		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (n/a%%)\n", gain)
@@ -96,8 +96,8 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 func promptEligibleSelection(r *bufio.Reader, w io.Writer, eligible []eligibleEntry) (eligibleEntry, error) {
 	fmt.Fprintln(w, "Investimentos:")
 	for i, e := range eligible {
-		fmt.Fprintf(w, "  [%d] %s — %s (investido: %.2f USD)\n",
-			i+1, e.asset.Type.Display(), e.asset.Name, e.total)
+		fmt.Fprintf(w, "  [%d] %s — %s (no activo: %.2f USD)\n",
+			i+1, e.asset.Type.Display(), e.asset.Name, e.holding)
 	}
 	for {
 		fmt.Fprintf(w, "Selecciona (1-%d): ", len(eligible))
