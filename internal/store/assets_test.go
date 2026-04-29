@@ -81,6 +81,80 @@ func TestStore_RejectsInvalidMonth(t *testing.T) {
 	}
 }
 
+func TestStore_UpdateAsset(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+
+	if err := s.UpdateAsset(domain.Asset{
+		ID: id, Type: domain.Accion, Name: "AAPL Updated", AmountUSD: 1500, Month: 6, Year: 2027,
+	}); err != nil {
+		t.Fatalf("UpdateAsset: %v", err)
+	}
+
+	got, err := s.ListAssets()
+	if err != nil {
+		t.Fatalf("ListAssets: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len = %d, esperabamos 1", len(got))
+	}
+	want := domain.Asset{
+		ID: id, Type: domain.Accion, Name: "AAPL Updated", AmountUSD: 1500, Month: 6, Year: 2027,
+	}
+	if got[0] != want {
+		t.Errorf("got %+v, esperabamos %+v", got[0], want)
+	}
+}
+
+func TestStore_UpdateAsset_NoRow(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	err = s.UpdateAsset(domain.Asset{
+		ID: 999, Type: domain.Accion, Name: "ghost", AmountUSD: 1, Month: 1, Year: 2026,
+	})
+	if err == nil {
+		t.Fatal("esperabamos erro por id inexistente")
+	}
+}
+
+func TestStore_UpdateAsset_RejectsInvalidMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+	err = s.UpdateAsset(domain.Asset{
+		ID: id, Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 13, Year: 2026,
+	})
+	if err == nil {
+		t.Fatal("esperabamos erro por mes inválido")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "constraint") {
+		t.Errorf("erro inesperado: %v", err)
+	}
+}
+
 func TestStore_DeleteAsset_CascadesChildren(t *testing.T) {
 	s, err := store.Open(":memory:")
 	if err != nil {
