@@ -48,8 +48,9 @@ func TestRun_EndToEnd_PersistsAndShowsCalculations(t *testing.T) {
 	}
 
 	output := out.String()
+	// Sen prev result, holding == TotalInvestedUpTo == 1500.
 	for _, want := range []string{
-		"investido: 1500.00 USD",
+		"no activo: 1500.00 USD",
 		"+300.00 USD",
 		"+20.00%",
 	} {

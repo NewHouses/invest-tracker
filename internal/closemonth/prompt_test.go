@@ -63,10 +63,15 @@ var threeAssets = []domain.Asset{
 	{ID: 12, Type: domain.Fondo, Name: "Bond Fund"},
 }
 
-func summariesFor(year, month int, totals map[int64]float64) map[summaryKey]domain.MonthlySummary {
+// summariesFor constrúe summaries onde EstimatedHolding == valor proporcionado
+// (caso típico: sen prev result, holding == total invested up to).
+func summariesFor(year, month int, holdings map[int64]float64) map[summaryKey]domain.MonthlySummary {
 	out := make(map[summaryKey]domain.MonthlySummary)
-	for id, total := range totals {
-		out[summaryKey{id, year, month}] = domain.MonthlySummary{TotalInvestedUpTo: total}
+	for id, h := range holdings {
+		out[summaryKey{id, year, month}] = domain.MonthlySummary{
+			TotalInvestedUpTo: h,
+			EstimatedHolding:  h,
+		}
 	}
 	return out
 }
@@ -127,8 +132,8 @@ func TestRun_PromptsForEachEligibleAsset(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	for _, want := range []string{
-		"[1/2] Acción — AAPL (investido: 1500.00 USD)",
-		"[2/2] Índice — Vanguard (investido: 2000.00 USD)",
+		"[1/2] Acción — AAPL (no activo: 1500.00 USD)",
+		"[2/2] Índice — Vanguard (no activo: 2000.00 USD)",
 		"Resultado (USD, baleiro = saltar):",
 	} {
 		if !strings.Contains(out, want) {
@@ -220,14 +225,48 @@ func TestRun_ShowsGainAfterEachSave(t *testing.T) {
 
 func TestRun_ShowsPreviousResultHint(t *testing.T) {
 	sums := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 4}: {TotalInvestedUpTo: 1500, Result: 1700, HasResult: true},
+		{10, 2026, 4}: {
+			TotalInvestedUpTo: 1500,
+			EstimatedHolding:  1500,
+			Result:            1700,
+			HasResult:         true,
+		},
 	}
 	out, _, err := runWith(threeAssets, sums, "4\n2026\n1800\n")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "Xa hai un resultado rexistrado: 1700.00 USD") {
+	if !strings.Contains(out, "Xa hai un resultado rexistrado este mes: 1700.00 USD") {
 		t.Errorf("saída non contén o aviso de resultado previo:\n%s", out)
+	}
+}
+
+func TestRun_UsesPrevResultPlusInvestedAsHolding(t *testing.T) {
+	// Resultado anterior 1100 + investido este mes 200 = no activo 1300.
+	// Resultado actual 1500 → ganhanza 200, +15.38%.
+	sums := map[summaryKey]domain.MonthlySummary{
+		{10, 2026, 4}: {
+			TotalInvestedUpTo: 1200,
+			InvestedInMonth:   200,
+			EstimatedHolding:  1300,
+			HasPrevResult:     true,
+		},
+	}
+	out, repo, err := runWith(threeAssets, sums, "4\n2026\n1500\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(repo.saved) != 1 {
+		t.Fatalf("saved tamaño = %d, esperabamos 1", len(repo.saved))
+	}
+	for _, want := range []string{
+		"no activo: 1300.00 USD",
+		"+200.00 USD",
+		"+15.38%",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("saída non contén %q:\n%s", want, out)
+		}
 	}
 }
 
