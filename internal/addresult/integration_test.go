@@ -36,7 +36,8 @@ func TestRun_EndToEnd_PersistsAndShowsCalculations(t *testing.T) {
 		t.Fatalf("InsertTransaction: %v", err)
 	}
 
-	input := "1\n1800\n5\n2026\n"
+	// Input layout: month, year, asset selection, result
+	input := "5\n2026\n1\n1800\n"
 	r := bufio.NewReader(strings.NewReader(input))
 	var out bytes.Buffer
 	if err := addresult.Run(r, &out, s); err != nil {

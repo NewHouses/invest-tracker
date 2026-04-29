@@ -13,12 +13,26 @@ import (
 
 type Repo interface {
 	ListAssets() ([]domain.Asset, error)
+	MonthlySummary(assetID int64, year, month int) (domain.MonthlySummary, error)
 	InsertMonthlyResult(domain.MonthlyResult) (int64, error)
-	TotalInvested(assetID int64) (float64, error)
+}
+
+type eligibleEntry struct {
+	asset domain.Asset
+	total float64
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	fmt.Fprint(w, "\n--- Engadir resultado mensual ---\n")
+
+	month, err := prompts.Month(r, w)
+	if err != nil {
+		return err
+	}
+	year, err := prompts.Year(r, w)
+	if err != nil {
+		return err
+	}
 
 	assets, err := repo.ListAssets()
 	if err != nil {
@@ -29,33 +43,34 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return nil
 	}
 
-	chosen, err := prompts.SelectAsset(r, w, assets)
+	var eligible []eligibleEntry
+	for _, a := range assets {
+		sum, err := repo.MonthlySummary(a.ID, year, month)
+		if err != nil {
+			return fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+		}
+		if sum.TotalInvestedUpTo > 0 {
+			eligible = append(eligible, eligibleEntry{asset: a, total: sum.TotalInvestedUpTo})
+		}
+	}
+
+	if len(eligible) == 0 {
+		fmt.Fprintf(w, "Non hai activos con capital investido en %02d/%d.\n", month, year)
+		return nil
+	}
+
+	chosen, err := promptEligibleSelection(r, w, eligible)
 	if err != nil {
 		return err
 	}
-
-	total, err := repo.TotalInvested(chosen.ID)
-	if err != nil {
-		return fmt.Errorf("calculando total investido: %w", err)
-	}
-	fmt.Fprintf(w, "Sobre %s — %s (investido: %.2f USD)\n",
-		chosen.Type.Display(), chosen.Name, total)
 
 	result, err := promptResult(r, w)
 	if err != nil {
 		return err
 	}
-	month, err := prompts.Month(r, w)
-	if err != nil {
-		return err
-	}
-	year, err := prompts.Year(r, w)
-	if err != nil {
-		return err
-	}
 
 	mr := domain.MonthlyResult{
-		AssetID:   chosen.ID,
+		AssetID:   chosen.asset.ID,
 		ResultUSD: result,
 		Month:     month,
 		Year:      year,
@@ -66,16 +81,36 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	fmt.Fprintf(w, "✓ Resultado gardado #%d sobre %s — %s: %.2f USD — %02d/%d\n",
-		id, chosen.Type.Display(), chosen.Name, result, month, year)
-	fmt.Fprintf(w, "Investido total: %.2f USD\n", total)
-	gain := result - total
-	if total > 0 {
-		pct := gain / total * 100
+		id, chosen.asset.Type.Display(), chosen.asset.Name, result, month, year)
+	fmt.Fprintf(w, "Investido total: %.2f USD\n", chosen.total)
+	gain := result - chosen.total
+	if chosen.total > 0 {
+		pct := gain / chosen.total * 100
 		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (%+.2f%%)\n", gain, pct)
 	} else {
 		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (n/a%%)\n", gain)
 	}
 	return nil
+}
+
+func promptEligibleSelection(r *bufio.Reader, w io.Writer, eligible []eligibleEntry) (eligibleEntry, error) {
+	fmt.Fprintln(w, "Investimentos:")
+	for i, e := range eligible {
+		fmt.Fprintf(w, "  [%d] %s — %s (investido: %.2f USD)\n",
+			i+1, e.asset.Type.Display(), e.asset.Name, e.total)
+	}
+	for {
+		fmt.Fprintf(w, "Selecciona (1-%d): ", len(eligible))
+		line, err := prompts.ReadLine(r)
+		if err != nil {
+			return eligibleEntry{}, err
+		}
+		idx, perr := strconv.Atoi(line)
+		if perr == nil && idx >= 1 && idx <= len(eligible) {
+			return eligible[idx-1], nil
+		}
+		fmt.Fprintln(w, "⚠ Selección non válida")
+	}
 }
 
 func promptResult(r *bufio.Reader, w io.Writer) (float64, error) {
