@@ -40,6 +40,26 @@ func (s *Store) ListAssets() ([]domain.Asset, error) {
 	return out, rows.Err()
 }
 
+// UpdateAsset actualiza nome, cantidade e data dun activo existente.
+// Non cambia o tipo. Devolve sql.ErrNoRows envolto se o id non existe.
+func (s *Store) UpdateAsset(a domain.Asset) error {
+	res, err := s.db.Exec(
+		`UPDATE assets SET name = ?, amount_usd = ?, month = ?, year = ? WHERE id = ?`,
+		a.Name, a.AmountUSD, a.Month, a.Year, a.ID,
+	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("activo id=%d: %w", a.ID, sql.ErrNoRows)
+	}
+	return nil
+}
+
 // DeleteAsset borra o activo e todas as súas transaccións e resultados mensuais.
 // Faino nunha única transacción para que sexa atómico.
 func (s *Store) DeleteAsset(id int64) error {
