@@ -12,7 +12,7 @@ import (
 	"invest-tracker/internal/store"
 )
 
-func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
+func TestRun_EndToEnd_PersistsCompra(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "test.db")
 
@@ -28,7 +28,7 @@ func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
 		t.Fatalf("InsertAsset: %v", err)
 	}
 
-	input := "1\n550.75\n5\n2026\n"
+	input := "1\n1\n550.75\n5\n2026\n"
 	r := bufio.NewReader(strings.NewReader(input))
 	var out bytes.Buffer
 	if err := addtransaction.Run(r, &out, s); err != nil {
@@ -65,5 +65,53 @@ func TestRun_EndToEnd_PersistsTransaction(t *testing.T) {
 	}
 	if got != want {
 		t.Errorf("fila gardada = %+v, queremos %+v", got, want)
+	}
+}
+
+func TestRun_EndToEnd_PersistsVendaAsNegative(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "test.db")
+
+	s, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+
+	assetID, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+
+	input := "1\n2\n300.00\n6\n2026\n"
+	r := bufio.NewReader(strings.NewReader(input))
+	var out bytes.Buffer
+	if err := addtransaction.Run(r, &out, s); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	s2, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatalf("re-Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s2.Close() })
+
+	list, err := s2.ListTransactionsByAsset(assetID)
+	if err != nil {
+		t.Fatalf("ListTransactionsByAsset: %v", err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("got %d filas, esperabamos 1", len(list))
+	}
+	if list[0].AmountUSD != -300.00 {
+		t.Errorf("amount = %v, esperabamos -300.00 (venda gardada como negativa)", list[0].AmountUSD)
+	}
+
+	if !strings.Contains(out.String(), "VENDA 300.00 USD") {
+		t.Errorf("saída non contén VENDA 300.00 USD:\n%s", out.String())
 	}
 }

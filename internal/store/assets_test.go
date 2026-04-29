@@ -80,3 +80,83 @@ func TestStore_RejectsInvalidMonth(t *testing.T) {
 		t.Errorf("erro inesperado: %v", err)
 	}
 }
+
+func TestStore_DeleteAsset_CascadesChildren(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id1, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset[1]: %v", err)
+	}
+	id2, err := s.InsertAsset(domain.Asset{
+		Type: domain.Indice, Name: "Vanguard", AmountUSD: 2000, Month: 1, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset[2]: %v", err)
+	}
+
+	for _, tx := range []domain.Transaction{
+		{AssetID: id1, AmountUSD: 500, Month: 2, Year: 2026},
+		{AssetID: id1, AmountUSD: 300, Month: 3, Year: 2026},
+		{AssetID: id2, AmountUSD: 100, Month: 2, Year: 2026},
+	} {
+		if _, err := s.InsertTransaction(tx); err != nil {
+			t.Fatalf("InsertTransaction: %v", err)
+		}
+	}
+	for _, mr := range []domain.MonthlyResult{
+		{AssetID: id1, ResultUSD: 1600, Month: 2, Year: 2026},
+		{AssetID: id2, ResultUSD: 2100, Month: 2, Year: 2026},
+	} {
+		if _, err := s.InsertMonthlyResult(mr); err != nil {
+			t.Fatalf("InsertMonthlyResult: %v", err)
+		}
+	}
+
+	if err := s.DeleteAsset(id1); err != nil {
+		t.Fatalf("DeleteAsset: %v", err)
+	}
+
+	assets, err := s.ListAssets()
+	if err != nil {
+		t.Fatalf("ListAssets: %v", err)
+	}
+	if len(assets) != 1 || assets[0].ID != id2 {
+		t.Errorf("permanece %v, esperabamos só id=%d", assets, id2)
+	}
+
+	txsRemoved, err := s.ListTransactionsByAsset(id1)
+	if err != nil {
+		t.Fatalf("ListTransactionsByAsset(id1): %v", err)
+	}
+	if len(txsRemoved) != 0 {
+		t.Errorf("esperabamos 0 transaccións de id=%d, got %d", id1, len(txsRemoved))
+	}
+
+	txsKept, err := s.ListTransactionsByAsset(id2)
+	if err != nil {
+		t.Fatalf("ListTransactionsByAsset(id2): %v", err)
+	}
+	if len(txsKept) != 1 {
+		t.Errorf("esperabamos 1 transacción de id=%d, got %d", id2, len(txsKept))
+	}
+}
+
+func TestStore_DeleteAsset_NoRow(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	err = s.DeleteAsset(999)
+	if err == nil {
+		t.Fatal("esperabamos erro por id inexistente")
+	}
+}
