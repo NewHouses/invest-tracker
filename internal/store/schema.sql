@@ -29,3 +29,11 @@ CREATE TABLE IF NOT EXISTS monthly_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_monthly_results_investment ON monthly_results(investment_id);
+
+CREATE TABLE IF NOT EXISTS dividends (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount_usd  REAL    NOT NULL,
+    month       INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+    year        INTEGER NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
