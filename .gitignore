@@ -1,0 +1,21 @@
+# Bases de datos SQLite (datos do usuario, non subir)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Binarios compilados
+invest-tracker
+invest-tracker.exe
+*.exe
+
+# Test binaries / coverage
+*.test
+*.out
+coverage.out
+
+# IDE / editores
+.vscode/
+.idea/
+*.swp
+*~
