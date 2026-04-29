@@ -35,8 +35,9 @@ func Options() []Option {
 		{Key: 6, Label: "Engadir resultado mensual"},
 		{Key: 7, Label: "Eliminar resultado mensual"},
 		{Key: 8, Label: "Engadir dividendo mensual"},
-		{Key: 9, Label: "Ver informe mensual dun activo"},
-		{Key: 10, Label: "Ver historial dun activo"},
+		{Key: 9, Label: "Eliminar dividendo mensual"},
+		{Key: 10, Label: "Ver informe mensual dun activo"},
+		{Key: 11, Label: "Ver historial dun activo"},
 		{Key: 0, Label: "Saír"},
 	}
 }
