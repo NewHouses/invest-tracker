@@ -35,7 +35,7 @@ func TestOptions_Stable(t *testing.T) {
 	want := []Option{
 		{Key: 1, Label: "Engadir novo activo"},
 		{Key: 2, Label: "Engadir nova transacción"},
-		{Key: 3, Label: "Introducir prezos do mes"},
+		{Key: 3, Label: "Engadir resultado mensual"},
 		{Key: 4, Label: "Pechar mes"},
 		{Key: 5, Label: "Ver informe mensual"},
 		{Key: 6, Label: "Exportar (CSV / HTML)"},

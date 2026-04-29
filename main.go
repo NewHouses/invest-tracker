@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"invest-tracker/internal/addasset"
+	"invest-tracker/internal/addresult"
 	"invest-tracker/internal/addtransaction"
 	"invest-tracker/internal/store"
 	"invest-tracker/internal/welcome"
@@ -53,6 +54,10 @@ func main() {
 		case 2:
 			if err := addtransaction.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro engadindo transacción:", err)
+			}
+		case 3:
+			if err := addresult.Run(reader, os.Stdout, s); err != nil {
+				fmt.Fprintln(os.Stderr, "⚠ erro engadindo resultado:", err)
 			}
 		default:
 			fmt.Printf("Seleccionaches: %s (placeholder, aínda non implementado)\n", opt.Label)
