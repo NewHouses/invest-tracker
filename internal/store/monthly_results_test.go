@@ -205,3 +205,68 @@ func TestStore_DeleteMonthlyResult_NoRow(t *testing.T) {
 		t.Fatal("esperabamos erro por id inexistente")
 	}
 }
+
+func TestStore_DeleteMonthlyResultsByMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id1, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset[1]: %v", err)
+	}
+	id2, err := s.InsertAsset(domain.Asset{
+		Type: domain.Indice, Name: "Vanguard", AmountUSD: 2000, Month: 1, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset[2]: %v", err)
+	}
+
+	// 2 resultados en 04/2026 (un por activo) + 1 resultado en 05/2026
+	for _, mr := range []domain.MonthlyResult{
+		{AssetID: id1, ResultUSD: 1100, Month: 4, Year: 2026},
+		{AssetID: id2, ResultUSD: 2100, Month: 4, Year: 2026},
+		{AssetID: id1, ResultUSD: 1200, Month: 5, Year: 2026},
+	} {
+		if _, err := s.InsertMonthlyResult(mr); err != nil {
+			t.Fatalf("InsertMonthlyResult: %v", err)
+		}
+	}
+
+	n, err := s.DeleteMonthlyResultsByMonth(2026, 4)
+	if err != nil {
+		t.Fatalf("DeleteMonthlyResultsByMonth: %v", err)
+	}
+	if n != 2 {
+		t.Errorf("filas borradas = %d, esperabamos 2", n)
+	}
+
+	// 04/2026 baleiro
+	if got, _ := s.ListMonthlyResultsByAsset(id1); len(got) != 1 || got[0].Month != 5 {
+		t.Errorf("AAPL debería ter só o resultado de 05/2026, got %+v", got)
+	}
+	if got, _ := s.ListMonthlyResultsByAsset(id2); len(got) != 0 {
+		t.Errorf("Vanguard debería non ter resultados, got %+v", got)
+	}
+}
+
+func TestStore_DeleteMonthlyResultsByMonth_NoRows(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	// Sen filas: a operación non debe erro, devolve 0.
+	n, err := s.DeleteMonthlyResultsByMonth(2026, 4)
+	if err != nil {
+		t.Fatalf("DeleteMonthlyResultsByMonth: %v", err)
+	}
+	if n != 0 {
+		t.Errorf("filas borradas = %d, esperabamos 0", n)
+	}
+}
