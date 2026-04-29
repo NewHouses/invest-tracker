@@ -12,6 +12,7 @@ import (
 	"invest-tracker/internal/adddividend"
 	"invest-tracker/internal/addresult"
 	"invest-tracker/internal/addtransaction"
+	"invest-tracker/internal/clearmonth"
 	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/deleteasset"
 	"invest-tracker/internal/deletedividend"
@@ -77,30 +78,34 @@ func main() {
 				fmt.Fprintln(os.Stderr, "⚠ erro pechando o mes:", err)
 			}
 		case 6:
+			if err := clearmonth.Run(reader, os.Stdout, s); err != nil {
+				fmt.Fprintln(os.Stderr, "⚠ erro limpando o mes:", err)
+			}
+		case 7:
 			if err := addresult.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro engadindo resultado:", err)
 			}
-		case 7:
+		case 8:
 			if err := deleteresult.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro eliminando resultado:", err)
 			}
-		case 8:
+		case 9:
 			if err := adddividend.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro engadindo dividendo:", err)
 			}
-		case 9:
+		case 10:
 			if err := deletedividend.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro eliminando dividendo:", err)
 			}
-		case 10:
+		case 11:
 			if err := viewreport.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe:", err)
 			}
-		case 11:
+		case 12:
 			if err := viewtypereport.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe por tipo:", err)
 			}
-		case 12:
+		case 13:
 			if err := viewassethistory.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando historial:", err)
 			}

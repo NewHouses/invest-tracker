@@ -68,3 +68,16 @@ func (s *Store) DeleteMonthlyResult(id int64) error {
 	}
 	return nil
 }
+
+// DeleteMonthlyResultsByMonth borra todos os monthly_results dun (mes, ano).
+// Devolve o número de filas afectadas. Cero non é erro: a operación é idempotente.
+func (s *Store) DeleteMonthlyResultsByMonth(year, month int) (int64, error) {
+	res, err := s.db.Exec(
+		`DELETE FROM monthly_results WHERE year = ? AND month = ?`,
+		year, month,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
