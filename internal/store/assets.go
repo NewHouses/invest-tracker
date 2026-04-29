@@ -1,6 +1,9 @@
 package store
 
 import (
+	"database/sql"
+	"fmt"
+
 	"invest-tracker/internal/domain"
 )
 
@@ -35,4 +38,33 @@ func (s *Store) ListAssets() ([]domain.Asset, error) {
 		out = append(out, a)
 	}
 	return out, rows.Err()
+}
+
+// DeleteAsset borra o activo e todas as súas transaccións e resultados mensuais.
+// Faino nunha única transacción para que sexa atómico.
+func (s *Store) DeleteAsset(id int64) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`DELETE FROM monthly_results WHERE asset_id = ?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM transactions WHERE asset_id = ?`, id); err != nil {
+		return err
+	}
+	res, err := tx.Exec(`DELETE FROM assets WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
+	}
+	return tx.Commit()
 }
