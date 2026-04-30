@@ -19,6 +19,7 @@ import (
 	"invest-tracker/internal/deleteresult"
 	"invest-tracker/internal/deletetransaction"
 	"invest-tracker/internal/editasset"
+	"invest-tracker/internal/prompts"
 	"invest-tracker/internal/store"
 	"invest-tracker/internal/viewassetgeneral"
 	"invest-tracker/internal/viewassethistory"
@@ -28,6 +29,18 @@ import (
 	"invest-tracker/internal/viewtypereport"
 	"invest-tracker/internal/welcome"
 )
+
+// runOp executa unha operación e amaña o erro: se é ErrCancelled imprime un
+// aviso suave; calquera outro erro vai a stderr cun prefixo descritivo.
+func runOp(label string, op func() error) {
+	if err := op(); err != nil {
+		if errors.Is(err, prompts.ErrCancelled) {
+			fmt.Println("↷ Operación cancelada. Volvendo ao menú.")
+			return
+		}
+		fmt.Fprintln(os.Stderr, "⚠ erro "+label+":", err)
+	}
+}
 
 func main() {
 	s, err := store.Open("./investimentos.db")
@@ -62,73 +75,39 @@ func main() {
 		}
 		switch opt.Key {
 		case 1:
-			if err := addasset.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro engadindo activo:", err)
-			}
+			runOp("engadindo activo", func() error { return addasset.Run(reader, os.Stdout, s) })
 		case 2:
-			if err := editasset.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro editando activo:", err)
-			}
+			runOp("editando activo", func() error { return editasset.Run(reader, os.Stdout, s) })
 		case 3:
-			if err := deleteasset.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro eliminando activo:", err)
-			}
+			runOp("eliminando activo", func() error { return deleteasset.Run(reader, os.Stdout, s) })
 		case 4:
-			if err := addtransaction.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro engadindo transacción:", err)
-			}
+			runOp("engadindo transacción", func() error { return addtransaction.Run(reader, os.Stdout, s) })
 		case 5:
-			if err := deletetransaction.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro eliminando transacción:", err)
-			}
+			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
 		case 6:
-			if err := closemonth.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro pechando o mes:", err)
-			}
+			runOp("pechando o mes", func() error { return closemonth.Run(reader, os.Stdout, s) })
 		case 7:
-			if err := clearmonth.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro limpando o mes:", err)
-			}
+			runOp("limpando o mes", func() error { return clearmonth.Run(reader, os.Stdout, s) })
 		case 8:
-			if err := addresult.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro engadindo resultado:", err)
-			}
+			runOp("engadindo resultado", func() error { return addresult.Run(reader, os.Stdout, s) })
 		case 9:
-			if err := deleteresult.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro eliminando resultado:", err)
-			}
+			runOp("eliminando resultado", func() error { return deleteresult.Run(reader, os.Stdout, s) })
 		case 10:
-			if err := adddividend.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro engadindo dividendo:", err)
-			}
+			runOp("engadindo dividendo", func() error { return adddividend.Run(reader, os.Stdout, s) })
 		case 11:
-			if err := deletedividend.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro eliminando dividendo:", err)
-			}
+			runOp("eliminando dividendo", func() error { return deletedividend.Run(reader, os.Stdout, s) })
 		case 12:
-			if err := viewreport.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe:", err)
-			}
+			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
 		case 13:
-			if err := viewassetgeneral.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando resultado xeral do activo:", err)
-			}
+			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
 		case 14:
-			if err := viewtypereport.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe por tipo:", err)
-			}
+			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
 		case 15:
-			if err := viewtotalhistory.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando resultado xeral:", err)
-			}
+			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
 		case 16:
-			if err := viewtotalreport.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe total:", err)
-			}
+			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
 		case 17:
-			if err := viewassethistory.Run(reader, os.Stdout, s); err != nil {
-				fmt.Fprintln(os.Stderr, "⚠ erro xerando historial:", err)
-			}
+			runOp("xerando historial", func() error { return viewassethistory.Run(reader, os.Stdout, s) })
 		default:
 			fmt.Printf("Seleccionaches: %s (placeholder, aínda non implementado)\n", opt.Label)
 		}
