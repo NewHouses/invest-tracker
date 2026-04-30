@@ -22,6 +22,7 @@ import (
 	"invest-tracker/internal/store"
 	"invest-tracker/internal/viewassethistory"
 	"invest-tracker/internal/viewreport"
+	"invest-tracker/internal/viewtotalhistory"
 	"invest-tracker/internal/viewtotalreport"
 	"invest-tracker/internal/viewtypereport"
 	"invest-tracker/internal/welcome"
@@ -112,10 +113,14 @@ func main() {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe por tipo:", err)
 			}
 		case 14:
+			if err := viewtotalhistory.Run(reader, os.Stdout, s); err != nil {
+				fmt.Fprintln(os.Stderr, "⚠ erro xerando resultado xeral:", err)
+			}
+		case 15:
 			if err := viewtotalreport.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando informe total:", err)
 			}
-		case 15:
+		case 16:
 			if err := viewassethistory.Run(reader, os.Stdout, s); err != nil {
 				fmt.Fprintln(os.Stderr, "⚠ erro xerando historial:", err)
 			}

@@ -4,6 +4,28 @@ import (
 	"invest-tracker/internal/domain"
 )
 
+// MonthsWithResults devolve todos os pares (year, month) distintos en
+// monthly_results, ordenados cronoloxicamente.
+func (s *Store) MonthsWithResults() ([]domain.YearMonth, error) {
+	rows, err := s.db.Query(
+		`SELECT DISTINCT year, month FROM monthly_results ORDER BY year, month`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []domain.YearMonth
+	for rows.Next() {
+		var ym domain.YearMonth
+		if err := rows.Scan(&ym.Year, &ym.Month); err != nil {
+			return nil, err
+		}
+		out = append(out, ym)
+	}
+	return out, rows.Err()
+}
+
 // MonthsWithResultsUpTo devolve os pares (year, month) distintos en
 // monthly_results cuxo (year*12+month) <= (year*12+month) do argumento,
 // ordenados cronoloxicamente.
