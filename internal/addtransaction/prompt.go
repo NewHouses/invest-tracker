@@ -41,11 +41,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	if err != nil {
 		return err
 	}
-	month, err := prompts.Month(r, w)
-	if err != nil {
-		return err
-	}
-	year, err := prompts.Year(r, w)
+	month, year, err := promptDateNotBefore(r, w, chosen.Month, chosen.Year)
 	if err != nil {
 		return err
 	}
@@ -71,6 +67,26 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	fmt.Fprintf(w, "✓ Transacción gardada #%d sobre %s — %s: %s %.2f USD — %02d/%d\n",
 		id, chosen.Type.Display(), chosen.Name, typeLabel, amount, month, year)
 	return nil
+}
+
+// promptDateNotBefore pide mes e ano e valida que (year*12+month) >= o mínimo
+// dado pola data do activo. Re-pregunta mes+ano se é anterior.
+func promptDateNotBefore(r *bufio.Reader, w io.Writer, minMonth, minYear int) (int, int, error) {
+	for {
+		month, err := prompts.Month(r, w)
+		if err != nil {
+			return 0, 0, err
+		}
+		year, err := prompts.Year(r, w)
+		if err != nil {
+			return 0, 0, err
+		}
+		if year*12+month >= minYear*12+minMonth {
+			return month, year, nil
+		}
+		fmt.Fprintf(w, "⚠ A transacción non pode ser anterior á data do activo (%02d/%d). Tenta de novo.\n",
+			minMonth, minYear)
+	}
 }
 
 func promptTransactionType(r *bufio.Reader, w io.Writer) (bool, error) {

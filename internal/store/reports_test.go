@@ -203,6 +203,47 @@ func TestStore_MonthlySummary_WithPrevResult(t *testing.T) {
 	}
 }
 
+// TestStore_MonthlySummary_IgnoresTxBeforeAssetCreation comproba que as
+// transaccións gardadas en meses ANTERIORES á data do activo (poderían xurdir
+// tras editar a data do activo a un mes posterior) NON afectan os cálculos.
+func TestStore_MonthlySummary_IgnoresTxBeforeAssetCreation(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	// Asset creado en 04/2026 con 1500 USD.
+	assetID, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1500, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+	// Transacción "orfa" en 02/2026 (anterior á data do activo).
+	if _, err := s.InsertTransaction(domain.Transaction{
+		AssetID: assetID, AmountUSD: -500, Month: 2, Year: 2026,
+	}); err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+
+	// Consulta para o primeiro mes do activo (04/2026): a tx de 02 debe ignorarse.
+	got, err := s.MonthlySummary(assetID, 2026, 4)
+	if err != nil {
+		t.Fatalf("MonthlySummary: %v", err)
+	}
+	if got.TotalInvestedUpTo != 1500 {
+		t.Errorf("TotalInvestedUpTo = %v; esperabamos 1500 (tx de 02/2026 ignorada)", got.TotalInvestedUpTo)
+	}
+	if got.InvestedInMonth != 1500 {
+		t.Errorf("InvestedInMonth = %v; esperabamos 1500", got.InvestedInMonth)
+	}
+	if got.TotalInvestedUpTo != got.InvestedInMonth {
+		t.Errorf("no primeiro mes ambos os campos deben coincidir; got %v vs %v",
+			got.TotalInvestedUpTo, got.InvestedInMonth)
+	}
+}
+
 func TestStore_MonthlySummary_PrevResultIgnoresCurrentMonth(t *testing.T) {
 	// Verifica que prev_result busca estritamente meses ANTERIORES (non o actual).
 	s, err := store.Open(":memory:")

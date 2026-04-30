@@ -60,6 +60,50 @@ func TestRun_EndToEnd_UpdatesAssetInDB(t *testing.T) {
 	}
 }
 
+// TestRun_EndToEnd_EditedAmountReflectsInBothInvestedFields verifica que tras
+// editar a cantidade inicial dun activo, MonthlySummary devolve o valor novo
+// tanto para TotalInvestedUpTo coma para InvestedInMonth no mes da creación.
+func TestRun_EndToEnd_EditedAmountReflectsInBothInvestedFields(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "test.db")
+
+	s, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 3, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+
+	// Edita a cantidade a 1500
+	r := bufio.NewReader(strings.NewReader("1\n3\n1500\n"))
+	var out bytes.Buffer
+	if err := editasset.Run(r, &out, s); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	// Verifica MonthlySummary para o mes de creación (03/2026)
+	sum, err := s.MonthlySummary(id, 2026, 3)
+	if err != nil {
+		t.Fatalf("MonthlySummary: %v", err)
+	}
+	if sum.TotalInvestedUpTo != 1500 {
+		t.Errorf("TotalInvestedUpTo = %v, esperabamos 1500 (cantidade editada)", sum.TotalInvestedUpTo)
+	}
+	if sum.InvestedInMonth != 1500 {
+		t.Errorf("InvestedInMonth = %v, esperabamos 1500 (cantidade editada)", sum.InvestedInMonth)
+	}
+	if sum.TotalInvestedUpTo != sum.InvestedInMonth {
+		t.Errorf("TotalInvestedUpTo (%v) != InvestedInMonth (%v); deberían ser iguais no primeiro mes",
+			sum.TotalInvestedUpTo, sum.InvestedInMonth)
+	}
+}
+
 func TestRun_EndToEnd_UpdatesNameAndDate(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "test.db")
