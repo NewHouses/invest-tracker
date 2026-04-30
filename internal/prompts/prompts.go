@@ -9,15 +9,34 @@ import (
 	"strings"
 )
 
+// ErrCancelled é un sentinel devolto por ReadLine cando o usuario escribe
+// ":q" ou "cancelar" para sair da operación e voltar ao menú principal.
+// Os fluxos propágano sen tratamento especial; main.go captúrao para
+// non mostralo coma erro normal.
+var ErrCancelled = errors.New("operación cancelada polo usuario")
+
 func ReadLine(r *bufio.Reader) (string, error) {
 	line, err := r.ReadString('\n')
 	if err != nil {
 		if errors.Is(err, io.EOF) && line != "" {
-			return strings.TrimSpace(line), nil
+			trimmed := strings.TrimSpace(line)
+			if isCancelSentinel(trimmed) {
+				return "", ErrCancelled
+			}
+			return trimmed, nil
 		}
 		return "", err
 	}
-	return strings.TrimSpace(line), nil
+	trimmed := strings.TrimSpace(line)
+	if isCancelSentinel(trimmed) {
+		return "", ErrCancelled
+	}
+	return trimmed, nil
+}
+
+func isCancelSentinel(s string) bool {
+	low := strings.ToLower(s)
+	return low == ":q" || low == "cancelar"
 }
 
 func Amount(r *bufio.Reader, w io.Writer) (float64, error) {

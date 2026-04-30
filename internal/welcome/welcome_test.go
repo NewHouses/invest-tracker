@@ -25,7 +25,8 @@ func TestWelcomeMessage_Snapshot(t *testing.T) {
 		"  Ferramenta CLI para o seguimento mensual\n" +
 		"============================================\n" +
 		"\n" +
-		"Benvida! Escolle unha opción:"
+		"Benvida! Escolle unha opción:\n" +
+		"(escribe ':q' ou 'cancelar' en calquera prompt para voltar ao menú)"
 	if got := WelcomeMessage(); got != want {
 		t.Errorf("WelcomeMessage mismatch.\n--- got ---\n%s\n--- want ---\n%s", got, want)
 	}

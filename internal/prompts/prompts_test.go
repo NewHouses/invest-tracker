@@ -32,6 +32,46 @@ func TestReadLine_EOFEmpty_ReturnsEOF(t *testing.T) {
 	}
 }
 
+func TestReadLine_CancelSentinels(t *testing.T) {
+	cases := []string{
+		":q\n",
+		"cancelar\n",
+		"  :q  \n",       // espazos
+		"CANCELAR\n",     // maiúsculas
+		":Q\n",
+	}
+	for _, in := range cases {
+		_, err := prompts.ReadLine(newReader(in))
+		if !errors.Is(err, prompts.ErrCancelled) {
+			t.Errorf("input %q: esperabamos ErrCancelled, got %v", in, err)
+		}
+	}
+}
+
+func TestAmount_PropagatesCancellation(t *testing.T) {
+	var w bytes.Buffer
+	_, err := prompts.Amount(newReader(":q\n"), &w)
+	if !errors.Is(err, prompts.ErrCancelled) {
+		t.Errorf("esperabamos ErrCancelled, got %v", err)
+	}
+}
+
+func TestMonth_PropagatesCancellation(t *testing.T) {
+	var w bytes.Buffer
+	_, err := prompts.Month(newReader(":q\n"), &w)
+	if !errors.Is(err, prompts.ErrCancelled) {
+		t.Errorf("esperabamos ErrCancelled, got %v", err)
+	}
+}
+
+func TestYear_PropagatesCancellation(t *testing.T) {
+	var w bytes.Buffer
+	_, err := prompts.Year(newReader(":q\n"), &w)
+	if !errors.Is(err, prompts.ErrCancelled) {
+		t.Errorf("esperabamos ErrCancelled, got %v", err)
+	}
+}
+
 func TestAmount_AcceptsDecimal(t *testing.T) {
 	var w bytes.Buffer
 	v, err := prompts.Amount(newReader("123.45\n"), &w)

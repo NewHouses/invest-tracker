@@ -22,7 +22,8 @@ func WelcomeMessage() string {
 		"  Ferramenta CLI para o seguimento mensual\n" +
 		"============================================\n" +
 		"\n" +
-		"Benvida! Escolle unha opción:"
+		"Benvida! Escolle unha opción:\n" +
+		"(escribe ':q' ou 'cancelar' en calquera prompt para voltar ao menú)"
 }
 
 func Options() []Option {
