@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sort"
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
@@ -16,6 +17,15 @@ type Repo interface {
 }
 
 const sep = "============================================================"
+
+type displayRow struct {
+	isInitial bool
+	id        int64
+	year      int
+	month     int
+	isVenda   bool
+	amount    float64 // sempre positivo
+}
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	fmt.Fprint(w, "\n--- Transaccións dun activo ---\n")
@@ -39,24 +49,60 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("listando transaccións: %w", err)
 	}
 
-	if len(txs) == 0 {
-		fmt.Fprintf(w, "%s — %s non ten transaccións rexistradas.\n",
-			chosen.Type.Display(), chosen.Name)
-		fmt.Fprintln(w, "(Nota: a compra inicial do activo non se conta como transacción.)")
-		return nil
-	}
-
-	renderTable(w, chosen, txs)
+	rows := buildRows(chosen, txs)
+	renderTable(w, chosen, rows)
 	return nil
 }
 
-func renderTable(w io.Writer, asset domain.Asset, txs []domain.Transaction) {
-	var totalCompra, totalVenda float64
+func buildRows(asset domain.Asset, txs []domain.Transaction) []displayRow {
+	rows := []displayRow{
+		// Compra inicial: o activo créase mercando por primeira vez.
+		{
+			isInitial: true,
+			year:      asset.Year,
+			month:     asset.Month,
+			isVenda:   false,
+			amount:    asset.AmountUSD,
+		},
+	}
 	for _, tx := range txs {
-		if tx.AmountUSD >= 0 {
-			totalCompra += tx.AmountUSD
+		amount := tx.AmountUSD
+		isVenda := false
+		if amount < 0 {
+			amount = -amount
+			isVenda = true
+		}
+		rows = append(rows, displayRow{
+			id:      tx.ID,
+			year:    tx.Year,
+			month:   tx.Month,
+			isVenda: isVenda,
+			amount:  amount,
+		})
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].year != rows[j].year {
+			return rows[i].year < rows[j].year
+		}
+		if rows[i].month != rows[j].month {
+			return rows[i].month < rows[j].month
+		}
+		// Mesma data: a compra inicial primeiro, despois por id.
+		if rows[i].isInitial != rows[j].isInitial {
+			return rows[i].isInitial
+		}
+		return rows[i].id < rows[j].id
+	})
+	return rows
+}
+
+func renderTable(w io.Writer, asset domain.Asset, rows []displayRow) {
+	var totalCompra, totalVenda float64
+	for _, r := range rows {
+		if r.isVenda {
+			totalVenda += r.amount
 		} else {
-			totalVenda += -tx.AmountUSD
+			totalCompra += r.amount
 		}
 	}
 	neto := totalCompra - totalVenda
@@ -65,22 +111,24 @@ func renderTable(w io.Writer, asset domain.Asset, txs []domain.Transaction) {
 	fmt.Fprintln(w, sep)
 	fmt.Fprintf(w, "  Transaccións de %s — %s\n", asset.Type.Display(), asset.Name)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Total: %d transacción(s)\n", len(txs))
+	fmt.Fprintf(w, "  Total: %d entradas (incluíndo a compra inicial)\n", len(rows))
 	fmt.Fprintf(w, "  Compras: %.2f USD · Vendas: %.2f USD · Neto: %+.2f USD\n",
 		totalCompra, totalVenda, neto)
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "  ID\tAno\tMes\tTipo\tCantidade\t")
-	for _, tx := range txs {
-		amount := tx.AmountUSD
+	fmt.Fprintln(tw, "  ID\tAno\tMes\tCompra/Venda\tCantidade\t")
+	for _, row := range rows {
+		idStr := fmt.Sprintf("%d", row.id)
+		if row.isInitial {
+			idStr = "—"
+		}
 		typeLabel := "COMPRA"
-		if amount < 0 {
-			amount = -amount
+		if row.isVenda {
 			typeLabel = "VENDA"
 		}
-		fmt.Fprintf(tw, "  %d\t%d\t%d\t%s\t%.2f USD\t\n",
-			tx.ID, tx.Year, tx.Month, typeLabel, amount,
+		fmt.Fprintf(tw, "  %s\t%d\t%d\t%s\t%.2f USD\t\n",
+			idStr, row.year, row.month, typeLabel, row.amount,
 		)
 	}
 	tw.Flush()
