@@ -27,6 +27,7 @@ import (
 	"invest-tracker/internal/viewreport"
 	"invest-tracker/internal/viewtotalhistory"
 	"invest-tracker/internal/viewtotalreport"
+	"invest-tracker/internal/viewtransactions"
 	"invest-tracker/internal/viewtypereport"
 	"invest-tracker/internal/welcome"
 )
@@ -84,32 +85,34 @@ func main() {
 		case 4:
 			runOp("engadindo transacción", func() error { return addtransaction.Run(reader, os.Stdout, s) })
 		case 5:
-			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
+			runOp("listando transaccións", func() error { return viewtransactions.Run(reader, os.Stdout, s) })
 		case 6:
-			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
+			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
 		case 7:
-			runOp("pechando o mes", func() error { return closemonth.Run(reader, os.Stdout, s) })
+			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
 		case 8:
-			runOp("limpando o mes", func() error { return clearmonth.Run(reader, os.Stdout, s) })
+			runOp("pechando o mes", func() error { return closemonth.Run(reader, os.Stdout, s) })
 		case 9:
-			runOp("engadindo resultado", func() error { return addresult.Run(reader, os.Stdout, s) })
+			runOp("limpando o mes", func() error { return clearmonth.Run(reader, os.Stdout, s) })
 		case 10:
-			runOp("eliminando resultado", func() error { return deleteresult.Run(reader, os.Stdout, s) })
+			runOp("engadindo resultado", func() error { return addresult.Run(reader, os.Stdout, s) })
 		case 11:
-			runOp("engadindo dividendo", func() error { return adddividend.Run(reader, os.Stdout, s) })
+			runOp("eliminando resultado", func() error { return deleteresult.Run(reader, os.Stdout, s) })
 		case 12:
-			runOp("eliminando dividendo", func() error { return deletedividend.Run(reader, os.Stdout, s) })
+			runOp("engadindo dividendo", func() error { return adddividend.Run(reader, os.Stdout, s) })
 		case 13:
-			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
+			runOp("eliminando dividendo", func() error { return deletedividend.Run(reader, os.Stdout, s) })
 		case 14:
-			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
+			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
 		case 15:
-			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
+			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
 		case 16:
-			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
+			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
 		case 17:
-			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
+			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
 		case 18:
+			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
+		case 19:
 			runOp("xerando historial", func() error { return viewassethistory.Run(reader, os.Stdout, s) })
 		default:
 			fmt.Printf("Seleccionaches: %s (placeholder, aínda non implementado)\n", opt.Label)
