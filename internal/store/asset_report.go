@@ -13,6 +13,9 @@ func (s *Store) AssetReport(assetID int64) (domain.AssetReport, error) {
 	}
 	report.TotalInvested = total
 
+	// As transaccións filtran por (year*12+month) >= asset_creation
+	// para ignorar txs anteriores á data do activo (xurdidas, p.e., tras
+	// editar a data do activo a un mes posterior).
 	rows, err := s.db.Query(
 		`SELECT mr.year, mr.month, mr.result_usd,
 			COALESCE(
@@ -20,7 +23,10 @@ func (s *Store) AssetReport(assetID int64) (domain.AssetReport, error) {
 				0
 			) +
 			COALESCE(
-				(SELECT SUM(amount_usd) FROM transactions WHERE asset_id = mr.asset_id AND year = mr.year AND month = mr.month),
+				(SELECT SUM(amount_usd) FROM transactions
+				 WHERE asset_id = mr.asset_id
+				   AND year = mr.year AND month = mr.month
+				   AND (year * 12 + month) >= (SELECT year * 12 + month FROM assets WHERE id = mr.asset_id)),
 				0
 			) AS invested_in_month,
 			COALESCE(
@@ -28,7 +34,10 @@ func (s *Store) AssetReport(assetID int64) (domain.AssetReport, error) {
 				0
 			) +
 			COALESCE(
-				(SELECT SUM(amount_usd) FROM transactions WHERE asset_id = mr.asset_id AND (year * 12 + month) <= (mr.year * 12 + mr.month)),
+				(SELECT SUM(amount_usd) FROM transactions
+				 WHERE asset_id = mr.asset_id
+				   AND (year * 12 + month) <= (mr.year * 12 + mr.month)
+				   AND (year * 12 + month) >= (SELECT year * 12 + month FROM assets WHERE id = mr.asset_id)),
 				0
 			) AS invested_up_to
 		FROM monthly_results mr

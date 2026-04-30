@@ -225,6 +225,41 @@ func TestRun_EmptyList_PrintsHint(t *testing.T) {
 	}
 }
 
+func TestRun_RejectsTxBeforeAssetCreation(t *testing.T) {
+	// sampleAssets[0] = AAPL creado en 1/2026.
+	// Probamos a engadir tx en 12/2025 (anterior); debe re-preguntar.
+	// Despois 5/2026 (válido) → garda.
+	out, repo, err := runWith(sampleAssets, "1\n1\n100\n12\n2025\n5\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "non pode ser anterior á data do activo (01/2026)") {
+		t.Errorf("saída non contén o erro de data anterior:\n%s", out)
+	}
+	if len(repo.saved) != 1 {
+		t.Fatalf("repo.saved tamaño = %d, esperabamos 1", len(repo.saved))
+	}
+	got := repo.saved[0]
+	if got.Month != 5 || got.Year != 2026 {
+		t.Errorf("data gardada %02d/%d, esperabamos 05/2026", got.Month, got.Year)
+	}
+}
+
+func TestRun_AcceptsTxOnSameMonthAsAssetCreation(t *testing.T) {
+	// Asset en 1/2026, tx no MESMO mes 1/2026 → debe aceptarse.
+	_, repo, err := runWith(sampleAssets, "1\n1\n100\n1\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(repo.saved) != 1 {
+		t.Fatalf("repo.saved tamaño = %d, esperabamos 1", len(repo.saved))
+	}
+	got := repo.saved[0]
+	if got.Month != 1 || got.Year != 2026 {
+		t.Errorf("data gardada %02d/%d, esperabamos 01/2026", got.Month, got.Year)
+	}
+}
+
 func TestRun_EOFMidFlow_ReturnsError(t *testing.T) {
 	_, repo, err := runWith(sampleAssets, "1\n1\n500\n5\n")
 	if err == nil {
