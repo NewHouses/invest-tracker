@@ -94,6 +94,83 @@ func TestStore_RejectsInvalidTransactionMonth(t *testing.T) {
 	}
 }
 
+func TestStore_UpdateTransaction(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	id, err := s.InsertTransaction(domain.Transaction{
+		AssetID: assetID, AmountUSD: 100, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+
+	if err := s.UpdateTransaction(domain.Transaction{
+		ID: id, AssetID: assetID, AmountUSD: -250, Month: 6, Year: 2026,
+	}); err != nil {
+		t.Fatalf("UpdateTransaction: %v", err)
+	}
+
+	got, err := s.ListTransactionsByAsset(assetID)
+	if err != nil {
+		t.Fatalf("ListTransactionsByAsset: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len = %d, esperabamos 1", len(got))
+	}
+	want := domain.Transaction{
+		ID: id, AssetID: assetID, AmountUSD: -250, Month: 6, Year: 2026,
+	}
+	if got[0] != want {
+		t.Errorf("got %+v, esperabamos %+v", got[0], want)
+	}
+}
+
+func TestStore_UpdateTransaction_NoRow(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	err = s.UpdateTransaction(domain.Transaction{
+		ID: 999, AssetID: 1, AmountUSD: 100, Month: 1, Year: 2026,
+	})
+	if err == nil {
+		t.Fatal("esperabamos erro por id inexistente")
+	}
+}
+
+func TestStore_UpdateTransaction_RejectsInvalidMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	id, err := s.InsertTransaction(domain.Transaction{
+		AssetID: assetID, AmountUSD: 100, Month: 4, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+
+	err = s.UpdateTransaction(domain.Transaction{
+		ID: id, AssetID: assetID, AmountUSD: 100, Month: 13, Year: 2026,
+	})
+	if err == nil {
+		t.Fatal("esperabamos erro por mes inválido")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "constraint") {
+		t.Errorf("erro inesperado: %v", err)
+	}
+}
+
 func TestStore_DeleteTransaction(t *testing.T) {
 	s, err := store.Open(":memory:")
 	if err != nil {

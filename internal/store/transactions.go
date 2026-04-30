@@ -39,6 +39,27 @@ func (s *Store) ListTransactionsByAsset(assetID int64) ([]domain.Transaction, er
 	return out, rows.Err()
 }
 
+// UpdateTransaction actualiza amount_usd, month e year dunha transacción
+// existente (o asset_id e o id NON cambian). Devolve sql.ErrNoRows envolto
+// se o id non existe.
+func (s *Store) UpdateTransaction(t domain.Transaction) error {
+	res, err := s.db.Exec(
+		`UPDATE transactions SET amount_usd = ?, month = ?, year = ? WHERE id = ?`,
+		t.AmountUSD, t.Month, t.Year, t.ID,
+	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("transacción id=%d: %w", t.ID, sql.ErrNoRows)
+	}
+	return nil
+}
+
 func (s *Store) DeleteTransaction(id int64) error {
 	res, err := s.db.Exec(`DELETE FROM transactions WHERE id = ?`, id)
 	if err != nil {
