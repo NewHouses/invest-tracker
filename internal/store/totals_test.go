@@ -136,6 +136,47 @@ func TestStore_MonthsWithResults_All(t *testing.T) {
 	}
 }
 
+func TestStore_MonthsWithResultsForAsset(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	id1, _ := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
+	})
+	id2, _ := s.InsertAsset(domain.Asset{
+		Type: domain.Indice, Name: "Vanguard", AmountUSD: 2000, Month: 1, Year: 2026,
+	})
+	for _, mr := range []domain.MonthlyResult{
+		{AssetID: id1, ResultUSD: 1100, Month: 4, Year: 2026},
+		{AssetID: id1, ResultUSD: 1200, Month: 5, Year: 2026},
+		{AssetID: id2, ResultUSD: 2100, Month: 4, Year: 2026},
+	} {
+		if _, err := s.InsertMonthlyResult(mr); err != nil {
+			t.Fatalf("InsertMonthlyResult: %v", err)
+		}
+	}
+
+	got, err := s.MonthsWithResultsForAsset(id1)
+	if err != nil {
+		t.Fatalf("MonthsWithResultsForAsset: %v", err)
+	}
+	want := []domain.YearMonth{
+		{Year: 2026, Month: 4},
+		{Year: 2026, Month: 5},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("len = %d, esperabamos %d", len(got), len(want))
+	}
+	for i, w := range want {
+		if got[i] != w {
+			t.Errorf("[%d] = %+v, esperabamos %+v", i, got[i], w)
+		}
+	}
+}
+
 func TestStore_MonthsWithResults_Empty(t *testing.T) {
 	s, err := store.Open(":memory:")
 	if err != nil {

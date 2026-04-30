@@ -26,6 +26,30 @@ func (s *Store) MonthsWithResults() ([]domain.YearMonth, error) {
 	return out, rows.Err()
 }
 
+// MonthsWithResultsForAsset devolve todos os pares (year, month) distintos en
+// monthly_results para un activo concreto, ordenados cronoloxicamente.
+func (s *Store) MonthsWithResultsForAsset(assetID int64) ([]domain.YearMonth, error) {
+	rows, err := s.db.Query(
+		`SELECT DISTINCT year, month FROM monthly_results
+		 WHERE asset_id = ? ORDER BY year, month`,
+		assetID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []domain.YearMonth
+	for rows.Next() {
+		var ym domain.YearMonth
+		if err := rows.Scan(&ym.Year, &ym.Month); err != nil {
+			return nil, err
+		}
+		out = append(out, ym)
+	}
+	return out, rows.Err()
+}
+
 // MonthsWithResultsUpTo devolve os pares (year, month) distintos en
 // monthly_results cuxo (year*12+month) <= (year*12+month) do argumento,
 // ordenados cronoloxicamente.
