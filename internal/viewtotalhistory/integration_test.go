@@ -22,7 +22,16 @@ func TestRun_EndToEnd_HistoryFromDB(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
-	// Setup idéntico ao integration test de viewtotalreport para reutilizar cálculos.
+	// 2 activos, 2 meses con resultados, 2 dividendos.
+	//
+	// 03/2026: AAPL 1000 (compra inicial) + Vanguard 2000 (compra inicial).
+	//          Resultados: AAPL=1100, Vanguard=2100. Dividend=20.
+	//          → agg: aporte=3000, fondos=3000, base=3200, div=20, result=3220, +220, +7.33%
+	// 04/2026: AAPL +200 tx. Resultados: AAPL=1500, Vanguard=2150. Dividend=50.
+	//          → agg: aporte=200, fondos=3400, base=3650, div=50, result=3700, +300, +8.82%
+	//
+	// Lifetime: aporte=3200, totalDiv=70, lastResults=1500+2150=3650.
+	// G/P Total = 3650 + 70 - 3200 = +520. Avg pct ≈ +8.08, Avg gain = 260.
 	aaplID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 3, Year: 2026,
 	})
@@ -44,13 +53,11 @@ func TestRun_EndToEnd_HistoryFromDB(t *testing.T) {
 			t.Fatalf("InsertMonthlyResult 03/2026: %v", err)
 		}
 	}
-
 	if _, err := s.InsertTransaction(domain.Transaction{
 		AssetID: aaplID, AmountUSD: 200, Month: 4, Year: 2026,
 	}); err != nil {
 		t.Fatalf("InsertTransaction: %v", err)
 	}
-
 	for _, mr := range []domain.MonthlyResult{
 		{AssetID: aaplID, ResultUSD: 1500, Month: 4, Year: 2026},
 		{AssetID: vanID, ResultUSD: 2150, Month: 4, Year: 2026},
@@ -59,7 +66,6 @@ func TestRun_EndToEnd_HistoryFromDB(t *testing.T) {
 			t.Fatalf("InsertMonthlyResult 04/2026: %v", err)
 		}
 	}
-
 	for _, d := range []domain.Dividend{
 		{AmountUSD: 20, Month: 3, Year: 2026},
 		{AmountUSD: 50, Month: 4, Year: 2026},
@@ -77,54 +83,29 @@ func TestRun_EndToEnd_HistoryFromDB(t *testing.T) {
 
 	output := out.String()
 
-	// Cabeceira
-	if !strings.Contains(output, "Resultado xeral") {
-		t.Errorf("saída non contén cabeceira:\n%s", output)
-	}
-	if !strings.Contains(output, "2 mes(es) con resultado") {
-		t.Errorf("saída non sinala 2 meses:\n%s", output)
-	}
-
-	// Lifetime: invested=3200 result_final=3650 gain=450 pct=14.06%
 	for _, want := range []string{
-		"3200.00 USD", // total investido lifetime
-		"+450.00 USD", // total gain
-		"+14.06%",     // total pct
-	} {
-		if !strings.Contains(output, want) {
-			t.Errorf("saída non contén %q:\n%s", want, output)
-		}
-	}
-
-	// Medias: pct sen div ≈7.01, gain sen div=225, pct con div ≈7.76, gain con div=250
-	for _, want := range []string{
-		"+7.01",
-		"+225.00 USD",
-		"+7.76",
-		"+250.00 USD",
-	} {
-		if !strings.Contains(output, want) {
-			t.Errorf("saída non contén %q:\n%s", want, output)
-		}
-	}
-
-	// Filas mensuais
-	for _, want := range []string{
-		// 03/2026
-		"3000.00", // invested total ata 03 + holding
-		"+200.00", // gain sen div 03
-		"+220.00", // gain con div 03
-		"+6.67%",
-		"+7.33%",
-		// 04/2026
-		"3400.00", // holding sen div 04
-		"3420.00", // holding con div 04
-		"3650.00", // result sen div 04
-		"3700.00", // result con div 04
-		"+250.00", // gain sen div 04
-		"+280.00", // gain con div 04
-		"+7.35%",
-		"+8.19%",
+		"Reporte histórico completo",
+		"2 activo(s) · 2 mes(es) con resultado",
+		// Top summary
+		"Aporte histórico total",
+		"3200.00 USD",
+		"Índice Medio",
+		"+8.08%",
+		"G/P Media",
+		"+260.00 USD",
+		"G/P Total",
+		"+520.00 USD",
+		"Dividendos totais",
+		"70.00 USD",
+		// Table columns
+		"Aporte Mensual",
+		"Fondos",
+		"Dividendos",
+		"Resultado",
+		// Row 03
+		"3000.00", "+7.33%", "+220.00", "20.00", "3220.00",
+		// Row 04
+		"200.00", "3400.00", "+8.82%", "+300.00", "50.00", "3700.00",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

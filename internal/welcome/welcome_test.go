@@ -42,8 +42,9 @@ func TestCategories_Stable(t *testing.T) {
 		{Key: 2, Label: "Operacións con transaccións", Options: []Option{
 			{Key: 1, Label: "Engadir transacción"},
 			{Key: 2, Label: "Engadir transaccións en serie"},
-			{Key: 3, Label: "Editar transacción"},
-			{Key: 4, Label: "Eliminar transacción"},
+			{Key: 3, Label: "Repartir aporte mensual"},
+			{Key: 4, Label: "Editar transacción"},
+			{Key: 5, Label: "Eliminar transacción"},
 		}},
 		{Key: 3, Label: "Operacións de resultados", Options: []Option{
 			{Key: 1, Label: "Engadir resultado"},
@@ -60,7 +61,7 @@ func TestCategories_Stable(t *testing.T) {
 			{Key: 4, Label: "Ver informe mensual dun activo"},
 			{Key: 5, Label: "Ver informe mensual por tipo"},
 			{Key: 6, Label: "Ver informe mensual total"},
-			{Key: 7, Label: "Ver resultado xeral total"},
+			{Key: 7, Label: "Reporte histórico completo"},
 		}},
 	}
 	got := Categories()

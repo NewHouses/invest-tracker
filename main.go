@@ -22,6 +22,7 @@ import (
 	"invest-tracker/internal/editasset"
 	"invest-tracker/internal/edittransaction"
 	"invest-tracker/internal/prompts"
+	"invest-tracker/internal/repartoaporte"
 	"invest-tracker/internal/store"
 	"invest-tracker/internal/viewassethistory"
 	"invest-tracker/internal/viewreport"
@@ -63,8 +64,10 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 		case 2:
 			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
 		case 3:
-			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
+			runOp("repartindo aporte mensual", func() error { return repartoaporte.Run(reader, os.Stdout, s) })
 		case 4:
+			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
+		case 5:
 			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
 		}
 	case 3: // Operacións de resultados
@@ -97,7 +100,7 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 		case 6:
 			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
 		case 7:
-			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
+			runOp("xerando reporte histórico completo", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
 		}
 	}
 }
