@@ -23,7 +23,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("listando dividendos: %w", err)
 	}
 	if len(dividends) == 0 {
-		fmt.Fprintln(w, "Aínda non hai dividendos rexistrados. Engade un primeiro coa opción 8.")
+		fmt.Fprintln(w, "Aínda non hai dividendos rexistrados. Engade un primeiro coa operación 'Engadir dividendo'.")
 		return nil
 	}
 

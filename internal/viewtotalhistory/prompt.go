@@ -50,7 +50,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa opción 1.")
+		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("obtendo meses con resultados: %w", err)
 	}
 	if len(months) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados. Engade resultados mensuais coa opción 8 ou 6.")
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados. Engade resultados mensuais coa operación 'Engadir resultado' ou 'Pechar mes'.")
 		return nil
 	}
 

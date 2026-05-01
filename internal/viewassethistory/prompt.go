@@ -25,7 +25,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa opción 1.")
+		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -40,7 +40,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	if len(report.Rows) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para este activo. Engade un coa opción 3.")
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para este activo. Engade un coa operación 'Engadir resultado'.")
 		return nil
 	}
 

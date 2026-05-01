@@ -32,44 +32,103 @@ func TestWelcomeMessage_Snapshot(t *testing.T) {
 	}
 }
 
-func TestOptions_Stable(t *testing.T) {
-	want := []Option{
-		{Key: 1, Label: "Engadir novo activo"},
-		{Key: 2, Label: "Ver historial dun activo"},
-		{Key: 3, Label: "Editar un activo"},
-		{Key: 4, Label: "Eliminar activo"},
-		{Key: 5, Label: "Engadir nova transacción"},
-		{Key: 6, Label: "Engadir varias transaccións"},
-		{Key: 7, Label: "Mostrar todas as transaccións dun activo"},
-		{Key: 8, Label: "Editar unha transacción"},
-		{Key: 9, Label: "Eliminar transacción"},
-		{Key: 10, Label: "Engadir resultado mensual"},
-		{Key: 11, Label: "Engadir dividendo mensual"},
-		{Key: 12, Label: "Pechar mes (resultados)"},
-		{Key: 13, Label: "Ver informe mensual dun activo"},
-		{Key: 14, Label: "Ver resultado xeral dun activo"},
-		{Key: 15, Label: "Ver informe mensual por tipo"},
-		{Key: 16, Label: "Ver informe mensual total"},
-		{Key: 17, Label: "Ver resultado xeral (historial total)"},
-		{Key: 18, Label: "Eliminar resultado mensual"},
-		{Key: 19, Label: "Eliminar dividendo mensual"},
-		{Key: 20, Label: "Limpar mes"},
-		{Key: 0, Label: "Saír"},
+func TestCategories_Stable(t *testing.T) {
+	want := []Category{
+		{Key: 1, Label: "Operacións con activos", Options: []Option{
+			{Key: 1, Label: "Engadir activo"},
+			{Key: 2, Label: "Editar activo"},
+			{Key: 3, Label: "Eliminar activo"},
+		}},
+		{Key: 2, Label: "Operacións con transaccións", Options: []Option{
+			{Key: 1, Label: "Engadir transacción"},
+			{Key: 2, Label: "Engadir transaccións en serie"},
+			{Key: 3, Label: "Editar transacción"},
+			{Key: 4, Label: "Eliminar transacción"},
+		}},
+		{Key: 3, Label: "Operacións de resultados", Options: []Option{
+			{Key: 1, Label: "Engadir resultado"},
+			{Key: 2, Label: "Engadir dividendo"},
+			{Key: 3, Label: "Pechar mes"},
+			{Key: 4, Label: "Eliminar resultado"},
+			{Key: 5, Label: "Eliminar dividendo"},
+			{Key: 6, Label: "Limpar mes"},
+		}},
+		{Key: 4, Label: "Informes", Options: []Option{
+			{Key: 1, Label: "Ver historial dun activo"},
+			{Key: 2, Label: "Ver transaccións dun activo"},
+			{Key: 3, Label: "Ver informe mensual dun activo"},
+			{Key: 4, Label: "Ver resultado xeral dun activo"},
+			{Key: 5, Label: "Ver informe mensual por tipo"},
+			{Key: 6, Label: "Ver informe mensual total"},
+			{Key: 7, Label: "Ver resultado xeral total"},
+		}},
 	}
-	got := Options()
+	got := Categories()
 	if len(got) != len(want) {
-		t.Fatalf("Options() devolveu %d entradas, esperabamos %d", len(got), len(want))
+		t.Fatalf("Categories() devolveu %d entradas, esperabamos %d", len(got), len(want))
 	}
 	for i, w := range want {
-		if got[i] != w {
-			t.Errorf("Options()[%d] = %+v, queremos %+v", i, got[i], w)
+		if got[i].Key != w.Key || got[i].Label != w.Label {
+			t.Errorf("Categories()[%d] = {%d, %q}, queremos {%d, %q}",
+				i, got[i].Key, got[i].Label, w.Key, w.Label)
+			continue
+		}
+		if len(got[i].Options) != len(w.Options) {
+			t.Errorf("Categories()[%d].Options len = %d, esperabamos %d",
+				i, len(got[i].Options), len(w.Options))
+			continue
+		}
+		for j, oj := range w.Options {
+			if got[i].Options[j] != oj {
+				t.Errorf("Categories()[%d].Options[%d] = %+v, queremos %+v",
+					i, j, got[i].Options[j], oj)
+			}
 		}
 	}
 }
 
+func TestTopOptions_ContainsAllCategoriesAndSair(t *testing.T) {
+	top := TopOptions()
+	if len(top) != len(Categories())+1 {
+		t.Fatalf("TopOptions len = %d, esperabamos %d", len(top), len(Categories())+1)
+	}
+	for i, cat := range Categories() {
+		if top[i].Key != cat.Key || top[i].Label != cat.Label {
+			t.Errorf("TopOptions[%d] = %+v, queremos {%d, %q}",
+				i, top[i], cat.Key, cat.Label)
+		}
+	}
+	last := top[len(top)-1]
+	if last.Key != 0 || last.Label != "Saír" {
+		t.Errorf("TopOptions[last] = %+v, queremos {0, Saír}", last)
+	}
+}
+
+func TestCategoryOptions_HasVoltar(t *testing.T) {
+	for _, cat := range Categories() {
+		opts := CategoryOptions(cat.Key)
+		if len(opts) != len(cat.Options)+1 {
+			t.Errorf("CategoryOptions(%d) len = %d, esperabamos %d",
+				cat.Key, len(opts), len(cat.Options)+1)
+			continue
+		}
+		last := opts[len(opts)-1]
+		if last.Key != 0 || last.Label != "Voltar" {
+			t.Errorf("CategoryOptions(%d) last = %+v, queremos {0, Voltar}", cat.Key, last)
+		}
+	}
+}
+
+func TestCategoryOptions_UnknownReturnsNil(t *testing.T) {
+	if got := CategoryOptions(99); got != nil {
+		t.Errorf("CategoryOptions(99) = %v, queremos nil", got)
+	}
+}
+
 func TestRender_ContainsEveryOption(t *testing.T) {
-	rendered := Render(Options())
-	for _, o := range Options() {
+	opts := TopOptions()
+	rendered := Render(opts)
+	for _, o := range opts {
 		keyMarker := fmt.Sprintf("[%d]", o.Key)
 		if !strings.Contains(rendered, keyMarker) {
 			t.Errorf("Render non contén a clave %s", keyMarker)
@@ -81,7 +140,7 @@ func TestRender_ContainsEveryOption(t *testing.T) {
 }
 
 func TestSelect_AllValidKeys(t *testing.T) {
-	opts := Options()
+	opts := TopOptions()
 	for _, o := range opts {
 		input := fmt.Sprint(o.Key)
 		got, err := Select(opts, input)
@@ -105,7 +164,7 @@ func TestSelect_TrimsWhitespace(t *testing.T) {
 		{"3\n", 3},
 		{" 0\r\n", 0},
 	}
-	opts := Options()
+	opts := TopOptions()
 	for _, c := range cases {
 		got, err := Select(opts, c.input)
 		if err != nil {
@@ -119,7 +178,7 @@ func TestSelect_TrimsWhitespace(t *testing.T) {
 }
 
 func TestSelect_InvalidInputs(t *testing.T) {
-	opts := Options()
+	opts := TopOptions()
 	cases := []string{
 		"",
 		"   ",
