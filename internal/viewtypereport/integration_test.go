@@ -86,7 +86,7 @@ func TestRun_EndToEnd_AggregatesByTypeFromDB(t *testing.T) {
 		"1500.00 USD", // investido ata o mes / no activo
 		"500.00 USD",  // investido este mes
 		"1700.00 USD", // resultado agregado
-		"+200.00 USD", // ganhanza
+		"+200.00 USD", // gañanza
 		"+13.33%",     // índice
 	} {
 		if !strings.Contains(output, want) {

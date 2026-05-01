@@ -207,22 +207,22 @@ func renderHistory(w io.Writer,
 	twH := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintf(twH, "  Total investido\t%.2f USD\n", lifetimeInvested)
 	if hasLifetimeMetrics {
-		fmt.Fprintf(twH, "  Total Ganhanzas/Perdas\t%+.2f USD\n", lifetimeGain)
+		fmt.Fprintf(twH, "  Total Gañanzas/Perdas\t%+.2f USD\n", lifetimeGain)
 		fmt.Fprintf(twH, "  Total Índice\t%+.2f%%\n", lifetimePct)
 	} else {
-		fmt.Fprintln(twH, "  Total Ganhanzas/Perdas\t— USD")
+		fmt.Fprintln(twH, "  Total Gañanzas/Perdas\t— USD")
 		fmt.Fprintln(twH, "  Total Índice\t— %")
 	}
 	if nValid > 0 {
 		fmt.Fprintf(twH, "  Índice medio mensual (sen div)\t%+.2f%%\n", sumPctNoDiv/float64(nValid))
-		fmt.Fprintf(twH, "  Ganhanza media mensual (sen div)\t%+.2f USD\n", sumGainNoDiv/float64(nValid))
+		fmt.Fprintf(twH, "  Gañanza media mensual (sen div)\t%+.2f USD\n", sumGainNoDiv/float64(nValid))
 		fmt.Fprintf(twH, "  Índice medio mensual (con div)\t%+.2f%%\n", sumPctWithDiv/float64(nValid))
-		fmt.Fprintf(twH, "  Ganhanza media mensual (con div)\t%+.2f USD\n", sumGainWithDiv/float64(nValid))
+		fmt.Fprintf(twH, "  Gañanza media mensual (con div)\t%+.2f USD\n", sumGainWithDiv/float64(nValid))
 	} else {
 		fmt.Fprintln(twH, "  Índice medio mensual (sen div)\t— %")
-		fmt.Fprintln(twH, "  Ganhanza media mensual (sen div)\t— USD")
+		fmt.Fprintln(twH, "  Gañanza media mensual (sen div)\t— USD")
 		fmt.Fprintln(twH, "  Índice medio mensual (con div)\t— %")
-		fmt.Fprintln(twH, "  Ganhanza media mensual (con div)\t— USD")
+		fmt.Fprintln(twH, "  Gañanza media mensual (con div)\t— USD")
 	}
 	twH.Flush()
 	fmt.Fprintln(w, sep)
@@ -244,8 +244,8 @@ func renderHistory(w io.Writer,
 	twA.Flush()
 	fmt.Fprintln(w, sep)
 
-	// Táboa B: resultados, ganhanzas e índices por mes
-	fmt.Fprintln(w, "  Resultados e ganhanzas por mes:")
+	// Táboa B: resultados, gañanzas e índices por mes
+	fmt.Fprintln(w, "  Resultados e gañanzas por mes:")
 	twB := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
 	fmt.Fprintln(twB, "  Ano\tMes\tDiv\tResult s/d\tResult c/d\tG/P s/d\tG/P c/d\t% s/d\t% c/d\t")
 	for _, row := range rows {

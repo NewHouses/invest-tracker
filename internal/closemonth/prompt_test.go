@@ -219,7 +219,7 @@ func TestRun_ShowsGainAfterEachSave(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	if !strings.Contains(out, "+300.00 USD") || !strings.Contains(out, "+20.00%") {
-		t.Errorf("saída non mostra ganhanza:\n%s", out)
+		t.Errorf("saída non mostra gañanza:\n%s", out)
 	}
 }
 
@@ -243,7 +243,7 @@ func TestRun_ShowsPreviousResultHint(t *testing.T) {
 
 func TestRun_UsesPrevResultPlusInvestedAsHolding(t *testing.T) {
 	// Resultado anterior 1100 + investido este mes 200 = no activo 1300.
-	// Resultado actual 1500 → ganhanza 200, +15.38%.
+	// Resultado actual 1500 → gañanza 200, +15.38%.
 	sums := map[summaryKey]domain.MonthlySummary{
 		{10, 2026, 4}: {
 			TotalInvestedUpTo: 1200,

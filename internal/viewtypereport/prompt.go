@@ -114,12 +114,12 @@ func renderTable(w io.Writer, typ domain.AssetType, year, month int, active []en
 	switch {
 	case withResult == 0:
 		fmt.Fprintln(tw, "  Resultado\t— USD")
-		fmt.Fprintln(tw, "  Ganhanzas/Perdas\t— USD")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas\t— USD")
 		fmt.Fprintln(tw, "  Índice\t—")
 	case withResult == len(active):
 		fmt.Fprintf(tw, "  Resultado\t%.2f USD\n", resultSum)
 		gain := resultSum - holdingForResult
-		fmt.Fprintf(tw, "  Ganhanzas/Perdas\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%+.2f USD\n", gain)
 		if holdingForResult > 0 {
 			pct := gain / holdingForResult * 100
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", pct)
@@ -129,7 +129,7 @@ func renderTable(w io.Writer, typ domain.AssetType, year, month int, active []en
 	default:
 		fmt.Fprintf(tw, "  Resultado (parc.)\t%.2f USD  (%d/%d activos)\n", resultSum, withResult, len(active))
 		gain := resultSum - holdingForResult
-		fmt.Fprintf(tw, "  Ganhanzas/Perdas (parc.)\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas (parc.)\t%+.2f USD\n", gain)
 		if holdingForResult > 0 {
 			pct := gain / holdingForResult * 100
 			fmt.Fprintf(tw, "  Índice (parc.)\t%+.2f%%\n", pct)
