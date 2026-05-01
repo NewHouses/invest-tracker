@@ -55,18 +55,20 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	var nValid int
 
 	for _, ym := range months {
-		var aporte, fondos, baseResult float64
+		var totalTx, fondos, baseResult float64
 		for _, a := range assets {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
 				return fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 			}
-			// Só agregamos os activos que reportan resultado neste mes:
-			// así Fondos e Resultado inclúen sempre o mesmo conxunto.
+			// Aporte Mensual = Σ transaccións de tódolos activos − dividendos.
+			// Inclúese tamén o investimento de activos sen resultado neste mes.
+			totalTx += sum.InvestedInMonth
+			// Fondos e Resultado: só dos activos con resultado neste mes para
+			// que ámbolos dous lados da G/P inclúan o mesmo conxunto.
 			if !sum.HasResult {
 				continue
 			}
-			aporte += sum.InvestedInMonth
 			fondos += sum.EstimatedHolding
 			baseResult += sum.Result
 		}
@@ -74,6 +76,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		if err != nil {
 			return fmt.Errorf("sumando dividendos de %d/%d: %w", ym.Month, ym.Year, err)
 		}
+		aporte := totalTx - div
 		result := baseResult + div
 		row := rowEntry{
 			year:      ym.Year,

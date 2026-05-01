@@ -13,6 +13,7 @@ import (
 	"invest-tracker/internal/addresult"
 	"invest-tracker/internal/addtransaction"
 	"invest-tracker/internal/addtxbatch"
+	"invest-tracker/internal/addtxmonth"
 	"invest-tracker/internal/clearmonth"
 	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/deleteasset"
@@ -64,10 +65,12 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 		case 2:
 			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
 		case 3:
-			runOp("repartindo aporte mensual", func() error { return repartoaporte.Run(reader, os.Stdout, s) })
+			runOp("engadindo transaccións do mes", func() error { return addtxmonth.Run(reader, os.Stdout, s) })
 		case 4:
-			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
+			runOp("repartindo aporte mensual", func() error { return repartoaporte.Run(reader, os.Stdout, s) })
 		case 5:
+			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
+		case 6:
 			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
 		}
 	case 3: // Operacións de resultados
