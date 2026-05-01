@@ -23,7 +23,6 @@ import (
 	"invest-tracker/internal/edittransaction"
 	"invest-tracker/internal/prompts"
 	"invest-tracker/internal/store"
-	"invest-tracker/internal/viewassetgeneral"
 	"invest-tracker/internal/viewassethistory"
 	"invest-tracker/internal/viewreport"
 	"invest-tracker/internal/viewtotalhistory"
@@ -91,12 +90,10 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 		case 3:
 			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
 		case 4:
-			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
-		case 5:
 			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
-		case 6:
+		case 5:
 			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
-		case 7:
+		case 6:
 			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
 		}
 	}

@@ -72,10 +72,9 @@ func Categories() []Category {
 				{Key: 1, Label: "Reporte histórico dun activo"},
 				{Key: 2, Label: "Ver transaccións dun activo"},
 				{Key: 3, Label: "Ver informe mensual dun activo"},
-				{Key: 4, Label: "Ver resultado xeral dun activo"},
-				{Key: 5, Label: "Ver informe mensual por tipo"},
-				{Key: 6, Label: "Ver informe mensual total"},
-				{Key: 7, Label: "Ver resultado xeral total"},
+				{Key: 4, Label: "Ver informe mensual por tipo"},
+				{Key: 5, Label: "Ver informe mensual total"},
+				{Key: 6, Label: "Ver resultado xeral total"},
 			},
 		},
 	}
