@@ -28,6 +28,7 @@ import (
 	"invest-tracker/internal/viewtotalhistory"
 	"invest-tracker/internal/viewtotalreport"
 	"invest-tracker/internal/viewtransactions"
+	"invest-tracker/internal/viewtypehistory"
 	"invest-tracker/internal/viewtypereport"
 	"invest-tracker/internal/welcome"
 )
@@ -86,14 +87,16 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 		case 1:
 			runOp("xerando historial", func() error { return viewassethistory.Run(reader, os.Stdout, s) })
 		case 2:
-			runOp("listando transaccións", func() error { return viewtransactions.Run(reader, os.Stdout, s) })
+			runOp("xerando historial por tipo", func() error { return viewtypehistory.Run(reader, os.Stdout, s) })
 		case 3:
-			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
+			runOp("listando transaccións", func() error { return viewtransactions.Run(reader, os.Stdout, s) })
 		case 4:
-			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
+			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
 		case 5:
-			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
+			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
 		case 6:
+			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
+		case 7:
 			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
 		}
 	}
