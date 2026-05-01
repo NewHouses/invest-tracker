@@ -182,15 +182,15 @@ func TestRun_PrintsAllRequiredFieldLabels(t *testing.T) {
 		"Dividendos este mes",
 		"Resultado (sen div)",
 		"Resultado total (con div)",
-		"Ganhanzas/Perdas",
-		"Ganhanzas/Perdas (con div)",
+		"Gañanzas/Perdas",
+		"Gañanzas/Perdas (con div)",
 		"Índice",
 		"Índice (con div)",
 		"Promedios mensuais",
 		"Índice medio mensual (sen div)",
-		"Ganhanza media mensual (sen div)",
+		"Gañanza media mensual (sen div)",
 		"Índice medio mensual (con div)",
-		"Ganhanza media mensual (con div)",
+		"Gañanza media mensual (con div)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)

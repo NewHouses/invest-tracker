@@ -22,6 +22,14 @@ func TestRun_EndToEnd_ShowsFullHistoryFromDB(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 
+	// AAPL bought in 03/2026 with 1000 USD (asset row), then 500 in 04 and 200 in 05.
+	// Results: 04 → 1800, 05 → 1900.
+	//
+	// Holding model:
+	//   04: holding = 1000 (asset) + 500 (tx 04) = 1500. G/P = 1800-1500 = +300 (+20%).
+	//   05: holding = 1800 (prev result) + 200 (tx 05)  = 2000. G/P = 1900-2000 = -100 (-5%).
+	// Total Aportado lifetime = 1700, Total G/P = 1900-1700 = +200.
+	// Medias mensuais: pct = (20 + -5)/2 = +7.50%, gain = (300 + -100)/2 = +100.
 	assetID, err := s.InsertAsset(domain.Asset{
 		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 3, Year: 2026,
 	})
@@ -53,26 +61,25 @@ func TestRun_EndToEnd_ShowsFullHistoryFromDB(t *testing.T) {
 
 	output := out.String()
 	for _, want := range []string{
+		"Reporte histórico dun activo",
 		"Acción — AAPL",
-		"Total investido",
+		// Top summary
+		"Total Aportado",
 		"1700.00 USD",
-		"Total Ganhanzas/Perdas",
+		"Índice Medio Mensual",
+		"+7.50%",
+		"Gañanzas/Perdas Medias Mensuais",
+		"+100.00 USD",
+		"Total Gañanzas/Perdas",
 		"+200.00 USD",
-		"Índice medio mensual",
-		"+15.88",
-		"Investido ata o mes",
-		"Investido este mes",
+		// Table columns
+		"Aporte Mensual",
+		"No activo",
+		"G/P USD",
 		"Resultado",
-		"1500.00",
-		"500.00",
-		"+20.00%",
-		"+300.00",
-		"1800.00",
-		"1700.00",
-		"200.00",
-		"+11.76%",
-		"+200.00",
-		"1900.00",
+		// Row values
+		"500.00", "1500.00", "+20.00%", "+300.00", "1800.00",
+		"200.00", "2000.00", "-5.00%", "-100.00", "1900.00",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

@@ -185,8 +185,8 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 	if !strings.Contains(out, "No activo: 1000.00 USD") {
 		t.Errorf("saída non contén o detalle 'No activo':\n%s", out)
 	}
-	if !strings.Contains(out, "Ganhanzas/Perdas:") {
-		t.Errorf("saída non contén Ganhanzas/Perdas:\n%s", out)
+	if !strings.Contains(out, "Gañanzas/Perdas:") {
+		t.Errorf("saída non contén Gañanzas/Perdas:\n%s", out)
 	}
 	if len(repo.saved) != 1 {
 		t.Fatalf("repo.saved tamaño = %d, esperabamos 1", len(repo.saved))
@@ -270,10 +270,10 @@ func TestRun_ShowsGain(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	if !strings.Contains(out, "+100.00 USD") {
-		t.Errorf("saída non mostra a ganhanza absoluta:\n%s", out)
+		t.Errorf("saída non mostra a gañanza absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "+10.00%") {
-		t.Errorf("saída non mostra a ganhanza %%:\n%s", out)
+		t.Errorf("saída non mostra a gañanza %%:\n%s", out)
 	}
 }
 
@@ -307,7 +307,7 @@ func TestRun_ShowsBreakeven(t *testing.T) {
 
 func TestRun_UsesPrevResultPlusInvested(t *testing.T) {
 	// Resultado anterior 1100 + investido este mes 200 = no activo 1300.
-	// Ganhanza con resultado actual 1500: 1500-1300 = 200 (+15.38%).
+	// Gañanza con resultado actual 1500: 1500-1300 = 200 (+15.38%).
 	sums := map[summaryKey]domain.MonthlySummary{
 		{10, 2026, 4}: {
 			TotalInvestedUpTo: 1200,
@@ -324,7 +324,7 @@ func TestRun_UsesPrevResultPlusInvested(t *testing.T) {
 		t.Errorf("saída non mostra holding (prev result + invested):\n%s", out)
 	}
 	if !strings.Contains(out, "+200.00 USD") {
-		t.Errorf("saída non mostra ganhanza calculada contra holding:\n%s", out)
+		t.Errorf("saída non mostra gañanza calculada contra holding:\n%s", out)
 	}
 	if !strings.Contains(out, "+15.38%") {
 		t.Errorf("saída non mostra %% calculada contra holding:\n%s", out)

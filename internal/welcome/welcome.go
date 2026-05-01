@@ -69,7 +69,7 @@ func Categories() []Category {
 			Key:   4,
 			Label: "Informes",
 			Options: []Option{
-				{Key: 1, Label: "Ver historial dun activo"},
+				{Key: 1, Label: "Reporte histórico dun activo"},
 				{Key: 2, Label: "Ver transaccións dun activo"},
 				{Key: 3, Label: "Ver informe mensual dun activo"},
 				{Key: 4, Label: "Ver resultado xeral dun activo"},

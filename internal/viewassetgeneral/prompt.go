@@ -116,18 +116,18 @@ func renderTable(w io.Writer, asset domain.Asset, rows []rowEntry,
 	twH := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintf(twH, "  Total investido\t%.2f USD\n", lifetimeInvested)
 	if hasLifetime {
-		fmt.Fprintf(twH, "  Total Ganhanzas/Perdas\t%+.2f USD\n", lifetimeGain)
+		fmt.Fprintf(twH, "  Total Gañanzas/Perdas\t%+.2f USD\n", lifetimeGain)
 		fmt.Fprintf(twH, "  Total Índice\t%+.2f%%\n", lifetimePct)
 	} else {
-		fmt.Fprintln(twH, "  Total Ganhanzas/Perdas\t— USD")
+		fmt.Fprintln(twH, "  Total Gañanzas/Perdas\t— USD")
 		fmt.Fprintln(twH, "  Total Índice\t— %")
 	}
 	if nValid > 0 {
 		fmt.Fprintf(twH, "  Índice medio mensual\t%+.2f%%\n", sumPct/float64(nValid))
-		fmt.Fprintf(twH, "  Ganhanza media mensual\t%+.2f USD\n", sumGain/float64(nValid))
+		fmt.Fprintf(twH, "  Gañanza media mensual\t%+.2f USD\n", sumGain/float64(nValid))
 	} else {
 		fmt.Fprintln(twH, "  Índice medio mensual\t— %")
-		fmt.Fprintln(twH, "  Ganhanza media mensual\t— USD")
+		fmt.Fprintln(twH, "  Gañanza media mensual\t— USD")
 	}
 	twH.Flush()
 	fmt.Fprintln(w, sep)
@@ -145,8 +145,8 @@ func renderTable(w io.Writer, asset domain.Asset, rows []rowEntry,
 	twA.Flush()
 	fmt.Fprintln(w, sep)
 
-	// Táboa B: resultados e ganhanzas por mes
-	fmt.Fprintln(w, "  Resultados e ganhanzas por mes:")
+	// Táboa B: resultados e gañanzas por mes
+	fmt.Fprintln(w, "  Resultados e gañanzas por mes:")
 	twB := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
 	fmt.Fprintln(twB, "  Ano\tMes\tResultado\tG/P USD\t%\t")
 	for _, row := range rows {

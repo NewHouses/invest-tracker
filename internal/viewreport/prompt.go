@@ -64,7 +64,7 @@ func renderTable(w io.Writer, a domain.Asset, year, month int, s domain.MonthlyS
 	if s.HasResult {
 		fmt.Fprintf(tw, "  Resultado\t%.2f USD\n", s.Result)
 		gain := s.Result - s.EstimatedHolding
-		fmt.Fprintf(tw, "  Ganhanzas/Perdas\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%+.2f USD\n", gain)
 		if s.EstimatedHolding > 0 {
 			pct := gain / s.EstimatedHolding * 100
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", pct)
@@ -73,7 +73,7 @@ func renderTable(w io.Writer, a domain.Asset, year, month int, s domain.MonthlyS
 		}
 	} else {
 		fmt.Fprintln(tw, "  Resultado\t— USD")
-		fmt.Fprintln(tw, "  Ganhanzas/Perdas\t— USD")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas\t— USD")
 		fmt.Fprintln(tw, "  Índice\t—")
 	}
 	tw.Flush()

@@ -209,8 +209,8 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 	if target.assetsWithResult == 0 {
 		fmt.Fprintln(tw, "  Resultado (sen div)\t— USD")
 		fmt.Fprintln(tw, "  Resultado total (con div)\t— USD")
-		fmt.Fprintln(tw, "  Ganhanzas/Perdas\t— USD")
-		fmt.Fprintln(tw, "  Ganhanzas/Perdas (con div)\t— USD")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas\t— USD")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas (con div)\t— USD")
 		fmt.Fprintln(tw, "  Índice\t— %")
 		fmt.Fprintln(tw, "  Índice (con div)\t— %")
 	} else {
@@ -222,8 +222,8 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 		fmt.Fprintf(tw, "  Resultado (sen div)\t%.2f USD%s\n", cur.ResultNoDiv, coverage)
 		fmt.Fprintf(tw, "  Resultado total (con div)\t%.2f USD\n", cur.ResultWithDiv)
 		if cur.HasMetrics {
-			fmt.Fprintf(tw, "  Ganhanzas/Perdas\t%+.2f USD\n", cur.GainNoDiv)
-			fmt.Fprintf(tw, "  Ganhanzas/Perdas (con div)\t%+.2f USD\n", cur.GainWithDiv)
+			fmt.Fprintf(tw, "  Gañanzas/Perdas\t%+.2f USD\n", cur.GainNoDiv)
+			fmt.Fprintf(tw, "  Gañanzas/Perdas (con div)\t%+.2f USD\n", cur.GainWithDiv)
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", cur.PctNoDiv)
 			if cur.HoldingWithDiv > 0 {
 				fmt.Fprintf(tw, "  Índice (con div)\t%+.2f%%\n", cur.PctWithDiv)
@@ -231,8 +231,8 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 				fmt.Fprintln(tw, "  Índice (con div)\tn/a")
 			}
 		} else {
-			fmt.Fprintln(tw, "  Ganhanzas/Perdas\tn/a")
-			fmt.Fprintln(tw, "  Ganhanzas/Perdas (con div)\tn/a")
+			fmt.Fprintln(tw, "  Gañanzas/Perdas\tn/a")
+			fmt.Fprintln(tw, "  Gañanzas/Perdas (con div)\tn/a")
 			fmt.Fprintln(tw, "  Índice\tn/a")
 			fmt.Fprintln(tw, "  Índice (con div)\tn/a")
 		}
@@ -250,11 +250,11 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 		twAvg := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 		fmt.Fprintf(twAvg, "    Índice medio mensual (sen div)\t%+.2f%%\n",
 			sumPctNoDiv/float64(nAvgMonths))
-		fmt.Fprintf(twAvg, "    Ganhanza media mensual (sen div)\t%+.2f USD\n",
+		fmt.Fprintf(twAvg, "    Gañanza media mensual (sen div)\t%+.2f USD\n",
 			sumGainNoDiv/float64(nAvgMonths))
 		fmt.Fprintf(twAvg, "    Índice medio mensual (con div)\t%+.2f%%\n",
 			sumPctWithDiv/float64(nAvgMonths))
-		fmt.Fprintf(twAvg, "    Ganhanza media mensual (con div)\t%+.2f USD\n",
+		fmt.Fprintf(twAvg, "    Gañanza media mensual (con div)\t%+.2f USD\n",
 			sumGainWithDiv/float64(nAvgMonths))
 		twAvg.Flush()
 	}

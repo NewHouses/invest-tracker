@@ -155,10 +155,10 @@ func TestRun_PrintsHeaderLabels(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Total investido",
-		"Total Ganhanzas/Perdas",
+		"Total Gañanzas/Perdas",
 		"Total Índice",
 		"Índice medio mensual",
-		"Ganhanza media mensual",
+		"Gañanza media mensual",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -176,7 +176,7 @@ func TestRun_PrintsTableHeaders(t *testing.T) {
 		"Investido total",
 		"Este mes",
 		"No activo",
-		"Resultados e ganhanzas por mes:",
+		"Resultados e gañanzas por mes:",
 		"Resultado",
 		"G/P USD",
 	} {

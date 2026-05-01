@@ -86,9 +86,9 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	gain := result - chosen.holding
 	if chosen.holding > 0 {
 		pct := gain / chosen.holding * 100
-		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (%+.2f%%)\n", gain, pct)
+		fmt.Fprintf(w, "Gañanzas/Perdas: %+.2f USD (%+.2f%%)\n", gain, pct)
 	} else {
-		fmt.Fprintf(w, "Ganhanzas/Perdas: %+.2f USD (n/a%%)\n", gain)
+		fmt.Fprintf(w, "Gañanzas/Perdas: %+.2f USD (n/a%%)\n", gain)
 	}
 	return nil
 }

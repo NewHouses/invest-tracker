@@ -174,7 +174,7 @@ func TestRun_PrintsTable_AggregatedFields(t *testing.T) {
 		"Investido este mes",
 		"No activo",
 		"Resultado",
-		"Ganhanzas/Perdas",
+		"Gañanzas/Perdas",
 		"Índice",
 	} {
 		if !strings.Contains(out, want) {

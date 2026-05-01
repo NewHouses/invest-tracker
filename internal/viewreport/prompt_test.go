@@ -137,7 +137,7 @@ func TestRun_PrintsTable_AllMetrics(t *testing.T) {
 		"Investido este mes",
 		"No activo",
 		"Resultado",
-		"Ganhanzas/Perdas",
+		"Gañanzas/Perdas",
 		"Índice",
 	} {
 		if !strings.Contains(out, want) {
@@ -162,10 +162,10 @@ func TestRun_ShowsGain(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	if !strings.Contains(out, "+300.00 USD") {
-		t.Errorf("saída non mostra a ganhanza absoluta:\n%s", out)
+		t.Errorf("saída non mostra a gañanza absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "+20.00%") {
-		t.Errorf("saída non mostra a ganhanza %%:\n%s", out)
+		t.Errorf("saída non mostra a gañanza %%:\n%s", out)
 	}
 }
 
@@ -240,7 +240,7 @@ func TestRun_ZeroInvested_ShowsNA(t *testing.T) {
 }
 
 // Test de regresión: cando hai prev_result, EstimatedHolding != TotalInvestedUpTo,
-// e a ganhanza calcúlase contra o holding (non contra o cost basis acumulado).
+// e a gañanza calcúlase contra o holding (non contra o cost basis acumulado).
 // Isto garante coherencia con viewassetgeneral.
 func TestRun_UsesEstimatedHoldingForGain(t *testing.T) {
 	// Holding=1300 (prev result 1100 + invested este mes 200).
@@ -267,7 +267,7 @@ func TestRun_UsesEstimatedHoldingForGain(t *testing.T) {
 		}
 	}
 	if !strings.Contains(out, "+200.00 USD") {
-		t.Errorf("saída non contén ganhanza +200.00 (gain contra holding):\n%s", out)
+		t.Errorf("saída non contén gañanza +200.00 (gain contra holding):\n%s", out)
 	}
 	if !strings.Contains(out, "+15.38%") {
 		t.Errorf("saída non contén pct +15.38%% (contra holding):\n%s", out)
