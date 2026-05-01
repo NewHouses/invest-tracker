@@ -49,9 +49,10 @@ func Categories() []Category {
 			Options: []Option{
 				{Key: 1, Label: "Engadir transacción"},
 				{Key: 2, Label: "Engadir transaccións en serie"},
-				{Key: 3, Label: "Repartir aporte mensual"},
-				{Key: 4, Label: "Editar transacción"},
-				{Key: 5, Label: "Eliminar transacción"},
+				{Key: 3, Label: "Engadir transaccións do mes"},
+				{Key: 4, Label: "Repartir aporte mensual"},
+				{Key: 5, Label: "Editar transacción"},
+				{Key: 6, Label: "Eliminar transacción"},
 			},
 		},
 		{

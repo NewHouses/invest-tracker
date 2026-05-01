@@ -60,13 +60,15 @@ var twoAssets = []domain.Asset{
 }
 
 // 03/2026:
-//   AAPL: aporte=1000, fondos=1000, result=1100
-//   Vanguard: aporte=2000, fondos=2000, result=2100
-//   div=20 → agg: aporte=3000, fondos=3000, base=3200, div=20, result=3220, G/P=+220, +7.33%
+//   AAPL: tx=1000, fondos=1000, result=1100
+//   Vanguard: tx=2000, fondos=2000, result=2100
+//   div=20 → agg: aporte=(3000−20)=2980, fondos=3000, base=3200, div=20,
+//                 result=3220, G/P=+220, +7.33%
 // 04/2026:
-//   AAPL: aporte=200, fondos=1300, result=1500
-//   Vanguard: aporte=0, fondos=2100, result=2150
-//   div=50 → agg: aporte=200, fondos=3400, base=3650, div=50, result=3700, G/P=+300, +8.82%
+//   AAPL: tx=200, fondos=1300, result=1500
+//   Vanguard: tx=0, fondos=2100, result=2150
+//   div=50 → agg: aporte=(200−50)=150, fondos=3400, base=3650, div=50,
+//                 result=3700, G/P=+300, +8.82%
 //
 // Lifetime: aporte=3200 (de 9999/12), últimos resultados=1500+2150=3650,
 //           totalDiv=70, G/P Total = 3650+70-3200 = +520.
@@ -196,9 +198,9 @@ func TestRun_PrintsRow_03(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	// 03/2026: aporte=3000, fondos=3000, +7.33%, +220, div=20, result=3220
+	// 03/2026: aporte=2980 (3000−20), fondos=3000, +7.33%, +220, div=20, result=3220
 	for _, want := range []string{
-		"3000.00", "+7.33%", "+220.00", "20.00", "3220.00",
+		"2980.00", "3000.00", "+7.33%", "+220.00", "20.00", "3220.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -211,9 +213,9 @@ func TestRun_PrintsRow_04(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	// 04/2026: aporte=200, fondos=3400, +8.82%, +300, div=50, result=3700
+	// 04/2026: aporte=150 (200−50), fondos=3400, +8.82%, +300, div=50, result=3700
 	for _, want := range []string{
-		"200.00", "3400.00", "+8.82%", "+300.00", "50.00", "3700.00",
+		"150.00", "3400.00", "+8.82%", "+300.00", "50.00", "3700.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
