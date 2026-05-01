@@ -203,6 +203,73 @@ func TestStore_MonthlySummary_WithPrevResult(t *testing.T) {
 	}
 }
 
+// TestStore_MonthlySummary_AccountsForGapTransactions comproba que cando hai
+// transaccións entre o último resultado rexistrado e o mes target, son tidas
+// en conta no EstimatedHolding (p.e. unha venda total despois do último
+// resultado debe deixar o activo a 0 nos meses seguintes).
+func TestStore_MonthlySummary_AccountsForGapTransactions(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	// 03/2026: asset creado con 1000.
+	// 04/2026: tx +200, result 1400.
+	// 05/2026: tx -1400 (venda total). Sen result rexistrado en 05.
+	assetID, err := s.InsertAsset(domain.Asset{
+		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 3, Year: 2026,
+	})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+	if _, err := s.InsertTransaction(domain.Transaction{
+		AssetID: assetID, AmountUSD: 200, Month: 4, Year: 2026,
+	}); err != nil {
+		t.Fatalf("InsertTransaction(04): %v", err)
+	}
+	if _, err := s.InsertMonthlyResult(domain.MonthlyResult{
+		AssetID: assetID, ResultUSD: 1400, Month: 4, Year: 2026,
+	}); err != nil {
+		t.Fatalf("InsertMonthlyResult: %v", err)
+	}
+	if _, err := s.InsertTransaction(domain.Transaction{
+		AssetID: assetID, AmountUSD: -1400, Month: 5, Year: 2026,
+	}); err != nil {
+		t.Fatalf("InsertTransaction(05): %v", err)
+	}
+
+	// Target 05/2026: prev_result=1400 (04). Tx en (04, 05] = -1400. holding = 0.
+	got, err := s.MonthlySummary(assetID, 2026, 5)
+	if err != nil {
+		t.Fatalf("MonthlySummary(05): %v", err)
+	}
+	if got.EstimatedHolding != 0 {
+		t.Errorf("EstimatedHolding(05) = %v, esperabamos 0 (venda total nullifica)",
+			got.EstimatedHolding)
+	}
+
+	// Target 06/2026 (mes seguinte á venda, sen actividade): prev_result=1400 (04).
+	// Tx en (04, 06] = {-1400 en 05}. holding debe seguir sendo 0.
+	got, err = s.MonthlySummary(assetID, 2026, 6)
+	if err != nil {
+		t.Fatalf("MonthlySummary(06): %v", err)
+	}
+	if got.EstimatedHolding != 0 {
+		t.Errorf("EstimatedHolding(06) = %v, esperabamos 0 (a venda en 05 debe persistir nos meses seguintes)",
+			got.EstimatedHolding)
+	}
+
+	// Target 09/2026 (varios meses despois): mesmo razoamento, holding = 0.
+	got, err = s.MonthlySummary(assetID, 2026, 9)
+	if err != nil {
+		t.Fatalf("MonthlySummary(09): %v", err)
+	}
+	if got.EstimatedHolding != 0 {
+		t.Errorf("EstimatedHolding(09) = %v, esperabamos 0", got.EstimatedHolding)
+	}
+}
+
 // TestStore_MonthlySummary_IgnoresTxBeforeAssetCreation comproba que as
 // transaccións gardadas en meses ANTERIORES á data do activo (poderían xurdir
 // tras editar a data do activo a un mes posterior) NON afectan os cálculos.

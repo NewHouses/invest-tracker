@@ -60,12 +60,13 @@ func renderTable(w io.Writer, a domain.Asset, year, month int, s domain.MonthlyS
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintf(tw, "  Investido ata o mes\t%.2f USD\n", s.TotalInvestedUpTo)
 	fmt.Fprintf(tw, "  Investido este mes\t%.2f USD\n", s.InvestedInMonth)
+	fmt.Fprintf(tw, "  No activo\t%.2f USD\n", s.EstimatedHolding)
 	if s.HasResult {
 		fmt.Fprintf(tw, "  Resultado\t%.2f USD\n", s.Result)
-		gain := s.Result - s.TotalInvestedUpTo
+		gain := s.Result - s.EstimatedHolding
 		fmt.Fprintf(tw, "  Ganhanzas/Perdas\t%+.2f USD\n", gain)
-		if s.TotalInvestedUpTo > 0 {
-			pct := gain / s.TotalInvestedUpTo * 100
+		if s.EstimatedHolding > 0 {
+			pct := gain / s.EstimatedHolding * 100
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", pct)
 		} else {
 			fmt.Fprintln(tw, "  Índice\tn/a")

@@ -54,18 +54,34 @@ func (s *Store) MonthlySummary(assetID int64, year, month int) (domain.MonthlySu
 	}
 
 	var prevResult sql.NullFloat64
+	var prevYear, prevMonth int
 	err = s.db.QueryRow(
-		`SELECT result_usd FROM monthly_results
+		`SELECT result_usd, year, month FROM monthly_results
 		 WHERE asset_id = ? AND (year * 12 + month) < (? * 12 + ?)
 		 ORDER BY year DESC, month DESC, id DESC LIMIT 1`,
 		assetID, year, month,
-	).Scan(&prevResult)
+	).Scan(&prevResult, &prevYear, &prevMonth)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return summary, err
 	}
 	if prevResult.Valid {
 		summary.HasPrevResult = true
-		summary.EstimatedHolding = prevResult.Float64 + summary.InvestedInMonth
+		// EstimatedHolding = prev_result + transaccións estritamente posteriores
+		// ao mes do prev_result e ata (incluído) o mes target. Isto cobre o caso
+		// de transaccións feitas en meses intermedios sen resultado rexistrado
+		// (p.e. unha venda total en 05 cando o último resultado é de 04).
+		var txGap float64
+		err = s.db.QueryRow(
+			`SELECT COALESCE(SUM(amount_usd), 0) FROM transactions
+			 WHERE asset_id = ?1
+			   AND (year * 12 + month) > (?2 * 12 + ?3)
+			   AND (year * 12 + month) <= (?4 * 12 + ?5)`,
+			assetID, prevYear, prevMonth, year, month,
+		).Scan(&txGap)
+		if err != nil {
+			return summary, err
+		}
+		summary.EstimatedHolding = prevResult.Float64 + txGap
 	} else {
 		summary.EstimatedHolding = summary.TotalInvestedUpTo
 	}
