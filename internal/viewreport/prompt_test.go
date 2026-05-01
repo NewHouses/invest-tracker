@@ -54,7 +54,10 @@ var sampleAssets = []domain.Asset{
 
 func gainSummary() map[summaryKey]domain.MonthlySummary {
 	return map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 5}: {TotalInvestedUpTo: 1500, InvestedInMonth: 500, Result: 1800, HasResult: true},
+		{10, 2026, 5}: {
+			TotalInvestedUpTo: 1500, InvestedInMonth: 500,
+			EstimatedHolding: 1500, Result: 1800, HasResult: true,
+		},
 	}
 }
 
@@ -124,7 +127,7 @@ func TestRun_EOFMidFlow_ReturnsError(t *testing.T) {
 	}
 }
 
-func TestRun_PrintsTable_AllFiveMetrics(t *testing.T) {
+func TestRun_PrintsTable_AllMetrics(t *testing.T) {
 	out, err := runWith(sampleAssets, gainSummary(), validInput)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -132,6 +135,7 @@ func TestRun_PrintsTable_AllFiveMetrics(t *testing.T) {
 	for _, want := range []string{
 		"Investido ata o mes",
 		"Investido este mes",
+		"No activo",
 		"Resultado",
 		"Ganhanzas/Perdas",
 		"Índice",
@@ -167,7 +171,10 @@ func TestRun_ShowsGain(t *testing.T) {
 
 func TestRun_ShowsLoss(t *testing.T) {
 	summaries := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 5}: {TotalInvestedUpTo: 1500, InvestedInMonth: 500, Result: 1200, HasResult: true},
+		{10, 2026, 5}: {
+			TotalInvestedUpTo: 1500, InvestedInMonth: 500,
+			EstimatedHolding: 1500, Result: 1200, HasResult: true,
+		},
 	}
 	out, err := runWith(sampleAssets, summaries, validInput)
 	if err != nil {
@@ -183,7 +190,10 @@ func TestRun_ShowsLoss(t *testing.T) {
 
 func TestRun_ShowsBreakeven(t *testing.T) {
 	summaries := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 5}: {TotalInvestedUpTo: 1000, InvestedInMonth: 0, Result: 1000, HasResult: true},
+		{10, 2026, 5}: {
+			TotalInvestedUpTo: 1000, InvestedInMonth: 0,
+			EstimatedHolding: 1000, Result: 1000, HasResult: true,
+		},
 	}
 	out, err := runWith(sampleAssets, summaries, validInput)
 	if err != nil {
@@ -199,7 +209,10 @@ func TestRun_ShowsBreakeven(t *testing.T) {
 
 func TestRun_NoResult_ShowsDashes(t *testing.T) {
 	summaries := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 5}: {TotalInvestedUpTo: 1500, InvestedInMonth: 500, Result: 0, HasResult: false},
+		{10, 2026, 5}: {
+			TotalInvestedUpTo: 1500, InvestedInMonth: 500,
+			EstimatedHolding: 1500, Result: 0, HasResult: false,
+		},
 	}
 	out, err := runWith(sampleAssets, summaries, validInput)
 	if err != nil {
@@ -212,7 +225,10 @@ func TestRun_NoResult_ShowsDashes(t *testing.T) {
 
 func TestRun_ZeroInvested_ShowsNA(t *testing.T) {
 	summaries := map[summaryKey]domain.MonthlySummary{
-		{10, 2026, 5}: {TotalInvestedUpTo: 0, InvestedInMonth: 0, Result: 100, HasResult: true},
+		{10, 2026, 5}: {
+			TotalInvestedUpTo: 0, InvestedInMonth: 0,
+			EstimatedHolding: 0, Result: 100, HasResult: true,
+		},
 	}
 	out, err := runWith(sampleAssets, summaries, validInput)
 	if err != nil {
@@ -220,5 +236,40 @@ func TestRun_ZeroInvested_ShowsNA(t *testing.T) {
 	}
 	if !strings.Contains(out, "n/a") {
 		t.Errorf("saída non contén n/a para o índice:\n%s", out)
+	}
+}
+
+// Test de regresión: cando hai prev_result, EstimatedHolding != TotalInvestedUpTo,
+// e a ganhanza calcúlase contra o holding (non contra o cost basis acumulado).
+// Isto garante coherencia con viewassetgeneral.
+func TestRun_UsesEstimatedHoldingForGain(t *testing.T) {
+	// Holding=1300 (prev result 1100 + invested este mes 200).
+	// Result=1500. Gain = 1500 - 1300 = 200, pct = 200/1300 ≈ 15.38%.
+	// Se usase TotalInvestedUpTo (1200), gain sería 300 e pct 25%.
+	summaries := map[summaryKey]domain.MonthlySummary{
+		{10, 2026, 4}: {
+			TotalInvestedUpTo: 1200,
+			InvestedInMonth:   200,
+			EstimatedHolding:  1300,
+			HasPrevResult:     true,
+			Result:            1500,
+			HasResult:         true,
+		},
+	}
+	out, err := runWith(sampleAssets, summaries, "1\n4\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "No activo  1300.00 USD") {
+		// Pode haber espazos por tabwriter; só verificamos que aparece a cifra.
+		if !strings.Contains(out, "1300.00 USD") {
+			t.Errorf("saída non contén 'No activo: 1300.00 USD':\n%s", out)
+		}
+	}
+	if !strings.Contains(out, "+200.00 USD") {
+		t.Errorf("saída non contén ganhanza +200.00 (gain contra holding):\n%s", out)
+	}
+	if !strings.Contains(out, "+15.38%") {
+		t.Errorf("saída non contén pct +15.38%% (contra holding):\n%s", out)
 	}
 }
