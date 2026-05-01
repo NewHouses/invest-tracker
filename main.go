@@ -45,6 +45,78 @@ func runOp(label string, op func() error) {
 	}
 }
 
+func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
+	switch catKey {
+	case 1: // Operacións con activos
+		switch opKey {
+		case 1:
+			runOp("engadindo activo", func() error { return addasset.Run(reader, os.Stdout, s) })
+		case 2:
+			runOp("editando activo", func() error { return editasset.Run(reader, os.Stdout, s) })
+		case 3:
+			runOp("eliminando activo", func() error { return deleteasset.Run(reader, os.Stdout, s) })
+		}
+	case 2: // Operacións con transaccións
+		switch opKey {
+		case 1:
+			runOp("engadindo transacción", func() error { return addtransaction.Run(reader, os.Stdout, s) })
+		case 2:
+			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
+		case 3:
+			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
+		case 4:
+			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
+		}
+	case 3: // Operacións de resultados
+		switch opKey {
+		case 1:
+			runOp("engadindo resultado", func() error { return addresult.Run(reader, os.Stdout, s) })
+		case 2:
+			runOp("engadindo dividendo", func() error { return adddividend.Run(reader, os.Stdout, s) })
+		case 3:
+			runOp("pechando o mes", func() error { return closemonth.Run(reader, os.Stdout, s) })
+		case 4:
+			runOp("eliminando resultado", func() error { return deleteresult.Run(reader, os.Stdout, s) })
+		case 5:
+			runOp("eliminando dividendo", func() error { return deletedividend.Run(reader, os.Stdout, s) })
+		case 6:
+			runOp("limpando o mes", func() error { return clearmonth.Run(reader, os.Stdout, s) })
+		}
+	case 4: // Informes
+		switch opKey {
+		case 1:
+			runOp("xerando historial", func() error { return viewassethistory.Run(reader, os.Stdout, s) })
+		case 2:
+			runOp("listando transaccións", func() error { return viewtransactions.Run(reader, os.Stdout, s) })
+		case 3:
+			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
+		case 4:
+			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
+		case 5:
+			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
+		case 6:
+			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
+		case 7:
+			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
+		}
+	}
+}
+
+// readMenuLine reads a line from stdin. Returns (line, eof). On EOF prints a
+// trailing newline and signals the caller to exit cleanly.
+func readMenuLine(reader *bufio.Reader) (string, bool) {
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			fmt.Println()
+			return "", true
+		}
+		fmt.Fprintln(os.Stderr, "erro lendo entrada:", err)
+		return "", true
+	}
+	return line, false
+}
+
 func main() {
 	s, err := store.Open("./investimentos.db")
 	if err != nil {
@@ -54,71 +126,47 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println(welcome.WelcomeMessage())
+
 	for {
+		topOpts := welcome.TopOptions()
 		fmt.Println()
-		fmt.Print(welcome.Render(welcome.Options()))
+		fmt.Print(welcome.Render(topOpts))
 		fmt.Print("> ")
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				fmt.Println()
-				return
-			}
-			fmt.Fprintln(os.Stderr, "erro lendo entrada:", err)
+		line, eof := readMenuLine(reader)
+		if eof {
 			return
 		}
-		opt, err := welcome.Select(welcome.Options(), line)
+		topSel, err := welcome.Select(topOpts, line)
 		if err != nil {
 			fmt.Println("⚠", err)
 			continue
 		}
-		if opt.Key == 0 {
+		if topSel.Key == 0 {
 			fmt.Println("Ata logo!")
 			return
 		}
-		switch opt.Key {
-		case 1:
-			runOp("engadindo activo", func() error { return addasset.Run(reader, os.Stdout, s) })
-		case 2:
-			runOp("xerando historial", func() error { return viewassethistory.Run(reader, os.Stdout, s) })
-		case 3:
-			runOp("editando activo", func() error { return editasset.Run(reader, os.Stdout, s) })
-		case 4:
-			runOp("eliminando activo", func() error { return deleteasset.Run(reader, os.Stdout, s) })
-		case 5:
-			runOp("engadindo transacción", func() error { return addtransaction.Run(reader, os.Stdout, s) })
-		case 6:
-			runOp("engadindo varias transaccións", func() error { return addtxbatch.Run(reader, os.Stdout, s) })
-		case 7:
-			runOp("listando transaccións", func() error { return viewtransactions.Run(reader, os.Stdout, s) })
-		case 8:
-			runOp("editando transacción", func() error { return edittransaction.Run(reader, os.Stdout, s) })
-		case 9:
-			runOp("eliminando transacción", func() error { return deletetransaction.Run(reader, os.Stdout, s) })
-		case 10:
-			runOp("engadindo resultado", func() error { return addresult.Run(reader, os.Stdout, s) })
-		case 11:
-			runOp("engadindo dividendo", func() error { return adddividend.Run(reader, os.Stdout, s) })
-		case 12:
-			runOp("pechando o mes", func() error { return closemonth.Run(reader, os.Stdout, s) })
-		case 13:
-			runOp("xerando informe", func() error { return viewreport.Run(reader, os.Stdout, s) })
-		case 14:
-			runOp("xerando resultado xeral do activo", func() error { return viewassetgeneral.Run(reader, os.Stdout, s) })
-		case 15:
-			runOp("xerando informe por tipo", func() error { return viewtypereport.Run(reader, os.Stdout, s) })
-		case 16:
-			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
-		case 17:
-			runOp("xerando resultado xeral", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
-		case 18:
-			runOp("eliminando resultado", func() error { return deleteresult.Run(reader, os.Stdout, s) })
-		case 19:
-			runOp("eliminando dividendo", func() error { return deletedividend.Run(reader, os.Stdout, s) })
-		case 20:
-			runOp("limpando o mes", func() error { return clearmonth.Run(reader, os.Stdout, s) })
-		default:
-			fmt.Printf("Seleccionaches: %s (placeholder, aínda non implementado)\n", opt.Label)
+
+		// Bucle do submenú: o usuario pode encadear varias operacións dentro
+		// dunha mesma categoría ata premer 0 (Voltar).
+		for {
+			subOpts := welcome.CategoryOptions(topSel.Key)
+			fmt.Println()
+			fmt.Printf("--- %s ---\n", topSel.Label)
+			fmt.Print(welcome.Render(subOpts))
+			fmt.Print("> ")
+			line, eof := readMenuLine(reader)
+			if eof {
+				return
+			}
+			subSel, err := welcome.Select(subOpts, line)
+			if err != nil {
+				fmt.Println("⚠", err)
+				continue
+			}
+			if subSel.Key == 0 {
+				break
+			}
+			dispatch(topSel.Key, subSel.Key, reader, s)
 		}
 	}
 }
