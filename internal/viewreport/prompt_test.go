@@ -241,7 +241,7 @@ func TestRun_ZeroInvested_ShowsNA(t *testing.T) {
 
 // Test de regresión: cando hai prev_result, EstimatedHolding != TotalInvestedUpTo,
 // e a gañanza calcúlase contra o holding (non contra o cost basis acumulado).
-// Isto garante coherencia con viewassetgeneral.
+// Isto garante coherencia con viewassethistory.
 func TestRun_UsesEstimatedHoldingForGain(t *testing.T) {
 	// Holding=1300 (prev result 1100 + invested este mes 200).
 	// Result=1500. Gain = 1500 - 1300 = 200, pct = 200/1300 ≈ 15.38%.
