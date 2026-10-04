@@ -26,6 +26,8 @@ import (
 	"invest-tracker/internal/repartoaporte"
 	"invest-tracker/internal/store"
 	"invest-tracker/internal/viewassethistory"
+	"invest-tracker/internal/viewcharts"
+	"invest-tracker/internal/viewprojection"
 	"invest-tracker/internal/viewreport"
 	"invest-tracker/internal/viewtotalhistory"
 	"invest-tracker/internal/viewtotalreport"
@@ -104,6 +106,10 @@ func dispatch(catKey, opKey int, reader *bufio.Reader, s *store.Store) {
 			runOp("xerando informe total", func() error { return viewtotalreport.Run(reader, os.Stdout, s) })
 		case 7:
 			runOp("xerando reporte histórico completo", func() error { return viewtotalhistory.Run(reader, os.Stdout, s) })
+		case 8:
+			runOp("debuxando gráficas", func() error { return viewcharts.Run(reader, os.Stdout, s) })
+		case 9:
+			runOp("calculando a proxección", func() error { return viewprojection.Run(reader, os.Stdout, s) })
 		}
 	}
 }

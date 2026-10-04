@@ -195,10 +195,10 @@ func TestRun_AggregatesMetricsCorrectly(t *testing.T) {
 	// gain = 2600 - 2300 = 300
 	// pct = 300/2300 * 100 ≈ 13.04
 	for _, want := range []string{
-		"2300.00 USD",
-		"200.00 USD",
-		"2600.00 USD",
-		"+300.00 USD",
+		"$2300.00",
+		"$200.00",
+		"$2600.00",
+		"+$300.00",
 		"+13.04%",
 	} {
 		if !strings.Contains(out, want) {
@@ -222,7 +222,7 @@ func TestRun_ShowsAggregateLoss(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "-300.00 USD") {
+	if !strings.Contains(out, "-$300.00") {
 		t.Errorf("saída non mostra perda absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "-15.00%") {

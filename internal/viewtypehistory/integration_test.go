@@ -84,18 +84,18 @@ func TestRun_EndToEnd_AggregatesByTypeFromDB(t *testing.T) {
 		"Tipo: Acción · 2 activo(s) · 2 mes(es)",
 		// Top summary
 		"Total Aportado",
-		"2000.00 USD",
+		"$2000.00",
 		"Total Gañanzas/Perdas",
-		"+405.00 USD",
+		"+$405.00",
 		// Table columns
 		"Aporte Mensual",
 		"No activo",
-		"G/P USD",
+		"G/P",
 		"Resultado",
 		// Mes 04 agg: aporte=2000, holding=2000, +17.50%, +350.00, result=2350
-		"+17.50%", "+350.00", "2350.00",
+		"+17.50%", "+$350.00", "2350.00",
 		// Mes 05 agg: aporte=0, holding=2350, +2.34%, +55.00, result=2405
-		"0.00", "2350.00", "+55.00", "2405.00",
+		"0.00", "2350.00", "+$55.00", "2405.00",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

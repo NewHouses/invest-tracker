@@ -83,11 +83,11 @@ func TestRun_EndToEnd_AggregatesByTypeFromDB(t *testing.T) {
 	// gain=200, pct=200/1500*100 ≈ 13.33
 	for _, want := range []string{
 		"Activos incluídos: 2",
-		"1500.00 USD", // investido ata o mes / no activo
-		"500.00 USD",  // investido este mes
-		"1700.00 USD", // resultado agregado
-		"+200.00 USD", // gañanza
-		"+13.33%",     // índice
+		"$1500.00", // investido ata o mes / no activo
+		"$500.00",  // investido este mes
+		"$1700.00", // resultado agregado
+		"+$200.00", // gañanza
+		"+13.33%",  // índice
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

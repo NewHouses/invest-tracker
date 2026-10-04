@@ -64,10 +64,13 @@ var twoAssets = []domain.Asset{
 // Setup: 2 activos. Mes target 04/2026. Mes anterior 03/2026 ten resultados.
 //
 // 03/2026: AAPL=1100 (compra=1000, +100 gañanza); Vanguard=2100 (compra=2000, +100).
-//          Sumas previas: invested=3000, result=3200, dividends=20.
+//
+//	Sumas previas: invested=3000, result=3200, dividends=20.
+//
 // 04/2026: AAPL invested este mes=200 holding=1100+200=1300, result=1500.
-//          Vanguard invested este mes=0 holding=2100+0=2100, result=2150.
-//          Sumas: invested ata=3200, este mes=200, result=3650, dividends=50.
+//
+//	Vanguard invested este mes=0 holding=2100+0=2100, result=2150.
+//	Sumas: invested ata=3200, este mes=200, result=3650, dividends=50.
 func gainSetup() *fakeRepo {
 	summaries := map[sumKey]domain.MonthlySummary{
 		// 03/2026
@@ -207,10 +210,10 @@ func TestRun_AggregatesCurrentMonthCorrectly(t *testing.T) {
 	// totalInvested = 1200 + 2000 = 3200
 	// investedInMonth = 200 + 0 = 200
 	// resultSum = 1500 + 2150 = 3650
-	// resultSumPrev = 1100 + 2100 = 3200
+	// holding = Σ EstimatedHolding = 1300 + 2100 = 3400 (todos con resultado)
 	// dividends = 50
 	// dividendsPrev = 20
-	// HoldingNoDiv = 3200 + 200 = 3400
+	// HoldingNoDiv = 3400
 	// HoldingWithDiv = 3400 + 20 = 3420
 	// ResultNoDiv = 3650
 	// ResultWithDiv = 3650 + 50 = 3700
@@ -220,18 +223,18 @@ func TestRun_AggregatesCurrentMonthCorrectly(t *testing.T) {
 	// PctWithDiv = 280 / 3420 ≈ 8.19%
 	// Investimento + dividendos prev. mes = 200 + 20 = 220
 	for _, want := range []string{
-		"3200.00 USD", // total invested ata o mes
-		"200.00 USD",  // investido este mes
-		"220.00 USD",  // investimento + dividendos prev. mes
-		"3400.00 USD", // no activo sen div
-		"3420.00 USD", // no activo con div
-		"50.00 USD",   // dividendos este mes
-		"3650.00 USD", // resultado sen div
-		"3700.00 USD", // resultado con div
-		"+250.00 USD", // gain sen div
-		"+280.00 USD", // gain con div
-		"+7.35%",      // pct sen div
-		"+8.19%",      // pct con div
+		"$3200.00", // total invested ata o mes
+		"$200.00",  // investido este mes
+		"$220.00",  // investimento + dividendos prev. mes
+		"$3400.00", // no activo sen div
+		"$3420.00", // no activo con div
+		"$50.00",   // dividendos este mes
+		"$3650.00", // resultado sen div
+		"$3700.00", // resultado con div
+		"+$250.00", // gain sen div
+		"+$280.00", // gain con div
+		"+7.35%",   // pct sen div
+		"+8.19%",   // pct con div
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -244,7 +247,7 @@ func TestRun_PrintsAverages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	// 03/2026: HoldingNoDiv = 0 (resultSumPrev=0) + invested=3000 = 3000
+	// 03/2026: HoldingNoDiv = Σ EstimatedHolding = 1000 + 2000 = 3000
 	//          ResultNoDiv = 3200, GainNoDiv = 200, PctNoDiv = 6.67%
 	//          HoldingWithDiv = 3000 + 0 = 3000 (no prev div)
 	//          ResultWithDiv = 3200 + 20 = 3220, GainWithDiv = 220, PctWithDiv ≈ 7.33%
@@ -257,9 +260,9 @@ func TestRun_PrintsAverages(t *testing.T) {
 		t.Errorf("saída non indica 2 meses no contador:\n%s", out)
 	}
 	for _, want := range []string{
-		"+7.01",  // avg pct no div (aproximado)
-		"+225.00 USD",
-		"+250.00 USD",
+		"+7.01", // avg pct sen div (aproximado, subcadea de "+7.01%")
+		"+$225.00",
+		"+$250.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -315,6 +318,74 @@ func TestRun_PartialResults_AnnotatesCoverage(t *testing.T) {
 	}
 	if !strings.Contains(out, "(1/2 activos con resultado)") {
 		t.Errorf("saída non anota cobertura parcial:\n%s", out)
+	}
+}
+
+// lineWith devolve a primeira liña da saída que contén label.
+func lineWith(out, label string) string {
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, label) {
+			return l
+		}
+	}
+	return ""
+}
+
+// Vanguard sen resultado en 04/2026: a G/P calcúlase só sobre AAPL
+// (1500 − 1300 = +200, +15.38%), mentres "No activo" segue mostrando o
+// capital de tódolos activos (1300 + 2100 = 3400).
+// Con div: 1550 − (1300 + 20) = +230, +17.42%.
+func TestRun_PartialResults_GainOnlyOverAssetsWithResult(t *testing.T) {
+	repo := gainSetup()
+	repo.summaries[sumKey{11, 2026, 4}] = domain.MonthlySummary{
+		TotalInvestedUpTo: 2000, EstimatedHolding: 2100, HasPrevResult: true,
+	}
+	out, err := runWith(repo, validInput)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if l := lineWith(out, "No activo (sen div)"); !strings.Contains(l, "$3400.00") {
+		t.Errorf("No activo (sen div) = %q, esperabamos $3400.00", l)
+	}
+	if l := lineWith(out, "Resultado (sen div)"); !strings.Contains(l, "$1500.00") {
+		t.Errorf("Resultado (sen div) = %q, esperabamos $1500.00", l)
+	}
+	for _, want := range []string{"+$200.00", "+15.38%", "+$230.00", "+17.42%"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("saída non contén %q:\n%s", want, out)
+		}
+	}
+}
+
+// AAPL non ten resultado no mes anterior (02/2026) pero si en 03/2026: a base
+// da súa G/P é o capital estimado (último resultado coñecido, 1000), non 0.
+// G/P 03/2026 = (1100 + 510) − (1000 + 500) = +110 (+7.33%), non +1110.
+func TestRun_AssetWithoutPrevMonthResult_UsesEstimatedHolding(t *testing.T) {
+	repo := &fakeRepo{
+		assets: twoAssets,
+		summaries: map[sumKey]domain.MonthlySummary{
+			{10, 2026, 2}: {TotalInvestedUpTo: 1000, EstimatedHolding: 1000, HasPrevResult: true},
+			{11, 2026, 2}: {TotalInvestedUpTo: 500, EstimatedHolding: 500, Result: 500, HasResult: true, HasPrevResult: true},
+			{10, 2026, 3}: {TotalInvestedUpTo: 1000, EstimatedHolding: 1000, Result: 1100, HasResult: true, HasPrevResult: true},
+			{11, 2026, 3}: {TotalInvestedUpTo: 500, EstimatedHolding: 500, Result: 510, HasResult: true, HasPrevResult: true},
+		},
+	}
+	out, err := runWith(repo, "3\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if l := lineWith(out, "No activo (sen div)"); !strings.Contains(l, "$1500.00") {
+		t.Errorf("No activo (sen div) = %q, esperabamos $1500.00", l)
+	}
+	for _, want := range []string{"$1610.00", "+$110.00", "+7.33%"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("saída non contén %q:\n%s", want, out)
+		}
+	}
+	for _, bad := range []string{"+$1110.00", "+222.00%"} {
+		if strings.Contains(out, bad) {
+			t.Errorf("saída contén %q (G/P inflada):\n%s", bad, out)
+		}
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
 
@@ -58,13 +59,13 @@ func renderTable(w io.Writer, a domain.Asset, year, month int, s domain.MonthlyS
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "  Investido ata o mes\t%.2f USD\n", s.TotalInvestedUpTo)
-	fmt.Fprintf(tw, "  Investido este mes\t%.2f USD\n", s.InvestedInMonth)
-	fmt.Fprintf(tw, "  No activo\t%.2f USD\n", s.EstimatedHolding)
+	fmt.Fprintf(tw, "  Investido ata o mes\t%s\n", money.USD(s.TotalInvestedUpTo))
+	fmt.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(s.InvestedInMonth))
+	fmt.Fprintf(tw, "  No activo\t%s\n", money.USD(s.EstimatedHolding))
 	if s.HasResult {
-		fmt.Fprintf(tw, "  Resultado\t%.2f USD\n", s.Result)
+		fmt.Fprintf(tw, "  Resultado\t%s\n", money.USD(s.Result))
 		gain := s.Result - s.EstimatedHolding
-		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(gain))
 		if s.EstimatedHolding > 0 {
 			pct := gain / s.EstimatedHolding * 100
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", pct)
@@ -72,8 +73,8 @@ func renderTable(w io.Writer, a domain.Asset, year, month int, s domain.MonthlyS
 			fmt.Fprintln(tw, "  Índice\tn/a")
 		}
 	} else {
-		fmt.Fprintln(tw, "  Resultado\t— USD")
-		fmt.Fprintln(tw, "  Gañanzas/Perdas\t— USD")
+		fmt.Fprintln(tw, "  Resultado\t—")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas\t—")
 		fmt.Fprintln(tw, "  Índice\t—")
 	}
 	tw.Flush()

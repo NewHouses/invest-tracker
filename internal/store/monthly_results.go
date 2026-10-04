@@ -18,27 +18,6 @@ func (s *Store) InsertMonthlyResult(m domain.MonthlyResult) (int64, error) {
 	return res.LastInsertId()
 }
 
-// TotalInvested devolve o total investido nun activo. As transaccións son
-// filtradas para ignorar as que estean en meses anteriores á data do activo.
-func (s *Store) TotalInvested(assetID int64) (float64, error) {
-	var total float64
-	err := s.db.QueryRow(
-		`SELECT
-			(SELECT amount_usd FROM assets WHERE id = ?1) +
-			COALESCE(
-				(SELECT SUM(amount_usd) FROM transactions
-				 WHERE asset_id = ?1
-				   AND (year * 12 + month) >= (SELECT year * 12 + month FROM assets WHERE id = ?1)),
-				0
-			)`,
-		assetID,
-	).Scan(&total)
-	if err != nil {
-		return 0, err
-	}
-	return total, nil
-}
-
 func (s *Store) ListMonthlyResultsByAsset(assetID int64) ([]domain.MonthlyResult, error) {
 	rows, err := s.db.Query(
 		`SELECT id, asset_id, result_usd, month, year FROM monthly_results

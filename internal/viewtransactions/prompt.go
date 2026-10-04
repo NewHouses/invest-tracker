@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
 
@@ -112,8 +113,8 @@ func renderTable(w io.Writer, asset domain.Asset, rows []displayRow) {
 	fmt.Fprintf(w, "  Transaccións de %s — %s\n", asset.Type.Display(), asset.Name)
 	fmt.Fprintln(w, sep)
 	fmt.Fprintf(w, "  Total: %d entradas (incluíndo a compra inicial)\n", len(rows))
-	fmt.Fprintf(w, "  Compras: %.2f USD · Vendas: %.2f USD · Neto: %+.2f USD\n",
-		totalCompra, totalVenda, neto)
+	fmt.Fprintf(w, "  Compras: %s · Vendas: %s · Neto: %s\n",
+		money.USD(totalCompra), money.USD(totalVenda), money.SignedUSD(neto))
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
@@ -127,8 +128,8 @@ func renderTable(w io.Writer, asset domain.Asset, rows []displayRow) {
 		if row.isVenda {
 			typeLabel = "VENDA"
 		}
-		fmt.Fprintf(tw, "  %s\t%d\t%d\t%s\t%.2f USD\t\n",
-			idStr, row.year, row.month, typeLabel, row.amount,
+		fmt.Fprintf(tw, "  %s\t%d\t%d\t%s\t%s\t\n",
+			idStr, row.year, row.month, typeLabel, money.USD(row.amount),
 		)
 	}
 	tw.Flush()

@@ -56,15 +56,15 @@ func TestRun_EndToEnd_ListsTransactionsWithInitialAndOrdered(t *testing.T) {
 	for _, want := range []string{
 		"Transaccións de Acción — AAPL",
 		"4 entradas (incluíndo a compra inicial)",
-		"Compras: 1800.00 USD", // 1000 inicial + 500 + 300
-		"Vendas: 200.00 USD",
-		"+1600.00 USD",
+		"Compras: $1800.00", // 1000 inicial + 500 + 300
+		"Vendas: $200.00",
+		"+$1600.00",
 		"Compra/Venda",
 		"COMPRA",
 		"VENDA",
-		"1000.00 USD", // inicial
-		"500.00 USD",
-		"300.00 USD",
+		"$1000.00", // inicial
+		"$500.00",
+		"$300.00",
 		"—", // ID da compra inicial
 	} {
 		if !strings.Contains(output, want) {
@@ -73,16 +73,16 @@ func TestRun_EndToEnd_ListsTransactionsWithInitialAndOrdered(t *testing.T) {
 	}
 
 	// Verifica orde cronolóxica dentro do corpo da táboa (evita falsas
-	// coincidencias na liña de totais "Compras: 1800.00 USD ...").
+	// coincidencias na liña de totais "Compras: $1800.00 ...").
 	tableStart := strings.Index(output, "Cantidade")
 	if tableStart < 0 {
 		t.Fatalf("non se atopou cabeceira da táboa:\n%s", output)
 	}
 	table := output[tableStart:]
-	pos1000 := strings.Index(table, "1000.00 USD")
-	pos500 := strings.Index(table, "500.00 USD")
-	pos200 := strings.Index(table, "200.00 USD")
-	pos300 := strings.Index(table, "300.00 USD")
+	pos1000 := strings.Index(table, "$1000.00")
+	pos500 := strings.Index(table, "$500.00")
+	pos200 := strings.Index(table, "$200.00")
+	pos300 := strings.Index(table, "$300.00")
 	if !(pos1000 < pos500 && pos500 < pos200 && pos200 < pos300) {
 		t.Errorf("filas non en orde cronolóxica: 1000=%d 500=%d 200=%d 300=%d\n%s",
 			pos1000, pos500, pos200, pos300, table)
@@ -119,10 +119,10 @@ func TestRun_EndToEnd_AssetWithoutTransactionsShowsOnlyInitial(t *testing.T) {
 	if !strings.Contains(output, "1 entradas (incluíndo a compra inicial)") {
 		t.Errorf("saída non mostra exactamente 1 entrada:\n%s", output)
 	}
-	if !strings.Contains(output, "1000.00 USD") {
-		t.Errorf("saída non mostra a compra inicial 1000.00 USD:\n%s", output)
+	if !strings.Contains(output, "$1000.00") {
+		t.Errorf("saída non mostra a compra inicial $1000.00:\n%s", output)
 	}
-	if !strings.Contains(output, "Compras: 1000.00 USD") {
+	if !strings.Contains(output, "Compras: $1000.00") {
 		t.Errorf("totais non inclúen a compra inicial:\n%s", output)
 	}
 }

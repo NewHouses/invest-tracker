@@ -90,24 +90,24 @@ func TestRun_EndToEnd_HistoryFromDB(t *testing.T) {
 		"2 activo(s) · 2 mes(es) con resultado",
 		// Top summary
 		"Aporte histórico total",
-		"3200.00 USD",
+		"$3200.00",
 		"Índice Medio",
 		"+8.08%",
 		"G/P Media",
-		"+260.00 USD",
+		"+$260.00",
 		"G/P Total",
-		"+520.00 USD",
+		"+$520.00",
 		"Dividendos totais",
-		"70.00 USD",
+		"$70.00",
 		// Table columns
 		"Aporte Mensual",
 		"Fondos",
 		"Dividendos",
 		"Resultado",
 		// Row 03 — aporte=2980 (3000−20), fondos=3000
-		"2980.00", "3000.00", "+7.33%", "+220.00", "20.00", "3220.00",
+		"2980.00", "3000.00", "+7.33%", "+$220.00", "20.00", "3220.00",
 		// Row 04 — aporte=150 (200−50), fondos=3400
-		"150.00", "3400.00", "+8.82%", "+300.00", "50.00", "3700.00",
+		"150.00", "3400.00", "+8.82%", "+$300.00", "50.00", "3700.00",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

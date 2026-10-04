@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -37,11 +38,22 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 
+	isCreated := func(a domain.Asset) bool { return createdBy(a, year, month) }
+	if !slices.ContainsFunc(assets, isCreated) {
+		fmt.Fprintf(w, "Non hai activos creados en %02d/%d ou antes.\n", month, year)
+		return nil
+	}
+
 	fmt.Fprintf(w, "\nAporte por activo en %02d/%d (deixa en branco para saltar):\n", month, year)
 
 	var saved, skipped int
 	var totalAmount float64
 	for _, a := range assets {
+		if !isCreated(a) {
+			fmt.Fprintf(w, "  %s — %s: omitido (creado en %02d/%d)\n",
+				a.Type.Display(), a.Name, a.Month, a.Year)
+			continue
+		}
 		amount, skip, err := promptOptionalAmount(r, w,
 			fmt.Sprintf("  %s — %s: ", a.Type.Display(), a.Name))
 		if err != nil {
@@ -69,6 +81,12 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	fmt.Fprintf(w, "\n✓ %d transacción(s) engadidas (%.2f USD total), %d saltado(s).\n",
 		saved, totalAmount, skipped)
 	return nil
+}
+
+// createdBy indica se o activo xa existía en (year, month). Os informes
+// ignoran as transaccións anteriores á data do activo, así que non se piden.
+func createdBy(a domain.Asset, year, month int) bool {
+	return a.Year*domain.MonthsPerYear+a.Month <= year*domain.MonthsPerYear+month
 }
 
 // promptOptionalAmount permite cantidade > 0 ou liña baleira para saltar.

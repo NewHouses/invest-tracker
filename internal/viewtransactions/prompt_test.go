@@ -98,9 +98,9 @@ func TestRun_IncludesInitialPurchaseInTotals(t *testing.T) {
 	// Inicial 1000 + tx compras 500 + 300 = 1800. Vendas 200. Neto +1600.
 	for _, want := range []string{
 		"4 entradas (incluíndo a compra inicial)",
-		"Compras: 1800.00 USD",
-		"Vendas: 200.00 USD",
-		"+1600.00 USD",
+		"Compras: $1800.00",
+		"Vendas: $200.00",
+		"+$1600.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -148,10 +148,10 @@ func TestRun_PrintsAbsoluteAmountForVenda(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if strings.Contains(out, "-200.00 USD") {
+	if strings.Contains(out, "-$200.00") {
 		t.Errorf("non debería mostrar amount negativo na fila de venda:\n%s", out)
 	}
-	if !strings.Contains(out, "200.00 USD") {
+	if !strings.Contains(out, "$200.00") {
 		t.Errorf("saída non mostra absoluto da venda:\n%s", out)
 	}
 }
@@ -162,8 +162,8 @@ func TestRun_PrintsInitialPurchaseRow(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	// AAPL creouse en 03/2026 con cantidade 1000.
-	if !strings.Contains(out, "1000.00 USD") {
-		t.Errorf("saída non mostra a compra inicial 1000.00 USD:\n%s", out)
+	if !strings.Contains(out, "$1000.00") {
+		t.Errorf("saída non mostra a compra inicial $1000.00:\n%s", out)
 	}
 	// O ID da compra inicial é "—" porque non é unha fila da táboa transactions.
 	if !strings.Contains(out, "—") {
@@ -190,10 +190,10 @@ func TestRun_OrdersByYearMonth(t *testing.T) {
 		t.Fatalf("non se atopou cabeceira da táboa:\n%s", out)
 	}
 	table := out[tableStart:]
-	pos1000 := strings.Index(table, "1000.00 USD")
-	pos400 := strings.Index(table, "400.00 USD")
-	pos500 := strings.Index(table, "500.00 USD")
-	pos600 := strings.Index(table, "600.00 USD")
+	pos1000 := strings.Index(table, "$1000.00")
+	pos400 := strings.Index(table, "$400.00")
+	pos500 := strings.Index(table, "$500.00")
+	pos600 := strings.Index(table, "$600.00")
 	if pos1000 < 0 || pos400 < 0 || pos500 < 0 || pos600 < 0 {
 		t.Fatalf("non se atoparon todas as cantidades:\n%s", table)
 	}
@@ -212,8 +212,8 @@ func TestRun_AssetWithoutTxs_ShowsOnlyInitial(t *testing.T) {
 	if !strings.Contains(out, "1 entradas (incluíndo a compra inicial)") {
 		t.Errorf("saída non mostra exactamente 1 entrada:\n%s", out)
 	}
-	if !strings.Contains(out, "1000.00 USD") {
-		t.Errorf("saída non mostra a compra inicial 1000.00 USD:\n%s", out)
+	if !strings.Contains(out, "$1000.00") {
+		t.Errorf("saída non mostra a compra inicial $1000.00:\n%s", out)
 	}
 }
 

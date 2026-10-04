@@ -46,13 +46,54 @@ func Amount(r *bufio.Reader, w io.Writer) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		normalized := strings.ReplaceAll(line, ",", ".")
-		v, perr := strconv.ParseFloat(normalized, 64)
+		v, perr := parseDecimal(line)
 		if perr == nil && v > 0 {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ca 0")
 	}
+}
+
+// NonNegativeAmount pide unha cantidade en USD baixo a etiqueta indicada.
+// A diferenza de Amount acepta o 0, pero rexeita valores negativos, baleiros
+// ou non numéricos, re-preguntando ata obter un valor válido.
+func NonNegativeAmount(r *bufio.Reader, w io.Writer, label string) (float64, error) {
+	for {
+		fmt.Fprintf(w, "%s: ", label)
+		line, err := ReadLine(r)
+		if err != nil {
+			return 0, err
+		}
+		v, perr := parseDecimal(line)
+		if perr == nil && v >= 0 {
+			return v, nil
+		}
+		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ou igual a 0")
+	}
+}
+
+// Percent pide unha porcentaxe baixo a etiqueta indicada e devólvea xa
+// convertida a fracción: se o usuario escribe 1,5 devólvese 0.015. Só admite
+// valores estritamente maiores ca minPct (expresado tamén en porcentaxe).
+func Percent(r *bufio.Reader, w io.Writer, label string, minPct float64) (float64, error) {
+	for {
+		fmt.Fprintf(w, "%s: ", label)
+		line, err := ReadLine(r)
+		if err != nil {
+			return 0, err
+		}
+		v, perr := parseDecimal(line)
+		if perr == nil && v > minPct {
+			return v / 100, nil
+		}
+		fmt.Fprintf(w, "⚠ Porcentaxe non válida, debe ser un número maior ca %g%%\n", minPct)
+	}
+}
+
+// parseDecimal converte unha cadea nun float aceptando tanto "." coma ","
+// como separador decimal.
+func parseDecimal(s string) (float64, error) {
+	return strconv.ParseFloat(strings.ReplaceAll(s, ",", "."), 64)
 }
 
 func Month(r *bufio.Reader, w io.Writer) (int, error) {

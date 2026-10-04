@@ -2,7 +2,10 @@ module invest-tracker
 
 go 1.25.0
 
-require modernc.org/sqlite v1.50.0
+require (
+	github.com/guptarohit/asciigraph v0.9.0
+	modernc.org/sqlite v1.50.0
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect

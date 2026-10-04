@@ -60,8 +60,10 @@ var sampleAssets = []domain.Asset{
 }
 
 // Escenario base:
-//   04/2026: aporte 500, no activo 1500, resultado 1800 → G/P +300, +20%
-//   05/2026: aporte 200, no activo 2000 (1800 prev + 200), resultado 1900 → G/P -100, -5%
+//
+//	04/2026: aporte 500, no activo 1500, resultado 1800 → G/P +300, +20%
+//	05/2026: aporte 200, no activo 2000 (1800 prev + 200), resultado 1900 → G/P -100, -5%
+//
 // Total Aportado lifetime = 1700.
 func gainSetup() *fakeRepo {
 	return &fakeRepo{
@@ -165,13 +167,13 @@ func TestRun_PrintsSummary_AllMetrics(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Total Aportado",
-		"1700.00 USD",
+		"$1700.00",
 		"Índice Medio Mensual",
 		"+7.50%",
 		"Gañanzas/Perdas Medias Mensuais",
-		"+100.00 USD",
+		"+$100.00",
 		"Total Gañanzas/Perdas",
-		"+200.00 USD",
+		"+$200.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -197,7 +199,7 @@ func TestRun_PrintsTableColumns_InOrder(t *testing.T) {
 		"Aporte Mensual",
 		"No activo",
 		"Índice",
-		"G/P USD",
+		"G/P",
 		"Resultado",
 	}
 	prev := -1
@@ -221,9 +223,9 @@ func TestRun_PrintsRowValues(t *testing.T) {
 	}
 	for _, want := range []string{
 		// 04/2026: aporte 500, no activo 1500, +20%, +300, 1800
-		"500.00", "1500.00", "+20.00%", "+300.00", "1800.00",
+		"500.00", "1500.00", "+20.00%", "+$300.00", "1800.00",
 		// 05/2026: aporte 200, no activo 2000, -5%, -100, 1900
-		"200.00", "2000.00", "-5.00%", "-100.00", "1900.00",
+		"200.00", "2000.00", "-5.00%", "-$100.00", "1900.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -249,11 +251,53 @@ func TestRun_LossOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "-200.00") {
+	if !strings.Contains(out, "-$200.00") {
 		t.Errorf("saída non mostra perda absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "-20.00%") {
 		t.Errorf("saída non mostra perda %%:\n%s", out)
+	}
+}
+
+func TestRun_ColorsRowsByGainSign(t *testing.T) {
+	// Escenario con un mes positivo, un negativo e un con G/P=0.
+	repo := &fakeRepo{
+		assets: sampleAssets,
+		months: map[int64][]domain.YearMonth{
+			10: {
+				{Year: 2026, Month: 4},
+				{Year: 2026, Month: 5},
+				{Year: 2026, Month: 6},
+			},
+		},
+		summaries: map[sumKey]domain.MonthlySummary{
+			// +20% positivo
+			{10, 2026, 4}: {InvestedInMonth: 1000, EstimatedHolding: 1000,
+				Result: 1200, HasResult: true, TotalInvestedUpTo: 1000},
+			// -10% negativo
+			{10, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 1200,
+				HasPrevResult: true, Result: 1080, HasResult: true, TotalInvestedUpTo: 1000},
+			// 0% exacto
+			{10, 2026, 6}: {InvestedInMonth: 0, EstimatedHolding: 1080,
+				HasPrevResult: true, Result: 1080, HasResult: true, TotalInvestedUpTo: 1000},
+			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
+		},
+	}
+	out, err := runWith(repo, "1\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "\x1b[48;5;157;30m") {
+		t.Errorf("non se atopou cor verde para mes positivo:\n%s", out)
+	}
+	if !strings.Contains(out, "\x1b[48;5;217;30m") {
+		t.Errorf("non se atopou cor vermella para mes negativo:\n%s", out)
+	}
+	if !strings.Contains(out, "\x1b[48;5;229;30m") {
+		t.Errorf("non se atopou cor amarela para mes con G/P=0:\n%s", out)
+	}
+	if !strings.Contains(out, "\x1b[0m") {
+		t.Errorf("non se atopou reset ANSI:\n%s", out)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
 
@@ -102,24 +103,24 @@ func renderTable(w io.Writer, typ domain.AssetType, year, month int, active []en
 	fmt.Fprintln(w, sep)
 	fmt.Fprintf(w, "  Activos incluídos: %d\n", len(active))
 	for _, e := range active {
-		fmt.Fprintf(w, "    - %s (no activo: %.2f USD)\n", e.asset.Name, e.sum.EstimatedHolding)
+		fmt.Fprintf(w, "    - %s (no activo: %s)\n", e.asset.Name, money.USD(e.sum.EstimatedHolding))
 	}
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "  Investido ata o mes\t%.2f USD\n", totalInvested)
-	fmt.Fprintf(tw, "  Investido este mes\t%.2f USD\n", investedInMonth)
-	fmt.Fprintf(tw, "  No activo\t%.2f USD\n", holding)
+	fmt.Fprintf(tw, "  Investido ata o mes\t%s\n", money.USD(totalInvested))
+	fmt.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(investedInMonth))
+	fmt.Fprintf(tw, "  No activo\t%s\n", money.USD(holding))
 
 	switch {
 	case withResult == 0:
-		fmt.Fprintln(tw, "  Resultado\t— USD")
-		fmt.Fprintln(tw, "  Gañanzas/Perdas\t— USD")
+		fmt.Fprintln(tw, "  Resultado\t—")
+		fmt.Fprintln(tw, "  Gañanzas/Perdas\t—")
 		fmt.Fprintln(tw, "  Índice\t—")
 	case withResult == len(active):
-		fmt.Fprintf(tw, "  Resultado\t%.2f USD\n", resultSum)
+		fmt.Fprintf(tw, "  Resultado\t%s\n", money.USD(resultSum))
 		gain := resultSum - holdingForResult
-		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(gain))
 		if holdingForResult > 0 {
 			pct := gain / holdingForResult * 100
 			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", pct)
@@ -127,9 +128,9 @@ func renderTable(w io.Writer, typ domain.AssetType, year, month int, active []en
 			fmt.Fprintln(tw, "  Índice\tn/a")
 		}
 	default:
-		fmt.Fprintf(tw, "  Resultado (parc.)\t%.2f USD  (%d/%d activos)\n", resultSum, withResult, len(active))
+		fmt.Fprintf(tw, "  Resultado (parc.)\t%s  (%d/%d activos)\n", money.USD(resultSum), withResult, len(active))
 		gain := resultSum - holdingForResult
-		fmt.Fprintf(tw, "  Gañanzas/Perdas (parc.)\t%+.2f USD\n", gain)
+		fmt.Fprintf(tw, "  Gañanzas/Perdas (parc.)\t%s\n", money.SignedUSD(gain))
 		if holdingForResult > 0 {
 			pct := gain / holdingForResult * 100
 			fmt.Fprintf(tw, "  Índice (parc.)\t%+.2f%%\n", pct)

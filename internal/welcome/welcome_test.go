@@ -63,6 +63,8 @@ func TestCategories_Stable(t *testing.T) {
 			{Key: 5, Label: "Ver informe mensual por tipo"},
 			{Key: 6, Label: "Ver informe mensual total"},
 			{Key: 7, Label: "Reporte histórico completo"},
+			{Key: 8, Label: "Ver gráficas"},
+			{Key: 9, Label: "Proxección a 20 anos"},
 		}},
 	}
 	got := Categories()

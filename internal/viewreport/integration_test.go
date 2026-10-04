@@ -53,12 +53,12 @@ func TestRun_EndToEnd_ShowsTableFromDB(t *testing.T) {
 	for _, want := range []string{
 		"Acción — AAPL · 04/2026",
 		"Investido ata o mes",
-		"1500.00 USD",
+		"$1500.00",
 		"Investido este mes",
-		"500.00 USD",
+		"$500.00",
 		"Resultado",
-		"1800.00 USD",
-		"+300.00 USD",
+		"$1800.00",
+		"+$300.00",
 		"+20.00%",
 	} {
 		if !strings.Contains(output, want) {

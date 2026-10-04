@@ -12,9 +12,9 @@ import (
 )
 
 type fakeRepo struct {
-	calls    []callRecord
-	count    int64
-	delEr    error
+	calls []callRecord
+	count int64
+	delEr error
 }
 
 type callRecord struct {

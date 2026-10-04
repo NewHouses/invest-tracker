@@ -161,7 +161,7 @@ func TestRun_ShowsGain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "+300.00 USD") {
+	if !strings.Contains(out, "+$300.00") {
 		t.Errorf("saída non mostra a gañanza absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "+20.00%") {
@@ -180,7 +180,7 @@ func TestRun_ShowsLoss(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "-300.00 USD") {
+	if !strings.Contains(out, "-$300.00") {
 		t.Errorf("saída non mostra a perda absoluta:\n%s", out)
 	}
 	if !strings.Contains(out, "-20.00%") {
@@ -199,8 +199,8 @@ func TestRun_ShowsBreakeven(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "+0.00 USD") {
-		t.Errorf("saída non mostra +0.00 USD:\n%s", out)
+	if !strings.Contains(out, "+$0.00") {
+		t.Errorf("saída non mostra +$0.00:\n%s", out)
 	}
 	if !strings.Contains(out, "+0.00%") {
 		t.Errorf("saída non mostra +0.00%%:\n%s", out)
@@ -260,13 +260,13 @@ func TestRun_UsesEstimatedHoldingForGain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out, "No activo  1300.00 USD") {
+	if !strings.Contains(out, "No activo  $1300.00") {
 		// Pode haber espazos por tabwriter; só verificamos que aparece a cifra.
-		if !strings.Contains(out, "1300.00 USD") {
-			t.Errorf("saída non contén 'No activo: 1300.00 USD':\n%s", out)
+		if !strings.Contains(out, "$1300.00") {
+			t.Errorf("saída non contén 'No activo: $1300.00':\n%s", out)
 		}
 	}
-	if !strings.Contains(out, "+200.00 USD") {
+	if !strings.Contains(out, "+$200.00") {
 		t.Errorf("saída non contén gañanza +200.00 (gain contra holding):\n%s", out)
 	}
 	if !strings.Contains(out, "+15.38%") {

@@ -28,59 +28,6 @@ func TestStore_InsertMonthlyResult(t *testing.T) {
 	}
 }
 
-func TestStore_TotalInvested_OnlyInitial(t *testing.T) {
-	s, err := store.Open(":memory:")
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() { _ = s.Close() })
-
-	assetID, err := s.InsertAsset(domain.Asset{
-		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
-	})
-	if err != nil {
-		t.Fatalf("InsertAsset: %v", err)
-	}
-
-	total, err := s.TotalInvested(assetID)
-	if err != nil {
-		t.Fatalf("TotalInvested: %v", err)
-	}
-	if total != 1000 {
-		t.Errorf("got %v, esperabamos 1000", total)
-	}
-}
-
-func TestStore_TotalInvested_WithTransactions(t *testing.T) {
-	s, err := store.Open(":memory:")
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() { _ = s.Close() })
-
-	assetID, err := s.InsertAsset(domain.Asset{
-		Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 1, Year: 2026,
-	})
-	if err != nil {
-		t.Fatalf("InsertAsset: %v", err)
-	}
-	for _, amt := range []float64{250.50, 500.00} {
-		if _, err := s.InsertTransaction(domain.Transaction{
-			AssetID: assetID, AmountUSD: amt, Month: 2, Year: 2026,
-		}); err != nil {
-			t.Fatalf("InsertTransaction: %v", err)
-		}
-	}
-
-	total, err := s.TotalInvested(assetID)
-	if err != nil {
-		t.Fatalf("TotalInvested: %v", err)
-	}
-	if total != 1750.50 {
-		t.Errorf("got %v, esperabamos 1750.50", total)
-	}
-}
-
 func TestStore_RejectsOrphanResult(t *testing.T) {
 	s, err := store.Open(":memory:")
 	if err != nil {

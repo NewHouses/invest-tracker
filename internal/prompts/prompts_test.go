@@ -36,8 +36,8 @@ func TestReadLine_CancelSentinels(t *testing.T) {
 	cases := []string{
 		":q\n",
 		"cancelar\n",
-		"  :q  \n",       // espazos
-		"CANCELAR\n",     // maiúsculas
+		"  :q  \n",   // espazos
+		"CANCELAR\n", // maiúsculas
 		":Q\n",
 	}
 	for _, in := range cases {
@@ -169,6 +169,100 @@ func TestYear_RejectsOutOfRange(t *testing.T) {
 	}
 	if !strings.Contains(w.String(), "Ano non válido") {
 		t.Errorf("esperabamos mensaxe de erro, got: %s", w.String())
+	}
+}
+
+func TestNonNegativeAmount_UsesLabelAndAcceptsZero(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.NonNegativeAmount(newReader("0\n"), &w, "Salario anual inicial (USD)")
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 0 {
+		t.Errorf("got %v, esperabamos 0", v)
+	}
+	if !strings.Contains(w.String(), "Salario anual inicial (USD): ") {
+		t.Errorf("esperabamos a etiqueta no prompt, got: %s", w.String())
+	}
+}
+
+func TestNonNegativeAmount_AcceptsComma(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.NonNegativeAmount(newReader("40000,50\n"), &w, "Salario")
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 40000.50 {
+		t.Errorf("got %v, esperabamos 40000.50", v)
+	}
+}
+
+func TestNonNegativeAmount_RejectsNegativeEmptyAndNonNumeric(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.NonNegativeAmount(newReader("-1\n\nabc\n40000\n"), &w, "Salario")
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 40000 {
+		t.Errorf("got %v, esperabamos 40000", v)
+	}
+	if got := strings.Count(w.String(), "Cantidade non válida"); got != 3 {
+		t.Errorf("esperabamos 3 avisos, got %d: %s", got, w.String())
+	}
+}
+
+func TestNonNegativeAmount_PropagatesCancellation(t *testing.T) {
+	var w bytes.Buffer
+	_, err := prompts.NonNegativeAmount(newReader(":q\n"), &w, "Salario")
+	if !errors.Is(err, prompts.ErrCancelled) {
+		t.Errorf("esperabamos ErrCancelled, got %v", err)
+	}
+}
+
+func TestPercent_ReturnsFraction(t *testing.T) {
+	cases := []struct {
+		input string
+		want  float64
+	}{
+		{"1\n", 0.01},
+		{"1,5\n", 0.015},
+		{"0\n", 0},
+		{"-5\n", -0.05},
+	}
+	for _, c := range cases {
+		var w bytes.Buffer
+		v, err := prompts.Percent(newReader(c.input), &w, "Retorno mensual esperado (%)", -100)
+		if err != nil {
+			t.Fatalf("input %q: erro inesperado: %v", c.input, err)
+		}
+		if v != c.want {
+			t.Errorf("input %q: got %v, esperabamos %v", c.input, v, c.want)
+		}
+	}
+}
+
+func TestPercent_RejectsAtOrBelowMin(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.Percent(newReader("-100\n-150\n\nabc\n2\n"), &w, "Retorno", -100)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 0.02 {
+		t.Errorf("got %v, esperabamos 0.02", v)
+	}
+	if got := strings.Count(w.String(), "Porcentaxe non válida"); got != 4 {
+		t.Errorf("esperabamos 4 avisos, got %d: %s", got, w.String())
+	}
+	if !strings.Contains(w.String(), "maior ca -100%") {
+		t.Errorf("esperabamos o límite na mensaxe, got: %s", w.String())
+	}
+}
+
+func TestPercent_PropagatesCancellation(t *testing.T) {
+	var w bytes.Buffer
+	_, err := prompts.Percent(newReader("cancelar\n"), &w, "Retorno", -100)
+	if !errors.Is(err, prompts.ErrCancelled) {
+		t.Errorf("esperabamos ErrCancelled, got %v", err)
 	}
 }
 

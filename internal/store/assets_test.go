@@ -234,3 +234,40 @@ func TestStore_DeleteAsset_NoRow(t *testing.T) {
 		t.Fatal("esperabamos erro por id inexistente")
 	}
 }
+
+func TestStore_FirstInvestmentMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	// Sen activos aínda non hai data de inicio.
+	if _, ok, err := s.FirstInvestmentMonth(); err != nil {
+		t.Fatalf("FirstInvestmentMonth: %v", err)
+	} else if ok {
+		t.Error("esperabamos ok=false cando non hai activos")
+	}
+
+	// Insírense fóra de orde: debe gañar o máis antigo (03/2025), non o primeiro.
+	for _, a := range []domain.Asset{
+		{Type: domain.Accion, Name: "AAPL", AmountUSD: 1000, Month: 7, Year: 2026},
+		{Type: domain.Indice, Name: "Vanguard", AmountUSD: 2000, Month: 3, Year: 2025},
+		{Type: domain.Fondo, Name: "Fondo", AmountUSD: 300, Month: 11, Year: 2025},
+	} {
+		if _, err := s.InsertAsset(a); err != nil {
+			t.Fatalf("InsertAsset %s: %v", a.Name, err)
+		}
+	}
+
+	got, ok, err := s.FirstInvestmentMonth()
+	if err != nil {
+		t.Fatalf("FirstInvestmentMonth: %v", err)
+	}
+	if !ok {
+		t.Fatal("esperabamos ok=true con activos rexistrados")
+	}
+	if want := (domain.YearMonth{Year: 2025, Month: 3}); got != want {
+		t.Errorf("FirstInvestmentMonth = %+v, queremos %+v", got, want)
+	}
+}

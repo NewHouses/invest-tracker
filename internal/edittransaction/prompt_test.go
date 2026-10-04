@@ -59,8 +59,8 @@ var sampleAssets = []domain.Asset{
 func sampleTxs() map[int64][]domain.Transaction {
 	return map[int64][]domain.Transaction{
 		10: {
-			{ID: 100, AssetID: 10, AmountUSD: 500, Month: 4, Year: 2026},   // COMPRA
-			{ID: 101, AssetID: 10, AmountUSD: -200, Month: 5, Year: 2026},  // VENDA
+			{ID: 100, AssetID: 10, AmountUSD: 500, Month: 4, Year: 2026},  // COMPRA
+			{ID: 101, AssetID: 10, AmountUSD: -200, Month: 5, Year: 2026}, // VENDA
 		},
 	}
 }

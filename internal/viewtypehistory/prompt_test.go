@@ -57,13 +57,16 @@ func runWith(repo *fakeRepo, input string) (string, error) {
 // 2 acciones (AAPL, MSFT) e 1 índice (Vanguard, debe excluírse).
 //
 // 04/2026 (Acción agg):
-//   AAPL: aporte 1000, holding 1000, result 1100 (+10%)
-//   MSFT: aporte 500,  holding 500,  result 550  (+10%)
-//   → aporte=1500, holding=1500, result=1650, G/P=+150, +10%
+//
+//	AAPL: aporte 1000, holding 1000, result 1100 (+10%)
+//	MSFT: aporte 500,  holding 500,  result 550  (+10%)
+//	→ aporte=1500, holding=1500, result=1650, G/P=+150, +10%
+//
 // 05/2026 (Acción agg):
-//   AAPL: aporte 0,   holding 1100, result 1320 (+20%)
-//   MSFT: aporte 0,   holding 550,  result 605  (+10%)
-//   → aporte=0, holding=1650, result=1925, G/P=+275, ≈+16.67%
+//
+//	AAPL: aporte 0,   holding 1100, result 1320 (+20%)
+//	MSFT: aporte 0,   holding 550,  result 605  (+10%)
+//	→ aporte=0, holding=1650, result=1925, G/P=+275, ≈+16.67%
 //
 // Lifetime invested = 1000 + 500 = 1500.
 // Lifetime result = 1320 + 605 = 1925; lifetime G/P = +425.
@@ -80,10 +83,10 @@ func gainSetup() *fakeRepo {
 			11: {{Year: 2026, Month: 4}, {Year: 2026, Month: 5}},
 		},
 		summaries: map[sumKey]domain.MonthlySummary{
-			{10, 2026, 4}: {InvestedInMonth: 1000, EstimatedHolding: 1000, Result: 1100, HasResult: true, TotalInvestedUpTo: 1000},
-			{11, 2026, 4}: {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
-			{10, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 1100, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
-			{11, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 550, HasPrevResult: true, Result: 605, HasResult: true, TotalInvestedUpTo: 500},
+			{10, 2026, 4}:  {InvestedInMonth: 1000, EstimatedHolding: 1000, Result: 1100, HasResult: true, TotalInvestedUpTo: 1000},
+			{11, 2026, 4}:  {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
+			{10, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 1100, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
+			{11, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 550, HasPrevResult: true, Result: 605, HasResult: true, TotalInvestedUpTo: 500},
 			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
 			{11, 9999, 12}: {TotalInvestedUpTo: 500},
 		},
@@ -166,13 +169,13 @@ func TestRun_PrintsSummary_AllMetrics(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Total Aportado",
-		"1500.00 USD",
+		"$1500.00",
 		"Índice Medio Mensual",
 		"+13.33%",
 		"Gañanzas/Perdas Medias Mensuais",
-		"+212.50 USD",
+		"+$212.50",
 		"Total Gañanzas/Perdas",
-		"+425.00 USD",
+		"+$425.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -192,7 +195,7 @@ func TestRun_PrintsTableColumns_InOrder(t *testing.T) {
 	table := out[start:]
 	wantCols := []string{
 		"Ano", "Mes", "Aporte Mensual", "No activo",
-		"Índice", "G/P USD", "Resultado",
+		"Índice", "G/P", "Resultado",
 	}
 	prev := -1
 	for _, col := range wantCols {
@@ -215,9 +218,9 @@ func TestRun_PrintsAggregatedRowValues(t *testing.T) {
 	}
 	for _, want := range []string{
 		// Mes 04: aporte 1500, holding 1500, +10%, +150, result 1650
-		"1500.00", "+10.00%", "+150.00", "1650.00",
+		"1500.00", "+10.00%", "+$150.00", "1650.00",
 		// Mes 05: aporte 0, holding 1650, +16.67%, +275, result 1925
-		"0.00", "1650.00", "+16.67%", "+275.00", "1925.00",
+		"0.00", "1650.00", "+16.67%", "+$275.00", "1925.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)
@@ -240,9 +243,9 @@ func TestRun_OnlyAssetsWithResultThisMonth(t *testing.T) {
 		summaries: map[sumKey]domain.MonthlySummary{
 			{10, 2026, 4}: {InvestedInMonth: 1000, EstimatedHolding: 1000, Result: 1200, HasResult: true, TotalInvestedUpTo: 1000},
 			// MSFT en 04: sen resultado, debería excluírse aínda que estivese cargado.
-			{11, 2026, 4}: {InvestedInMonth: 500, EstimatedHolding: 500, HasResult: false},
-			{10, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 1200, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
-			{11, 2026, 5}: {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
+			{11, 2026, 4}:  {InvestedInMonth: 500, EstimatedHolding: 500, HasResult: false},
+			{10, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 1200, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
+			{11, 2026, 5}:  {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
 			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
 			{11, 9999, 12}: {TotalInvestedUpTo: 500},
 		},
@@ -254,8 +257,8 @@ func TestRun_OnlyAssetsWithResultThisMonth(t *testing.T) {
 	// Mes 04: só AAPL → aporte 1000, holding 1000, result 1200, +20%, +200
 	// Mes 05: AAPL + MSFT → aporte 500, holding 1700, result 1870, ≈+10%, +170
 	for _, want := range []string{
-		"1000.00", "+20.00%", "+200.00", "1200.00",
-		"500.00", "1700.00", "+10.00%", "+170.00", "1870.00",
+		"1000.00", "+20.00%", "+$200.00", "1200.00",
+		"500.00", "1700.00", "+10.00%", "+$170.00", "1870.00",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("saída non contén %q:\n%s", want, out)

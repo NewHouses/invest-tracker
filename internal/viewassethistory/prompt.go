@@ -2,11 +2,15 @@ package viewassethistory
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
+	"invest-tracker/internal/colors"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
 
@@ -106,36 +110,59 @@ func renderReport(w io.Writer, asset domain.Asset, rows []rowEntry,
 	fmt.Fprintln(w, sep)
 
 	twH := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(twH, "  Total Aportado\t%.2f USD\n", lifetimeInvested)
+	fmt.Fprintf(twH, "  Total Aportado\t%s\n", money.USD(lifetimeInvested))
 	if nValid > 0 {
 		fmt.Fprintf(twH, "  Índice Medio Mensual\t%+.2f%%\n", sumPct/float64(nValid))
-		fmt.Fprintf(twH, "  Gañanzas/Perdas Medias Mensuais\t%+.2f USD\n", sumGain/float64(nValid))
+		fmt.Fprintf(twH, "  Gañanzas/Perdas Medias Mensuais\t%s\n", money.SignedUSD(sumGain/float64(nValid)))
 	} else {
-		fmt.Fprintln(twH, "  Índice Medio Mensual\t— %")
-		fmt.Fprintln(twH, "  Gañanzas/Perdas Medias Mensuais\t— USD")
+		fmt.Fprintln(twH, "  Índice Medio Mensual\t—")
+		fmt.Fprintln(twH, "  Gañanzas/Perdas Medias Mensuais\t—")
 	}
 	if hasLifetime {
-		fmt.Fprintf(twH, "  Total Gañanzas/Perdas\t%+.2f USD\n", lifetimeGain)
+		fmt.Fprintf(twH, "  Total Gañanzas/Perdas\t%s\n", money.SignedUSD(lifetimeGain))
 	} else {
-		fmt.Fprintln(twH, "  Total Gañanzas/Perdas\t— USD")
+		fmt.Fprintln(twH, "  Total Gañanzas/Perdas\t—")
 	}
 	twH.Flush()
 	fmt.Fprintln(w, sep)
 
-	twT := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(twT, "  Ano\tMes\tAporte Mensual\tNo activo\tÍndice\tG/P USD\tResultado\t")
+	// Pintamos a táboa nun buffer para poder colorear cada fila polo signo
+	// do G/P despois de que tabwriter aliñe as columnas.
+	var tbuf bytes.Buffer
+	twT := tabwriter.NewWriter(&tbuf, 0, 0, 2, ' ', tabwriter.AlignRight)
+	fmt.Fprintln(twT, "  Ano\tMes\tAporte Mensual\tNo activo\tÍndice\tG/P\tResultado\t")
 	for _, row := range rows {
 		var idxStr, gainStr string
 		if row.hasMetrics {
 			idxStr = fmt.Sprintf("%+.2f%%", row.gainPct)
-			gainStr = fmt.Sprintf("%+.2f", row.gain)
+			gainStr = money.SignedUSD(row.gain)
 		} else {
 			idxStr = "n/a"
 			gainStr = "—"
 		}
-		fmt.Fprintf(twT, "  %d\t%d\t%.2f\t%.2f\t%s\t%s\t%.2f\t\n",
-			row.year, row.month, row.aporte, row.holding, idxStr, gainStr, row.result)
+		fmt.Fprintf(twT, "  %d\t%d\t%s\t%s\t%s\t%s\t%s\t\n",
+			row.year, row.month,
+			money.USD(row.aporte), money.USD(row.holding),
+			idxStr, gainStr, money.USD(row.result))
 	}
 	twT.Flush()
+	writeColoredRows(w, tbuf.String(), rows)
 	fmt.Fprintln(w, sep)
+}
+
+// writeColoredRows imprime as liñas xa formatadas: a primeira (cabeceira) sen
+// cor, e cada fila de datos envolvida no código ANSI segundo o seu G/P.
+func writeColoredRows(w io.Writer, formatted string, rows []rowEntry) {
+	lines := strings.Split(strings.TrimRight(formatted, "\n"), "\n")
+	if len(lines) == 0 {
+		return
+	}
+	fmt.Fprintln(w, lines[0])
+	for i, line := range lines[1:] {
+		if i < len(rows) && rows[i].hasMetrics {
+			fmt.Fprintln(w, colors.ForGain(rows[i].gain)+line+colors.Reset)
+		} else {
+			fmt.Fprintln(w, line)
+		}
+	}
 }

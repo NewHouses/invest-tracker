@@ -57,8 +57,8 @@ func TestRun_EndToEnd_Mode3_AutoIncrement(t *testing.T) {
 
 	// As 3 transaccións deben estar en 11/2025, 12/2025, 01/2026
 	want := []struct {
-		amount       float64
-		year, month  int
+		amount      float64
+		year, month int
 	}{
 		{100, 2025, 11},
 		{200, 2025, 12},

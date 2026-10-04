@@ -65,21 +65,21 @@ func TestRun_EndToEnd_ShowsFullHistoryFromDB(t *testing.T) {
 		"Acción — AAPL",
 		// Top summary
 		"Total Aportado",
-		"1700.00 USD",
+		"$1700.00",
 		"Índice Medio Mensual",
 		"+7.50%",
 		"Gañanzas/Perdas Medias Mensuais",
-		"+100.00 USD",
+		"+$100.00",
 		"Total Gañanzas/Perdas",
-		"+200.00 USD",
+		"+$200.00",
 		// Table columns
 		"Aporte Mensual",
 		"No activo",
-		"G/P USD",
+		"G/P",
 		"Resultado",
 		// Row values
-		"500.00", "1500.00", "+20.00%", "+300.00", "1800.00",
-		"200.00", "2000.00", "-5.00%", "-100.00", "1900.00",
+		"500.00", "1500.00", "+20.00%", "+$300.00", "1800.00",
+		"200.00", "2000.00", "-5.00%", "-$100.00", "1900.00",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("saída non contén %q:\n%s", want, output)

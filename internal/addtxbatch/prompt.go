@@ -17,8 +17,8 @@ type Repo interface {
 }
 
 const (
-	modePerTx        = 1
-	modeFixedMonth   = 2
+	modePerTx         = 1
+	modeFixedMonth    = 2
 	modeAutoIncrement = 3
 )
 

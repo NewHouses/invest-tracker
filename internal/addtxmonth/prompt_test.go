@@ -195,6 +195,46 @@ func TestRun_EOFMidFlow_ReturnsError(t *testing.T) {
 	}
 }
 
+// Un activo creado despois do mes escollido non se pregunta: a transacción
+// quedaría antes da data do activo e os informes ignorariana.
+func TestRun_OmitsAssetsCreatedAfterMonth(t *testing.T) {
+	repo := &fakeRepo{assets: []domain.Asset{
+		{ID: 10, Type: domain.Accion, Name: "AAPL", Month: 12, Year: 2025},
+		{ID: 11, Type: domain.Accion, Name: "MSFT", Month: 6, Year: 2026},
+		{ID: 12, Type: domain.Indice, Name: "Vanguard", Month: 4, Year: 2026}, // mesmo mes: válido
+	}}
+	// Só hai respostas para AAPL e Vanguard: se se preguntase por MSFT, o
+	// 300 iría para el e Vanguard remataría en EOF.
+	out, err := runWith(repo, "4\n2026\n100\n300\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "Acción — MSFT: omitido (creado en 06/2026)") {
+		t.Errorf("saída non sinala MSFT como omitido:\n%s", out)
+	}
+	if len(repo.saved) != 2 ||
+		repo.saved[0].AssetID != 10 || repo.saved[0].AmountUSD != 100 ||
+		repo.saved[1].AssetID != 12 || repo.saved[1].AmountUSD != 300 {
+		t.Errorf("saved = %+v, esperabamos AAPL=100 e Vanguard=300", repo.saved)
+	}
+}
+
+func TestRun_NoAssetsCreatedByMonth_PrintsHint(t *testing.T) {
+	repo := &fakeRepo{assets: []domain.Asset{
+		{ID: 10, Type: domain.Accion, Name: "AAPL", Month: 5, Year: 2026},
+	}}
+	out, err := runWith(repo, "4\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "Non hai activos creados en 04/2026 ou antes") {
+		t.Errorf("saída non contén suxestión:\n%s", out)
+	}
+	if len(repo.saved) != 0 {
+		t.Errorf("saved = %+v, esperabamos ningunha", repo.saved)
+	}
+}
+
 func TestRun_AcceptsCommaDecimal(t *testing.T) {
 	repo := &fakeRepo{assets: []domain.Asset{
 		{ID: 10, Type: domain.Accion, Name: "AAPL"},

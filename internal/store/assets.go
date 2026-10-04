@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"invest-tracker/internal/domain"
@@ -38,6 +39,22 @@ func (s *Store) ListAssets() ([]domain.Asset, error) {
 		out = append(out, a)
 	}
 	return out, rows.Err()
+}
+
+// FirstInvestmentMonth devolve a data de inicio dos investimentos, é dicir o
+// mes do activo máis antigo rexistrado. ok=false se aínda non hai activos.
+func (s *Store) FirstInvestmentMonth() (domain.YearMonth, bool, error) {
+	var ym domain.YearMonth
+	err := s.db.QueryRow(
+		`SELECT year, month FROM assets ORDER BY year, month, id LIMIT 1`,
+	).Scan(&ym.Year, &ym.Month)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.YearMonth{}, false, nil
+		}
+		return domain.YearMonth{}, false, err
+	}
+	return ym, true, nil
 }
 
 // UpdateAsset actualiza nome, cantidade e data dun activo existente.
