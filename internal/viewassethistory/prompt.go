@@ -43,6 +43,29 @@ type Row struct {
 	HasMetrics bool             `json:"hasMetrics"`
 }
 
+func Current(repo Repo, asset domain.Asset, now domain.YearMonth) (*Row, error) {
+	if !asset.CreatedBy(now) {
+		return nil, nil
+	}
+	months, err := repo.MonthsWithResultsForAsset(asset.ID)
+	if err != nil {
+		return nil, fmt.Errorf("obtendo meses con resultados: %w", err)
+	}
+	for _, ym := range months {
+		if !ym.Before(now) {
+			return nil, nil
+		}
+	}
+	sum, err := repo.MonthlySummary(asset.ID, now.Year, now.Month)
+	if err != nil {
+		return nil, fmt.Errorf("calculando resumo: %w", err)
+	}
+	if sum.EstimatedHolding <= 0 && sum.InvestedInMonth == 0 {
+		return nil, nil
+	}
+	return &Row{Period: now, Aporte: sum.InvestedInMonth, Holding: sum.EstimatedHolding}, nil
+}
+
 func Build(repo Repo, asset domain.Asset) (History, error) {
 	months, err := repo.MonthsWithResultsForAsset(asset.ID)
 	if err != nil {

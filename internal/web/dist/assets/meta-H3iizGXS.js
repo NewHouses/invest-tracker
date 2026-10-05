@@ -1,0 +1,1 @@
+import{an as e,c as t,i as n,nn as r,o as i}from"./ErrorAlert-RXgNvlbb.js";var a=e(r(),1);function o(){return t({queryKey:n.meta,queryFn:({signal:e})=>i(`/api/meta`,{signal:e}),staleTime:1/0})}function s(){let e=o().data?.assetTypes;return(0,a.useCallback)(t=>e?.find(e=>e.value===t)?.label??t,[e])}export{o as n,s as t};

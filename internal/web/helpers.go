@@ -14,7 +14,7 @@ func (s *Server) internalError(w http.ResponseWriter, r *http.Request, err error
 	writeError(w, http.StatusInternalServerError, "erro interno")
 }
 
-// loadAsset le o {id} da ruta e devolve o activo. Se non é válido ou non
+// loadAsset le o {id} da ruta e devolve o ativo. Se non é válido ou non
 // existe, xa respondeu (400/404/500) e devolve ok=false.
 func (s *Server) loadAsset(w http.ResponseWriter, r *http.Request) (domain.Asset, bool) {
 	id, err := pathID(r, "id")
@@ -25,7 +25,7 @@ func (s *Server) loadAsset(w http.ResponseWriter, r *http.Request) (domain.Asset
 	a, err := s.store.GetAsset(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "activo non atopado")
+			writeError(w, http.StatusNotFound, "ativo non atopado")
 			return domain.Asset{}, false
 		}
 		s.internalError(w, r, err)
@@ -39,7 +39,7 @@ func (s *Server) loadAsset(w http.ResponseWriter, r *http.Request) (domain.Asset
 func pathAssetType(w http.ResponseWriter, r *http.Request) (domain.AssetType, bool) {
 	t := domain.AssetType(r.PathValue("type"))
 	if !t.Valid() {
-		writeError(w, http.StatusBadRequest, "tipo de activo non válido")
+		writeError(w, http.StatusBadRequest, "tipo de ativo non válido")
 		return "", false
 	}
 	return t, true

@@ -23,7 +23,7 @@ type assetUpdateRequest struct {
 	Year      int     `json:"year"`
 }
 
-// registerAssetRoutes rexistra as rutas de activos da API.
+// registerAssetRoutes rexistra as rutas de ativos da API.
 func (s *Server) registerAssetRoutes() {
 	s.handleAPI("GET /api/assets", s.listAssets)
 	s.handleAPI("GET /api/assets/{id}", s.getAsset)
@@ -57,7 +57,7 @@ func (s *Server) createAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	fields := map[string]string{}
 	if !req.Type.Valid() {
-		fields["type"] = "o tipo de activo non é válido"
+		fields["type"] = "o tipo de ativo non é válido"
 	}
 	name := validateName(fields, "name", req.Name)
 	validateAmount(fields, "amountUsd", req.AmountUSD)
@@ -97,7 +97,7 @@ func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
 	updated := domain.Asset{ID: current.ID, Type: current.Type, Name: name, AmountUSD: req.AmountUSD, Month: req.Month, Year: req.Year}
 	if err := s.store.UpdateAsset(updated); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "activo non atopado")
+			writeError(w, http.StatusNotFound, "ativo non atopado")
 			return
 		}
 		s.internalError(w, r, err)
@@ -114,7 +114,7 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteAsset(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "activo non atopado")
+			writeError(w, http.StatusNotFound, "ativo non atopado")
 			return
 		}
 		s.internalError(w, r, err)

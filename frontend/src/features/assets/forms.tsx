@@ -62,7 +62,7 @@ export function CreateAssetForm({ submitting, error, onSubmit }: CreateAssetForm
         <NumberInput label="Importe inicial" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
         <YearMonthInput label="Data inicial" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
         <Group justify="flex-end">
-          <Button type="submit" loading={submitting ?? false}>Gardar activo</Button>
+          <Button type="submit" loading={submitting ?? false}>Gardar ativo</Button>
         </Group>
       </Stack>
     </form>
@@ -112,7 +112,7 @@ export function EditAssetForm({ asset, typeLabel, submitting, error, onSubmit }:
         <NumberInput label="Importe inicial" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
         <YearMonthInput label="Data inicial" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
         <Group justify="flex-end">
-          <Button type="submit" loading={submitting ?? false}>Gardar cambios</Button>
+          <Button type="submit" loading={submitting ?? false}>Gardar ativo</Button>
         </Group>
       </Stack>
     </form>

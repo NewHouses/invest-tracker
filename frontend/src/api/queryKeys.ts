@@ -43,11 +43,14 @@ export const queryKeys = {
     type: (t: AssetType) => ['charts', 'type', t] as const,
     typeAssets: (t: AssetType) => ['charts', 'type', t, 'assets'] as const,
     types: ['charts', 'types'] as const,
+    allAssets: ['charts', 'assets'] as const,
     total: ['charts', 'total'] as const,
   },
   tools: {
     all: ['tools'] as const,
     projectionStart: ['tools', 'projection', 'start'] as const,
+    projectionDefaults: ['tools', 'projection', 'defaults'] as const,
   },
+  portfolio: ['portfolio'] as const,
   dashboard: ['dashboard'] as const,
 } as const

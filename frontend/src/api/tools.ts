@@ -4,27 +4,51 @@ import { apiFetch } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import type { Asset, AssetType, YearMonth } from '@/api/types'
 
-export type ProjectionStartResponse = { start: YearMonth | null }
-export type ProjectionRules = { investmentRate: number; salaryRaiseRate: number; salaryRaiseMonth: number; years: number }
-export type ProjectionRequest = { annualSalary: number; monthlyReturnPct: number; start?: YearMonth }
+export type GrowthRule = { kind: 'fixed' | 'percent'; value: number; everyMonths: number; from: YearMonth }
+export type ProjectionMode = 'contribution' | 'salary'
+export type ProjectionDefaultsResponse = {
+  start: YearMonth
+  startFromAssets: boolean
+  years: number
+  investmentRatePct: number
+  salaryRules: GrowthRule[]
+}
+export type ProjectionRequest = {
+  start: YearMonth
+  years: number
+  initialInvestment: number
+  monthlyReturnPct: number
+  mode: ProjectionMode
+  monthlyContribution: number
+  annualSalary: number
+  investmentRatePct: number
+  rules: GrowthRule[]
+}
 export type ProjectionMonth = {
   index: number
   date: YearMonth
   annualSalary: number
   monthlySalary: number
-  investment: number
+  contribution: number
   totalInvested: number
   return: number
   totalGains: number
   totalCapital: number
 }
 export type ProjectionResponse = {
-  start: YearMonth
-  startFromAssets: boolean
-  input: { annualSalary: number; monthlyReturnPct: number }
-  rules: ProjectionRules
+  input: ProjectionRequest
   months: ProjectionMonth[]
-  summary: { finalAnnualSalary: number; totalInvested: number; totalGains: number; finalCapital: number }
+  summary: {
+    initialInvestment: number
+    firstContribution: number
+    finalContribution: number
+    finalAnnualSalary: number
+    totalContributions: number
+    totalInvested: number
+    totalGains: number
+    finalCapital: number
+    months: number
+  }
 }
 
 export type AllocationRequest = { total: number; selection: Array<{ type: AssetType; assetIds: number[] }> }
@@ -33,10 +57,10 @@ export type Allocation = {
   types: Array<{ type: AssetType; label: string; amount: number; assets: Array<{ asset: Asset; amount: number }> }>
 }
 
-export function useProjectionStart() {
+export function useProjectionDefaults() {
   return useQuery({
-    queryKey: queryKeys.tools.projectionStart,
-    queryFn: ({ signal }) => apiFetch<ProjectionStartResponse>('/api/tools/projection/start', { signal }),
+    queryKey: queryKeys.tools.projectionDefaults,
+    queryFn: ({ signal }) => apiFetch<ProjectionDefaultsResponse>('/api/tools/projection/defaults', { signal }),
   })
 }
 

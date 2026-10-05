@@ -34,7 +34,7 @@ export function TransactionForm({ assetId, initial, submitLabel = 'Gardar transa
       period: initial?.period ?? currentYearMonth(),
     },
     validate: {
-      assetId: (value) => (value ? null : 'Escolle un activo'),
+      assetId: (value) => (value ? null : 'Escolle un ativo'),
       amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
       period: (value) => (value ? null : 'Escolle un mes'),
     },
@@ -61,7 +61,7 @@ export function TransactionForm({ assetId, initial, submitLabel = 'Gardar transa
       })}
     >
       <Stack>
-        <AssetSelect label="Activo" required disabled={assetId !== undefined} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
+        <AssetSelect label="Ativo" required disabled={assetId !== undefined} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
         <SegmentedControl
           aria-label="Tipo de transacción"
           data={[{ label: 'Compra', value: 'compra' }, { label: 'Venda', value: 'venda' }]}

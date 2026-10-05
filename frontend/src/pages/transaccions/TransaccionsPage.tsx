@@ -41,7 +41,7 @@ function BatchForm() {
   const form = useForm<BatchValues>({
     initialValues: { assetId: null, mode: 'por-fila', start: currentYearMonth(), rows: [newRow()] },
     validate: {
-      assetId: (value) => (value ? null : 'Escolle un activo'),
+      assetId: (value) => (value ? null : 'Escolle un ativo'),
       start: (value, values) => (values.mode === 'por-fila' || value ? null : 'Escolle un mes'),
       rows: {
         amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
@@ -84,7 +84,7 @@ function BatchForm() {
     >
       <Stack>
         {mutation.error ? <ErrorAlert error={mutation.error} /> : null}
-        <AssetSelect label="Activo" required value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
+        <AssetSelect label="Ativo" required value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
         <SegmentedControl
           aria-label="Modo de serie"
           data={[{ label: 'Mes en cada fila', value: 'por-fila' }, { label: 'Todas no mesmo mes', value: 'mes-unico' }, { label: 'Unha por mes', value: 'unha-por-mes' }]}
@@ -138,9 +138,9 @@ function MonthTransactionsForm() {
         setPeriod(value)
         setAmounts({})
       }} />
-      {assets.isLoading ? <Loader aria-label="Cargando activos elixibles" /> : null}
+      {assets.isLoading ? <Loader aria-label="Cargando ativos elixibles" /> : null}
       {assets.error ? <ErrorAlert error={assets.error} /> : null}
-      {eligible.length === 0 && !assets.isLoading ? <EmptyState title={`Non hai activos creados en ${formatYearMonth(period)} ou antes.`} /> : null}
+      {eligible.length === 0 && !assets.isLoading ? <EmptyState title={`Non hai ativos creados en ${formatYearMonth(period)} ou antes.`} /> : null}
       {eligible.length > 0 ? (
         <form
           onSubmit={async (event) => {
@@ -158,7 +158,7 @@ function MonthTransactionsForm() {
             {mutation.error ? <ErrorAlert error={mutation.error} /> : null}
             <Paper withBorder radius="md">
               <Table>
-                <Table.Thead><Table.Tr><Table.Th>Activo</Table.Th><Table.Th>Importe</Table.Th></Table.Tr></Table.Thead>
+                <Table.Thead><Table.Tr><Table.Th>Ativo</Table.Th><Table.Th>Importe</Table.Th></Table.Tr></Table.Thead>
                 <Table.Tbody>
                   {eligible.map((asset) => (
                     <Table.Tr key={asset.id}>
@@ -175,7 +175,7 @@ function MonthTransactionsForm() {
       ) : null}
       {omitted.length > 0 ? (
         <Stack gap={4}>
-          <Text fw={600}>Activos omitidos</Text>
+          <Text fw={600}>Ativos omitidos</Text>
           {omitted.map((asset) => <Text key={asset.id} c="dimmed">{asset.name}: omitido (creado en {formatPeriod(asset.year, asset.month)})</Text>)}
         </Stack>
       ) : null}

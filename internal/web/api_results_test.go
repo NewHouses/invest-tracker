@@ -61,7 +61,7 @@ func TestAPIResults(t *testing.T) {
 
 	rr = doJSON(t, h, http.MethodPost, "/api/results", map[string]any{"assetId": lateID, "resultUsd": 1.0, "month": 2, "year": 2026}, cookie)
 	assertFieldErrors(t, rr, "assetId")
-	if !strings.Contains(rr.Body.String(), "o activo non ten capital investido nese mes") {
+	if !strings.Contains(rr.Body.String(), "o ativo non ten capital investido nese mes") {
 		t.Fatalf("mensaxe de elixibilidade inesperada: %s", rr.Body.String())
 	}
 	rr = doJSON(t, h, http.MethodPost, "/api/results", map[string]any{"assetId": int64(999), "resultUsd": 0, "month": 13, "year": 2200}, cookie)

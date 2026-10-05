@@ -223,7 +223,31 @@ func BuildAssetsOfType(repo Repo, typ domain.AssetType) (LineChart, error) {
 	if len(months) == 0 {
 		return chart, nil
 	}
-	for _, a := range ofType {
+	return buildAssetSeries(repo, chart, ofType, months)
+}
+
+func BuildAllAssets(repo Repo) (LineChart, error) {
+	assets, err := repo.ListAssets()
+	if err != nil {
+		return LineChart{}, fmt.Errorf("listando activos: %w", err)
+	}
+	chart := LineChart{Title: "Todos os ativos", HasAssets: len(assets) > 0}
+	if len(assets) == 0 {
+		return chart, nil
+	}
+	months, err := repo.MonthsWithResults()
+	if err != nil {
+		return LineChart{}, fmt.Errorf("obtendo meses: %w", err)
+	}
+	chart.Months = months
+	if len(months) == 0 {
+		return chart, nil
+	}
+	return buildAssetSeries(repo, chart, assets, months)
+}
+
+func buildAssetSeries(repo Repo, chart LineChart, assets []domain.Asset, months []domain.YearMonth) (LineChart, error) {
+	for _, a := range assets {
 		values := make([]float64, len(months))
 		any := false
 		for i, ym := range months {
@@ -320,9 +344,10 @@ func BuildTotal(repo Repo) (LineChart, error) {
 		return chart, nil
 	}
 	values := make([]float64, len(months))
+	aportes := make([]float64, len(months))
 	var cumDiv float64
 	for i, ym := range months {
-		var resSum float64
+		var resSum, aporteSum float64
 		for _, a := range assets {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
@@ -331,6 +356,7 @@ func BuildTotal(repo Repo) (LineChart, error) {
 			if sum.HasResult {
 				resSum += sum.Result
 			}
+			aporteSum += sum.TotalInvestedUpTo
 		}
 		div, err := repo.SumDividends(ym.Year, ym.Month)
 		if err != nil {
@@ -338,8 +364,12 @@ func BuildTotal(repo Repo) (LineChart, error) {
 		}
 		cumDiv += div
 		values[i] = resSum + cumDiv
+		aportes[i] = aporteSum
 	}
-	chart.Series = []charts.Series{{Label: "Resultado + dividendos acum.", Values: values}}
+	chart.Series = []charts.Series{
+		{Label: "Resultado + dividendos acum.", Values: values},
+		{Label: "Aporte acumulado", Values: aportes},
+	}
 	return chart, nil
 }
 
@@ -472,7 +502,7 @@ func chart6Total(w io.Writer, repo Repo) error {
 		fmt.Fprintln(w, "Aínda non hai resultados rexistrados.")
 		return nil
 	}
-	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	charts.RenderLine(w, chart.Series[:1], chart.Months, chart.Title)
 	return nil
 }
 

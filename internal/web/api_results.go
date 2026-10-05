@@ -79,7 +79,7 @@ func (s *Server) createResult(w http.ResponseWriter, r *http.Request) {
 			s.internalError(w, r, err)
 			return
 		} else if !ok {
-			fields["assetId"] = "o activo non ten capital investido nese mes"
+			fields["assetId"] = "o ativo non ten capital investido nese mes"
 		}
 	}
 	if len(fields) > 0 {
@@ -124,10 +124,10 @@ func (s *Server) closeMonthResults(w http.ResponseWriter, r *http.Request) {
 		if _, ok, failed := s.bodyAsset(w, r, fields, prefix+"assetId", item.AssetID); failed {
 			return
 		} else if ok && periodValid && !eligible[item.AssetID] {
-			fields[prefix+"assetId"] = "o activo non ten capital investido nese mes"
+			fields[prefix+"assetId"] = "o ativo non ten capital investido nese mes"
 		}
 		if seen[item.AssetID] {
-			fields[prefix+"assetId"] = "o activo está repetido"
+			fields[prefix+"assetId"] = "o ativo está repetido"
 		}
 		seen[item.AssetID] = true
 		results = append(results, domain.MonthlyResult{AssetID: item.AssetID, ResultUSD: item.ResultUSD, Year: req.Year, Month: req.Month})

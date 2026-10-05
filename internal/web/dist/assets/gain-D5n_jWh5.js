@@ -1,0 +1,1 @@
+function e(e){return e>0?`green`:e<0?`red`:`yellow`}export{e as t};

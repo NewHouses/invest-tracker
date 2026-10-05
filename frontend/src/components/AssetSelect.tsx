@@ -34,8 +34,8 @@ export function AssetSelect({ value, onChange, typeFilter, assets, placeholder, 
       value={value === null ? null : String(value)}
       onChange={(v) => onChange(v === null ? null : Number(v))}
       searchable
-      nothingFoundMessage="Non hai activos"
-      placeholder={placeholder ?? (assets === undefined && all.isLoading ? 'Cargando…' : 'Escolle un activo')}
+      nothingFoundMessage="Non hai ativos"
+      placeholder={placeholder ?? (assets === undefined && all.isLoading ? 'Cargando…' : 'Escolle un ativo')}
       {...props}
     />
   )

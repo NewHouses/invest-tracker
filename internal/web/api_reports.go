@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 
+	"invest-tracker/internal/domain"
 	"invest-tracker/internal/viewassethistory"
 	"invest-tracker/internal/viewreport"
 	"invest-tracker/internal/viewtotalhistory"
@@ -10,6 +11,21 @@ import (
 	"invest-tracker/internal/viewtypehistory"
 	"invest-tracker/internal/viewtypereport"
 )
+
+type assetHistoryResponse struct {
+	viewassethistory.History
+	Current *viewassethistory.Row `json:"current"`
+}
+
+type typeHistoryResponse struct {
+	viewtypehistory.History
+	Current *viewtypehistory.Row `json:"current"`
+}
+
+type totalHistoryResponse struct {
+	viewtotalhistory.History
+	Current *viewtotalhistory.Row `json:"current"`
+}
 
 // registerReportRoutes rexistra as rutas de informes da API.
 func (s *Server) registerReportRoutes() {
@@ -81,7 +97,12 @@ func (s *Server) reportAssetHistory(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, assetHistoryDTO(history))
+	current, err := viewassethistory.Current(s.store, asset, currentYearMonth(s))
+	if err != nil {
+		s.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, assetHistoryResponse{History: assetHistoryDTO(history), Current: current})
 }
 
 func (s *Server) reportTypeHistory(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +115,12 @@ func (s *Server) reportTypeHistory(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, typeHistoryDTO(history))
+	current, err := viewtypehistory.Current(s.store, typ, currentYearMonth(s))
+	if err != nil {
+		s.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, typeHistoryResponse{History: typeHistoryDTO(history), Current: current})
 }
 
 func (s *Server) reportTotalHistory(w http.ResponseWriter, r *http.Request) {
@@ -103,5 +129,15 @@ func (s *Server) reportTotalHistory(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, totalHistoryDTO(history))
+	current, err := viewtotalhistory.Current(s.store, currentYearMonth(s))
+	if err != nil {
+		s.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, totalHistoryResponse{History: totalHistoryDTO(history), Current: current})
+}
+
+func currentYearMonth(s *Server) domain.YearMonth {
+	now := s.now()
+	return domain.YearMonth{Year: now.Year(), Month: int(now.Month())}
 }

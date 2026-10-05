@@ -8,9 +8,11 @@ import (
 
 func TestChartsRequireSession(t *testing.T) {
 	s := testServer(t)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/charts/total", nil, nil)
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("código=%d, esperabamos 401", rr.Code)
+	for _, path := range []string{"/api/charts/total", "/api/charts/assets"} {
+		rr := doJSON(t, s.Handler(), http.MethodGet, path, nil, nil)
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("%s: código=%d, esperabamos 401", path, rr.Code)
+		}
 	}
 }
 
@@ -25,6 +27,7 @@ func TestChartsHappyAndNaNAsNull(t *testing.T) {
 		"/api/charts/asset/" + jsonID(a.ID),
 		"/api/charts/type/accion",
 		"/api/charts/type/accion/assets",
+		"/api/charts/assets",
 		"/api/charts/types",
 		"/api/charts/total",
 	}
@@ -47,6 +50,15 @@ func TestChartsHappyAndNaNAsNull(t *testing.T) {
 	if !bytes.Contains(rr.Body.Bytes(), []byte(`"values":[1000,null,1100]`)) {
 		t.Fatalf("NaN debe ser null no JSON: %s", rr.Body.String())
 	}
+
+	rr = doJSON(t, h, http.MethodGet, "/api/charts/assets", nil, cookie)
+	decodeBody(t, rr, &chart)
+	if chart.Title != "Todos os ativos" || len(chart.Series) != 2 || chart.Series[0].Values[1] != nil {
+		t.Fatalf("todos os activos debe conservar o gap como null: %#v", chart)
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte(`"values":[1000,null,1100]`)) {
+		t.Fatalf("NaN debe ser null no JSON de todos os activos: %s", rr.Body.String())
+	}
 }
 
 func TestChartsValidationNotFoundAndEmptySlices(t *testing.T) {
@@ -68,5 +80,9 @@ func TestChartsValidationNotFoundAndEmptySlices(t *testing.T) {
 	rr = doJSON(t, h, http.MethodGet, "/api/charts/total", nil, cookie)
 	if rr.Code != http.StatusOK || !bytes.Contains(rr.Body.Bytes(), []byte(`"months":[]`)) || !bytes.Contains(rr.Body.Bytes(), []byte(`"series":[]`)) {
 		t.Fatalf("line chart baleira debe ter slices=[]: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
+	rr = doJSON(t, h, http.MethodGet, "/api/charts/assets", nil, cookie)
+	if rr.Code != http.StatusOK || !bytes.Contains(rr.Body.Bytes(), []byte(`"months":[]`)) || !bytes.Contains(rr.Body.Bytes(), []byte(`"series":[]`)) {
+		t.Fatalf("todos os activos baleiro debe ter slices=[]: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 }

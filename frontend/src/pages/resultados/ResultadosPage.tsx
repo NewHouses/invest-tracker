@@ -40,9 +40,9 @@ function CloseMonthForm() {
         setPeriod(value)
         setValues({})
       }} />
-      {eligible.isLoading ? <Loader aria-label="Cargando activos elixibles" /> : null}
+      {eligible.isLoading ? <Loader aria-label="Cargando ativos elixibles" /> : null}
       {eligible.error ? <ErrorAlert error={eligible.error} /> : null}
-      {items.length === 0 && !eligible.isLoading ? <EmptyState title={`Non hai activos con capital investido para ${formatYearMonth(period)}.`} /> : null}
+      {items.length === 0 && !eligible.isLoading ? <EmptyState title={`Non hai ativos con capital investido para ${formatYearMonth(period)}.`} /> : null}
       {items.length > 0 ? (
         <form
           onSubmit={async (event) => {
@@ -59,7 +59,7 @@ function CloseMonthForm() {
             {closeMonth.error ? <ErrorAlert error={closeMonth.error} /> : null}
             <Paper withBorder radius="md">
               <Table verticalSpacing="sm">
-                <Table.Thead><Table.Tr><Table.Th>Activo</Table.Th><Table.Th>No activo</Table.Th><Table.Th>Resultado</Table.Th><Table.Th>G/P previsto</Table.Th></Table.Tr></Table.Thead>
+                <Table.Thead><Table.Tr><Table.Th>Ativo</Table.Th><Table.Th>No ativo</Table.Th><Table.Th>Resultado</Table.Th><Table.Th>G/P previsto</Table.Th></Table.Tr></Table.Thead>
                 <Table.Tbody>
                   {items.map((item) => {
                     const result = parseNumber(values[item.asset.id])
@@ -106,12 +106,12 @@ function AddResultForm() {
   const form = useForm<ResultFormValues>({
     initialValues: { assetId: null, resultUsd: '' },
     validate: {
-      assetId: (value) => (value ? null : 'Escolle un activo'),
+      assetId: (value) => (value ? null : 'Escolle un ativo'),
       resultUsd: (value) => (parseNumber(value) > 0 ? null : 'O resultado debe ser maior ca 0'),
     },
   })
 
-  // Ao cambiar de mes cambian os activos elixibles: a selección anterior
+  // Ao cambiar de mes cambian os ativos elixibles: a selección anterior
   // deixa de ser válida.
   const changePeriod = (value: YearMonth | null) => {
     if (!value) return
@@ -141,8 +141,8 @@ function AddResultForm() {
         {eligible.error ? <ErrorAlert error={eligible.error} /> : null}
         {create.error ? <ErrorAlert error={create.error} /> : null}
         <YearMonthInput label="Mes" value={period} onChange={changePeriod} error={form.errors.period} />
-        {eligible.isLoading ? <Loader aria-label="Cargando activos elixibles" /> : null}
-        <AssetSelect label="Activo" required assets={assets} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
+        {eligible.isLoading ? <Loader aria-label="Cargando ativos elixibles" /> : null}
+        <AssetSelect label="Ativo" required assets={assets} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
         <NumberInput label="Resultado" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('resultUsd')} />
         {preview !== null && selected ? <Text>G/P resultante: <GainBadge value={preview} kind="amount" /> ({formatPct(gainPct(parseNumber(form.values.resultUsd), selected.holding))})</Text> : null}
         <Button type="submit" loading={create.isPending}>Engadir resultado</Button>
@@ -186,7 +186,7 @@ export function ResultadosPage() {
 
   return (
     <Stack>
-      <PageHeader title="Resultados" description="Pecha meses e mantén os valores actuais dos activos." />
+      <PageHeader title="Resultados" description="Pecha meses e mantén os valores actuais dos ativos." />
       <Tabs value={active} onChange={(value) => setParams(value && value !== 'pechar' ? { tab: value } : {})}>
         <Tabs.List>
           <Tabs.Tab value="pechar">Pechar mes</Tabs.Tab>

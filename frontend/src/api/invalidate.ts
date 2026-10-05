@@ -13,6 +13,7 @@ export function invalidatePortfolio(queryClient: QueryClient) {
     queryKeys.reports.all,
     queryKeys.charts.all,
     queryKeys.tools.all,
+    queryKeys.portfolio,
     queryKeys.dashboard,
   ]
   return Promise.all(prefixes.map((queryKey) => queryClient.invalidateQueries({ queryKey })))

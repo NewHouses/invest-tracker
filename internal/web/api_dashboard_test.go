@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -39,8 +40,18 @@ func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 	if got.AssetCount != 2 || got.KPIs.TotalInvested != 1500 || !got.KPIs.HasCurrentValue || got.KPIs.TotalGain != 110 || got.KPIs.AvgIndexPct < 2.44 || got.KPIs.AvgIndexPct > 2.45 {
 		t.Fatalf("KPIs inesperados: %#v", got.KPIs)
 	}
-	if got.Pending.Period.Year != 2026 || got.Pending.Period.Month != 4 || len(got.Pending.Items) != 2 {
-		t.Fatalf("pendentes inesperados: %#v", got.Pending)
+	if got.Portfolio.Period.Year != 2026 || got.Portfolio.Period.Month != 4 || got.Portfolio.PendingCount != 2 || len(got.Portfolio.Rows) != 2 {
+		t.Fatalf("carteira inesperada: %#v", got.Portfolio)
+	}
+	if !got.Portfolio.Rows[0].Pending || !got.Portfolio.Rows[1].Pending {
+		t.Fatalf("as dúas filas debían estar pendentes: %#v", got.Portfolio.Rows)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(rr.Body.Bytes(), &raw); err != nil {
+		t.Fatalf("JSON inválido: %v", err)
+	}
+	if _, ok := raw["pending"]; ok {
+		t.Fatalf("a resposta xa non debe incluír a chave pending: %s", rr.Body.String())
 	}
 	if len(got.Evolution.Months) != 3 || len(got.Distribution.Items) != 2 {
 		t.Fatalf("gráficas inesperadas: %#v", got)
@@ -54,8 +65,8 @@ func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 		t.Fatalf("dashboard 2: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 	decodeBody(t, rr, &got)
-	if len(got.Pending.Items) != 1 || got.Pending.Items[0].Asset.Name != "B" {
-		t.Fatalf("debe quedar só B pendente: %#v", got.Pending.Items)
+	if got.Portfolio.PendingCount != 1 || len(got.Portfolio.Rows) != 2 || got.Portfolio.Rows[0].Pending || !got.Portfolio.Rows[1].Pending {
+		t.Fatalf("debe quedar só B pendente: %#v", got.Portfolio)
 	}
 
 	empty := fixedClockServer(t, time.Date(2026, 4, 15, 12, 0, 0, 0, time.UTC))
@@ -63,7 +74,7 @@ func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("dashboard baleiro: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
-	if body := rr.Body.String(); !containsAll(body, []string{`"months":[]`, `"series":[]`, `"items":[]`}) {
+	if body := rr.Body.String(); !containsAll(body, []string{`"months":[]`, `"series":[]`, `"items":[]`, `"rows":[]`}) {
 		t.Fatalf("slices baleiros deben ser []: %s", body)
 	}
 }

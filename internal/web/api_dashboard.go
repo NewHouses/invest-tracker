@@ -3,8 +3,8 @@ package web
 import (
 	"net/http"
 
-	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/portfolio"
 	"invest-tracker/internal/viewcharts"
 	"invest-tracker/internal/viewtotalhistory"
 )
@@ -12,6 +12,7 @@ import (
 // registerDashboardRoutes rexistra as rutas do panel principal da API.
 func (s *Server) registerDashboardRoutes() {
 	s.handleAPI("GET /api/dashboard", s.dashboard)
+	s.handleAPI("GET /api/portfolio", s.portfolio)
 }
 
 type dashboardResponse struct {
@@ -19,7 +20,7 @@ type dashboardResponse struct {
 	KPIs         dashboardKPIs           `json:"kpis"`
 	Evolution    apiLineChart            `json:"evolution"`
 	Distribution viewcharts.Distribution `json:"distribution"`
-	Pending      dashboardPending        `json:"pending"`
+	Portfolio    portfolio.Portfolio     `json:"portfolio"`
 }
 
 type dashboardKPIs struct {
@@ -31,11 +32,6 @@ type dashboardKPIs struct {
 	TotalDividends  float64 `json:"totalDividends"`
 	AvgIndexPct     float64 `json:"avgIndexPct"`
 	HasAverages     bool    `json:"hasAverages"`
-}
-
-type dashboardPending struct {
-	Period domain.YearMonth           `json:"period"`
-	Items  []closemonth.EligibleAsset `json:"items"`
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
@@ -57,16 +53,10 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 
 	now := s.now()
 	period := domain.YearMonth{Year: now.Year(), Month: int(now.Month())}
-	pending, err := closemonth.Eligible(s.store, period.Year, period.Month)
+	port, err := portfolio.Build(s.store, period)
 	if err != nil {
 		s.internalError(w, r, err)
 		return
-	}
-	withoutResult := make([]closemonth.EligibleAsset, 0, len(pending))
-	for _, item := range pending {
-		if !item.HasResult {
-			withoutResult = append(withoutResult, item)
-		}
 	}
 
 	resp := dashboardResponse{
@@ -83,10 +73,7 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 		},
 		Evolution:    lineChartDTO(evolution),
 		Distribution: distributionDTO(distribution),
-		Pending: dashboardPending{
-			Period: period,
-			Items:  eligibleAssetsDTO(withoutResult),
-		},
+		Portfolio:    port,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

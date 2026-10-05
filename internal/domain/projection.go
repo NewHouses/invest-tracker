@@ -101,39 +101,31 @@ func Project(in ProjectionInput) ([]ProjectionMonth, error) {
 		return nil, err
 	}
 
-	months := make([]ProjectionMonth, 0, ProjectionMonths)
-	annualSalary := in.AnnualSalary
-	var capital, totalInvested float64
+	planMonths, err := ProjectPlan(PlanInput{
+		Start:          in.Start,
+		Years:          ProjectionYears,
+		MonthlyReturn:  in.MonthlyReturn,
+		Mode:           ProjectionModeSalary,
+		AnnualSalary:   in.AnnualSalary,
+		InvestmentRate: InvestmentRate,
+		Rules:          []GrowthRule{DefaultSalaryRaiseRule(in.Start)},
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	for i := 0; i < ProjectionMonths; i++ {
-		date := in.Start.AddMonths(i)
-		// O salario inicial rexe no mes de inicio, así que a primeira subida é
-		// a do primeiro setembro posterior a ese mes.
-		if i > 0 && date.Month == SalaryRaiseMonth {
-			annualSalary *= 1 + SalaryRaiseRate
-		}
-
-		monthlySalary := annualSalary / MonthsPerYear
-		investment := monthlySalary * InvestmentRate
-
-		// Capitalización composta: o aporte do mes tamén renta este mes.
-		base := capital + investment
-		monthReturn := base * in.MonthlyReturn
-		capital = base + monthReturn
-		totalInvested += investment
-
+	months := make([]ProjectionMonth, 0, len(planMonths))
+	for _, m := range planMonths {
 		months = append(months, ProjectionMonth{
-			Index:         i + 1,
-			Date:          date,
-			AnnualSalary:  annualSalary,
-			MonthlySalary: monthlySalary,
-			Investment:    investment,
-			TotalInvested: totalInvested,
-			Return:        monthReturn,
-			// Derívanse do capital para que sempre se cumpra
-			// TotalCapital = TotalInvested + TotalGains.
-			TotalGains:   capital - totalInvested,
-			TotalCapital: capital,
+			Index:         m.Index,
+			Date:          m.Date,
+			AnnualSalary:  m.AnnualSalary,
+			MonthlySalary: m.MonthlySalary,
+			Investment:    m.Contribution,
+			TotalInvested: m.TotalInvested,
+			Return:        m.Return,
+			TotalGains:    m.TotalGains,
+			TotalCapital:  m.TotalCapital,
 		})
 	}
 	return months, nil

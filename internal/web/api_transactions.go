@@ -180,11 +180,11 @@ func (s *Server) createTransactionMonth(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		if seen[item.AssetID] {
-			fields[prefix+"assetId"] = "o activo está repetido"
+			fields[prefix+"assetId"] = "o ativo está repetido"
 		}
 		seen[item.AssetID] = true
 		if ok && period.Valid() && !asset.CreatedBy(period) {
-			fields[prefix+"assetId"] = "o activo creouse despois dese mes"
+			fields[prefix+"assetId"] = "o ativo creouse despois dese mes"
 		}
 		txs = append(txs, domain.Transaction{AssetID: item.AssetID, AmountUSD: item.AmountUSD, Year: req.Year, Month: req.Month})
 	}

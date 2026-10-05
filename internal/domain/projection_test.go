@@ -244,6 +244,33 @@ func TestValidate_AcceptsValidInput(t *testing.T) {
 	}
 }
 
+func TestProject_DelegatesWithOldAlgorithmValues(t *testing.T) {
+	in := domain.ProjectionInput{
+		AnnualSalary:  120000,
+		MonthlyReturn: 0,
+		Start:         domain.YearMonth{Year: 2026, Month: 8},
+	}
+	months := mustProject(t, in)
+
+	cases := []struct {
+		idx        int
+		salary     float64
+		investment float64
+		invested   float64
+	}{
+		{0, 120000, 1882.35, 1882.35},
+		{1, 132000, 2070.585, 3952.935},
+		{12, 132000, 2070.585, 26729.37},
+		{13, 145200, 2277.6435, 29007.0135},
+	}
+	for _, c := range cases {
+		m := months[c.idx]
+		if !almostEqual(m.AnnualSalary, c.salary) || !almostEqual(m.Investment, c.investment) || !almostEqual(m.TotalInvested, c.invested) || !almostEqual(m.TotalCapital, c.invested) {
+			t.Fatalf("mes %d inesperado: %#v", c.idx+1, m)
+		}
+	}
+}
+
 func findMonth(t *testing.T, months []domain.ProjectionMonth, date domain.YearMonth) domain.ProjectionMonth {
 	t.Helper()
 	for _, m := range months {

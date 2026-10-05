@@ -79,6 +79,7 @@ export type HistoryRow = {
 export type AssetHistory = {
   asset: Asset
   rows: HistoryRow[]
+  current: HistoryRow | null
   totalInvested: number
   avgIndexPct: number
   avgGain: number
@@ -106,6 +107,7 @@ export type TotalHistoryRow = {
 export type TotalHistory = {
   assetCount: number
   rows: TotalHistoryRow[]
+  current: TotalHistoryRow | null
   lifetimeAporte: number
   avgIndexPct: number
   avgGain: number

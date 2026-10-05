@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Loader, Modal, Paper, Stack, Table, Tabs, Text } from '@mantine/core'
+import { Button, Group, Loader, Modal, Paper, Stack, Table, Tabs, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -15,6 +15,7 @@ import {
   type TransactionKind,
 } from '@/api/transactions'
 import { useAssetResults, useDeleteResult } from '@/api/results'
+import { AssetTypeBadge } from '@/components/AssetTypeBadge'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { MoneyText } from '@/components/MoneyText'
@@ -47,9 +48,9 @@ export function ActivoDetailPage() {
   const [creatingTx, setCreatingTx] = useState(false)
   const [editingTx, setEditingTx] = useState<AssetTransactionRow | null>(null)
 
-  if (asset.isLoading) return <Loader aria-label="Cargando activo" />
+  if (asset.isLoading) return <Loader aria-label="Cargando ativo" />
   if ((asset.error instanceof ApiError && asset.error.status === 404) || (!asset.isLoading && !asset.data)) {
-    return <EmptyState title="Activo non atopado" action={<Button component={Link} to="/activos">Volver aos activos</Button>} />
+    return <EmptyState title="Ativo non atopado" action={<Button component={Link} to="/activos">Volver ao Portofolio</Button>} />
   }
   if (asset.error) return <ErrorAlert error={asset.error} />
 
@@ -65,7 +66,7 @@ export function ActivoDetailPage() {
       />
       <Paper withBorder p="md" radius="md">
         <Group gap="md">
-          <Badge variant="light">{typeLabel(current.type)}</Badge>
+          <AssetTypeBadge type={current.type} />
           <Text>Data inicial: {formatPeriod(current.year, current.month)}</Text>
           <Text>Importe inicial: <MoneyText amount={current.amountUsd} /></Text>
         </Group>
@@ -84,7 +85,7 @@ export function ActivoDetailPage() {
 
         <Tabs.Panel value="transaccions" pt="md">
           <Stack>
-            <Group justify="space-between"><Text fw={600}>Transaccións do activo</Text><Button onClick={() => setCreatingTx(true)}>Nova transacción</Button></Group>
+            <Group justify="space-between"><Text fw={600}>Transaccións do ativo</Text><Button onClick={() => setCreatingTx(true)}>Nova transacción</Button></Group>
             {transactions.isLoading ? <Loader aria-label="Cargando transaccións" /> : null}
             {transactions.error ? <ErrorAlert error={transactions.error} /> : null}
             {transactions.data ? (
@@ -130,7 +131,7 @@ export function ActivoDetailPage() {
           <Stack>
             {results.isLoading ? <Loader aria-label="Cargando resultados" /> : null}
             {results.error ? <ErrorAlert error={results.error} /> : null}
-            {results.data && results.data.length === 0 ? <EmptyState title="Aínda non hai resultados rexistrados para este activo." /> : null}
+            {results.data && results.data.length === 0 ? <EmptyState title="Aínda non hai resultados rexistrados para este ativo." /> : null}
             {results.data && results.data.length > 0 ? (
               <Paper withBorder radius="md">
                 <Table verticalSpacing="sm">

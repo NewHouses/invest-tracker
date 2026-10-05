@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import type { Distribution, LineChartDTO } from '@/api/charts'
-import type { EligibleAsset, YearMonth } from '@/api/types'
+import type { Portfolio } from '@/api/portfolio'
 
 export type Dashboard = {
   assetCount: number
@@ -19,7 +19,7 @@ export type Dashboard = {
   }
   evolution: LineChartDTO
   distribution: Distribution
-  pending: { period: YearMonth; items: EligibleAsset[] }
+  portfolio: Portfolio
 }
 
 export function useDashboard() {

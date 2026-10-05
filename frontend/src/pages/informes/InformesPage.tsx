@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { PageHeader } from '@/components/PageHeader'
 import { YearMonthInput } from '@/components/YearMonthInput'
-import { KvTable } from '@/features/charts/common'
+import { KvTable } from '@/components/ReportTable'
 import { AssetHistoryPanel, LoadingReport, ReportCard, TotalHistoryView, TypeHistoryView } from '@/features/reports/AssetHistoryPanel'
 import { formatPct, formatSignedUSD, formatUSD, formatYearMonth } from '@/lib/format'
 import { currentYearMonth } from '@/lib/yearMonth'
@@ -27,9 +27,9 @@ const na = (ok: boolean, value: string) => (ok ? value : 'n/a')
 
 function useQueryState() {
   const [params, setParams] = useSearchParams()
-  const vista = params.get('vista') === 'historico' ? 'historico' : 'mensual'
+  const vista = params.get('vista') === 'mensual' ? 'mensual' : 'historico'
   const ambitoParam = params.get('ambito')
-  const ambito: Ambito = ambitoParam === 'tipo' || ambitoParam === 'total' ? ambitoParam : 'activo'
+  const ambito: Ambito = ambitoParam === 'tipo' || ambitoParam === 'activo' ? ambitoParam : 'total'
   const update = (next: Partial<{ vista: Vista; ambito: Ambito }>) => {
     const merged = new URLSearchParams(params)
     if (next.vista) merged.set('vista', next.vista)
@@ -41,7 +41,7 @@ function useQueryState() {
 
 function AssetMonth({ assetId, period }: { assetId: number | null; period: YearMonth }) {
   const report = useAssetMonthReport(assetId, period)
-  if (assetId === null) return <EmptyState title="Escolle un activo" />
+  if (assetId === null) return <EmptyState title="Escolle un ativo" />
   if (report.isLoading) return <LoadingReport />
   if (report.isError) return <ErrorAlert error={report.error} />
   const r = report.data
@@ -49,7 +49,7 @@ function AssetMonth({ assetId, period }: { assetId: number | null; period: YearM
   return <ReportCard><Title order={3}>{r.asset.name} · {formatYearMonth(r.period)}</Title><KvTable rows={[
     { label: 'Investido ata o mes', value: formatUSD(r.summary.totalInvestedUpTo) },
     { label: 'Investido este mes', value: formatUSD(r.summary.investedInMonth) },
-    { label: 'No activo', value: formatUSD(r.summary.estimatedHolding) },
+    { label: 'No ativo', value: formatUSD(r.summary.estimatedHolding) },
     { label: 'Resultado', value: dash(r.hasResult, formatUSD(r.summary.result)) },
     { label: 'Gañanzas/Perdas', value: dash(r.hasResult, formatSignedUSD(r.gain)) },
     { label: 'Índice', value: r.hasResult ? na(r.hasGainPct, formatPct(r.gainPct)) : '—' },
@@ -64,14 +64,14 @@ function TypeMonth({ type, period }: { type: AssetType | null; period: YearMonth
   if (report.isError) return <ErrorAlert error={report.error} />
   const r = report.data
   if (!r) return null
-  if (r.assets.length === 0) return <EmptyState title={`Non hai activos de tipo ${typeLabel(type)}.`} />
-  if (r.active.length === 0) return <EmptyState title={`Non hai activos de tipo ${typeLabel(type)} con capital investido en ${formatYearMonth(r.period)}.`} />
-  const partial = r.partial ? ` (${r.withResult}/${r.active.length} activos)` : ''
+  if (r.assets.length === 0) return <EmptyState title={`Non hai ativos de tipo ${typeLabel(type)}.`} />
+  if (r.active.length === 0) return <EmptyState title={`Non hai ativos de tipo ${typeLabel(type)} con capital investido en ${formatYearMonth(r.period)}.`} />
+  const partial = r.partial ? ` (${r.withResult}/${r.active.length} ativos)` : ''
   return <ReportCard><Title order={3}>{typeLabel(type)} · {formatYearMonth(r.period)}</Title><KvTable rows={[
-    { label: 'Activos incluídos', value: <Stack gap={2}>{r.active.map((e) => <Text key={e.asset.id}>{e.asset.name} (no activo: {formatUSD(e.summary.estimatedHolding)})</Text>)}</Stack> },
+    { label: 'Ativos incluídos', value: <Stack gap={2}>{r.active.map((e) => <Text key={e.asset.id}>{e.asset.name} (no ativo: {formatUSD(e.summary.estimatedHolding)})</Text>)}</Stack> },
     { label: 'Investido ata o mes', value: formatUSD(r.totalInvested) },
     { label: 'Investido este mes', value: formatUSD(r.investedInMonth) },
-    { label: 'No activo', value: formatUSD(r.holding) },
+    { label: 'No ativo', value: formatUSD(r.holding) },
     { label: r.partial ? 'Resultado (parc.)' : 'Resultado', value: r.withResult === 0 ? '—' : `${formatUSD(r.resultSum)}${partial}` },
     { label: r.partial ? 'Gañanzas/Perdas (parc.)' : 'Gañanzas/Perdas', value: r.withResult === 0 ? '—' : formatSignedUSD(r.gain) },
     { label: r.partial ? 'Índice (parc.)' : 'Índice', value: r.withResult === 0 ? '—' : na(r.hasGainPct, formatPct(r.gainPct)) },
@@ -84,15 +84,15 @@ function TotalMonth({ period }: { period: YearMonth }) {
   if (report.isError) return <ErrorAlert error={report.error} />
   const r = report.data
   if (!r) return null
-  if (r.totalAssets === 0) return <EmptyState title="Aínda non hai activos" />
-  if (r.assetsActive === 0) return <EmptyState title={`Non hai activos con capital investido en ${formatYearMonth(r.period)}.`} />
-  const coverage = r.partial ? ` (${r.assetsWithResult}/${r.assetsActive} activos con resultado)` : ''
+  if (r.totalAssets === 0) return <EmptyState title="Aínda non hai ativos" />
+  if (r.assetsActive === 0) return <EmptyState title={`Non hai ativos con capital investido en ${formatYearMonth(r.period)}.`} />
+  const coverage = r.partial ? ` (${r.assetsWithResult}/${r.assetsActive} ativos con resultado)` : ''
   return <ReportCard><Title order={3}>Informe total · {formatYearMonth(r.period)}</Title><KvTable rows={[
     { label: 'Total investido ata o mes', value: formatUSD(r.totalInvested) },
     { label: 'Investido este mes', value: formatUSD(r.investedInMonth) },
     { label: 'Investimento + dividendos prev. mes', value: formatUSD(r.investedPlusPrevDividends) },
-    { label: 'No activo (sen div)', value: formatUSD(r.holdingNoDiv) },
-    { label: 'No activo (con div)', value: formatUSD(r.holdingWithDiv) },
+    { label: 'No ativo (sen div)', value: formatUSD(r.holdingNoDiv) },
+    { label: 'No ativo (con div)', value: formatUSD(r.holdingWithDiv) },
     { label: 'Dividendos este mes', value: formatUSD(r.dividends) },
     { label: 'Resultado (sen div)', value: r.hasResults ? `${formatUSD(r.resultNoDiv)}${coverage}` : '—' },
     { label: 'Resultado total (con div)', value: r.hasResults ? formatUSD(r.resultWithDiv) : '—' },
@@ -133,13 +133,13 @@ export function InformesPage() {
   return (
     <Stack>
       <PageHeader title="Informes" description="Informes mensuais e históricos" />
-      <Group align="end"><SegmentedControl value={vista} onChange={(v) => update({ vista: v as Vista })} data={[{ label: 'Mensual', value: 'mensual' }, { label: 'Histórico', value: 'historico' }]} /><SegmentedControl value={ambito} onChange={(v) => update({ ambito: v as Ambito })} data={[{ label: 'Activo', value: 'activo' }, { label: 'Tipo', value: 'tipo' }, { label: 'Total', value: 'total' }]} />{ambito === 'activo' ? <AssetSelect value={effectiveAssetId} onChange={setAssetId} label="Activo" /> : null}{ambito === 'tipo' ? <AssetTypeSelect value={type} onChange={setType} label="Tipo" {...(presentTypes.length > 0 ? { only: presentTypes } : {})} /> : null}{vista === 'mensual' ? <YearMonthInput value={period} onChange={(v) => v && setPeriod(v)} label="Mes" required /> : null}</Group>
+      <Group align="end"><SegmentedControl value={vista} onChange={(v) => update({ vista: v as Vista })} data={[{ label: 'Mensual', value: 'mensual' }, { label: 'Histórico', value: 'historico' }]} /><SegmentedControl value={ambito} onChange={(v) => update({ ambito: v as Ambito })} data={[{ label: 'Total', value: 'total' }, { label: 'Tipo', value: 'tipo' }, { label: 'Ativo', value: 'activo' }]} />{ambito === 'activo' ? <AssetSelect value={effectiveAssetId} onChange={setAssetId} label="Ativo" /> : null}{ambito === 'tipo' ? <AssetTypeSelect value={type} onChange={setType} label="Tipo" {...(presentTypes.length > 0 ? { only: presentTypes } : {})} /> : null}{vista === 'mensual' ? <YearMonthInput value={period} onChange={(v) => v && setPeriod(v)} label="Mes" required /> : null}</Group>
       {assets.isLoading ? <Loader /> : null}
       {vista === 'mensual' && ambito === 'activo' ? <AssetMonth assetId={effectiveAssetId} period={period} /> : null}
       {vista === 'mensual' && ambito === 'tipo' ? <TypeMonth type={type} period={period} /> : null}
       {vista === 'mensual' && ambito === 'total' ? <TotalMonth period={period} /> : null}
       {vista === 'historico' && ambito === 'activo' && effectiveAssetId !== null ? <AssetHistoryPanel assetId={effectiveAssetId} /> : null}
-      {vista === 'historico' && ambito === 'activo' && effectiveAssetId === null ? <EmptyState title="Escolle un activo" /> : null}
+      {vista === 'historico' && ambito === 'activo' && effectiveAssetId === null ? <EmptyState title="Escolle un ativo" /> : null}
       {vista === 'historico' && ambito === 'tipo' ? <TypeHistoryPanel type={type} /> : null}
       {vista === 'historico' && ambito === 'total' ? <TotalHistoryPanel /> : null}
     </Stack>

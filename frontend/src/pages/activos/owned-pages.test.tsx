@@ -49,7 +49,7 @@ function AssetCreateHarness() {
   return (
     <>
       <button type="button" onClick={() => void create.mutateAsync({ type: 'indice', name: 'SP500', amountUsd: 1000, year: 2026, month: 1 })}>
-        Crear activo
+        Crear ativo
       </button>
       <ul>{(assets.data ?? []).map((asset) => <li key={asset.id}>{asset.name}</li>)}</ul>
     </>
@@ -69,7 +69,7 @@ describe('asset pages', () => {
     })
 
     renderWithProviders(<AssetCreateHarness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Crear activo' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Crear ativo' }))
 
     await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === '/api/assets')).toBe(true))
     const post = calls.find((call) => call.method === 'POST' && call.path === '/api/assets')
@@ -81,6 +81,7 @@ describe('asset pages', () => {
   it('deletes an asset after confirmation', async () => {
     const calls = stubFetch((path, init) => {
       if (path === '/api/assets' && (init?.method ?? 'GET') === 'GET') return json([assetA])
+      if (path === '/api/portfolio') return json({ period: { year: 2026, month: 10 }, pendingCount: 0, rows: [] })
       if (path === '/api/assets/1' && init?.method === 'DELETE') return noContent()
       return json([])
     })
@@ -92,6 +93,40 @@ describe('asset pages', () => {
     await userEvent.click(within(modal).getByRole('button', { name: 'Eliminar' }))
 
     await waitFor(() => expect(calls.some((call) => call.method === 'DELETE' && call.path === '/api/assets/1')).toBe(true))
+  })
+
+  it('sorts the Portofolio by a clicked header', async () => {
+    stubFetch((path) => {
+      if (path === '/api/assets') return json([assetA, assetB])
+      if (path === '/api/portfolio') return json({
+        period: { year: 2026, month: 10 },
+        pendingCount: 0,
+        rows: [
+          { asset: assetA, totalInvested: 1000, currentValue: 1200, hasCurrentValue: true, gain: 200, gainPct: 20, hasGain: true, hasGainPct: true, lastResult: { year: 2026, month: 10 }, pending: false },
+          { asset: assetB, totalInvested: 250, currentValue: 0, hasCurrentValue: false, gain: 0, gainPct: 0, hasGain: false, hasGainPct: false, lastResult: null, pending: true },
+        ],
+      })
+      return json([])
+    })
+
+    renderWithProviders(<ActivosPage />)
+    expect(await screen.findByText('SP500')).toBeInTheDocument()
+
+    const bodyRows = () => screen.getAllByRole('row').slice(1).map((row) => row.textContent ?? '')
+    expect(bodyRows()[0]).toContain('SP500')
+    expect(bodyRows()[1]).toContain('Novo')
+
+    await userEvent.click(screen.getByRole('button', { name: /Nome/ }))
+    expect(bodyRows()[0]).toContain('Novo')
+    expect(bodyRows()[1]).toContain('SP500')
+
+    await userEvent.click(screen.getByRole('button', { name: /Nome/ }))
+    expect(bodyRows()[0]).toContain('SP500')
+    expect(bodyRows()[1]).toContain('Novo')
+
+    await userEvent.click(screen.getByRole('button', { name: /Nome/ }))
+    expect(bodyRows()[0]).toContain('SP500')
+    expect(bodyRows()[1]).toContain('Novo')
   })
 })
 
@@ -106,7 +141,7 @@ describe('transaction page', () => {
   it('shows the server month field error in the Nova tab', async () => {
     stubFetch((path, init) => {
       if (path === '/api/assets') return json([assetA])
-      if (path === '/api/transactions' && init?.method === 'POST') return json({ error: 'Erro de validación', fields: { month: 'a transacción non pode ser anterior á data do activo (01/2026)' } }, 400)
+      if (path === '/api/transactions' && init?.method === 'POST') return json({ error: 'Erro de validación', fields: { month: 'a transacción non pode ser anterior á data do ativo (01/2026)' } }, 400)
       return json([])
     })
 

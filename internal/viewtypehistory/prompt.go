@@ -45,6 +45,47 @@ type Row struct {
 	HasMetrics bool             `json:"hasMetrics"`
 }
 
+func Current(repo Repo, typ domain.AssetType, now domain.YearMonth) (*Row, error) {
+	assets, err := repo.ListAssets()
+	if err != nil {
+		return nil, fmt.Errorf("listando activos: %w", err)
+	}
+	var candidates []domain.Asset
+	for _, a := range assets {
+		if a.Type == typ && a.CreatedBy(now) {
+			candidates = append(candidates, a)
+		}
+	}
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	var aporte, holding float64
+	for _, a := range candidates {
+		months, err := repo.MonthsWithResultsForAsset(a.ID)
+		if err != nil {
+			return nil, fmt.Errorf("obtendo meses de %s: %w", a.Name, err)
+		}
+		for _, ym := range months {
+			if !ym.Before(now) {
+				return nil, nil
+			}
+		}
+		sum, err := repo.MonthlySummary(a.ID, now.Year, now.Month)
+		if err != nil {
+			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+		}
+		aporte += sum.InvestedInMonth
+		if sum.EstimatedHolding > 0 {
+			holding += sum.EstimatedHolding
+		}
+	}
+	if holding <= 0 && aporte == 0 {
+		return nil, nil
+	}
+	return &Row{Period: now, Aporte: aporte, Holding: holding}, nil
+}
+
 func Build(repo Repo, typ domain.AssetType) (History, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {

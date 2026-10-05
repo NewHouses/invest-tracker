@@ -8,7 +8,7 @@ const colors = ['blue.6', 'green.6', 'orange.6', 'grape.6', 'cyan.6', 'red.6', '
 
 // As claves dos datos son sintéticas (s0, s1…): Mantine/Recharts interpretan
 // os puntos dunha clave como rutas aniñadas, e etiquetas como
-// "Resultado + dividendos acum." ou nomes de activos con "S.A." romperían a
+// "Resultado + dividendos acum." ou nomes de ativos con "S.A." romperían a
 // lenda. A etiqueta visible vai en `label`.
 export function mapLineChartDTO(dto: LineChartDTO): { data: MantineLineDatum[]; series: MantineLineSeries[] } {
   const keyed = dto.series.map((serie, index) => ({ ...serie, key: `s${index}` }))

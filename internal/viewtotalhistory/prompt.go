@@ -47,6 +47,52 @@ type Row struct {
 	HasMetrics bool             `json:"hasMetrics"`
 }
 
+func Current(repo Repo, now domain.YearMonth) (*Row, error) {
+	assets, err := repo.ListAssets()
+	if err != nil {
+		return nil, fmt.Errorf("listando activos: %w", err)
+	}
+	var candidates []domain.Asset
+	for _, a := range assets {
+		if a.CreatedBy(now) {
+			candidates = append(candidates, a)
+		}
+	}
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+	months, err := repo.MonthsWithResults()
+	if err != nil {
+		return nil, fmt.Errorf("obtendo meses con resultados: %w", err)
+	}
+	for _, ym := range months {
+		if !ym.Before(now) {
+			return nil, nil
+		}
+	}
+
+	var totalTx, fondos float64
+	for _, a := range candidates {
+		sum, err := repo.MonthlySummary(a.ID, now.Year, now.Month)
+		if err != nil {
+			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+		}
+		totalTx += sum.InvestedInMonth
+		if sum.EstimatedHolding > 0 {
+			fondos += sum.EstimatedHolding
+		}
+	}
+	div, err := repo.SumDividends(now.Year, now.Month)
+	if err != nil {
+		return nil, fmt.Errorf("sumando dividendos de %d/%d: %w", now.Month, now.Year, err)
+	}
+	aporte := totalTx - div
+	if fondos <= 0 && aporte == 0 && div == 0 {
+		return nil, nil
+	}
+	return &Row{Period: now, Aporte: aporte, Fondos: fondos, Dividends: div}, nil
+}
+
 func Build(repo Repo) (History, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {

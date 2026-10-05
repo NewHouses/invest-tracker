@@ -14,6 +14,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import {
   IconAdjustments,
+  IconArrowsExchange,
   IconChartLine,
   IconCoin,
   IconHome,
@@ -31,23 +32,41 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 
 import { useLogout } from '@/api/auth'
 
-type NavItem = {
+type NavLeaf = {
   label: string
   to: string
   icon: Icon
 }
 
+type NavGroup = {
+  label: string
+  icon: Icon
+  children: NavLeaf[]
+}
+
+type NavItem = NavLeaf | NavGroup
+
 const navItems: NavItem[] = [
   { label: 'Inicio', to: '/', icon: IconHome },
-  { label: 'Activos', to: '/activos', icon: IconWallet },
-  { label: 'Transaccións', to: '/transaccions', icon: IconListDetails },
-  { label: 'Resultados', to: '/resultados', icon: IconTrendingUp },
+  { label: 'Portofolio', to: '/activos', icon: IconWallet },
   { label: 'Dividendos', to: '/dividendos', icon: IconCoin },
+  {
+    label: 'Operacións',
+    icon: IconArrowsExchange,
+    children: [
+      { label: 'Transaccións', to: '/transaccions', icon: IconListDetails },
+      { label: 'Resultados', to: '/resultados', icon: IconTrendingUp },
+    ],
+  },
   { label: 'Informes', to: '/informes', icon: IconReportAnalytics },
   { label: 'Gráficas', to: '/graficas', icon: IconChartLine },
-  { label: 'Proxección', to: '/proxeccion', icon: IconTimeline },
+  { label: 'Proxeccións', to: '/proxeccion', icon: IconTimeline },
   { label: 'Axustes', to: '/axustes', icon: IconAdjustments },
 ]
+
+function isActive(pathname: string, to: string) {
+  return to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`)
+}
 
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure()
@@ -116,18 +135,47 @@ export function AppLayout() {
         <ScrollArea>
           {navItems.map((item) => {
             const IconComponent = item.icon
-            const active = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
+            const linkStyle = { borderRadius: 'var(--mantine-radius-md)' }
+            if ('children' in item) {
+              return (
+                <MantineNavLink
+                  key={item.label}
+                  label={item.label}
+                  leftSection={<IconComponent size={18} />}
+                  defaultOpened
+                  childrenOffset={28}
+                  style={linkStyle}
+                >
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon
+                    return (
+                      <MantineNavLink
+                        key={child.to}
+                        label={child.label}
+                        leftSection={<ChildIcon size={16} />}
+                        active={isActive(location.pathname, child.to)}
+                        onClick={() => {
+                          navigate(child.to)
+                          close()
+                        }}
+                        style={linkStyle}
+                      />
+                    )
+                  })}
+                </MantineNavLink>
+              )
+            }
             return (
               <MantineNavLink
                 key={item.to}
                 label={item.label}
                 leftSection={<IconComponent size={18} />}
-                active={active}
+                active={isActive(location.pathname, item.to)}
                 onClick={() => {
                   navigate(item.to)
                   close()
                 }}
-                style={{ borderRadius: 'var(--mantine-radius-md)' }}
+                style={linkStyle}
               />
             )
           })}

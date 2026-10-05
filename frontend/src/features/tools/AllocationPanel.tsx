@@ -29,7 +29,7 @@ export function AllocationPanel() {
   const toggleAsset = (type: AssetType, id: number, checked: boolean) => setSelectedAssets((prev) => ({ ...prev, [type]: checked ? [...prev[type], id] : prev[type].filter((assetId) => assetId !== id) }))
   const submit = () => mutation.mutate({ total: typeof total === 'number' ? total : Number(total), selection: selectedTypes.map((type) => ({ type, assetIds: selectedAssets[type] })) })
   if (assets.isError) return <ErrorAlert error={assets.error} />
-  if (!assets.isLoading && (assets.data ?? []).length === 0) return <EmptyState title="Aínda non hai activos" description="Engade activos antes de repartir aportes." />
+  if (!assets.isLoading && (assets.data ?? []).length === 0) return <EmptyState title="Aínda non hai ativos" description="Engade ativos antes de repartir aportes." />
   return (
     <Stack>
       <Paper withBorder p="md"><Stack>

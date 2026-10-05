@@ -48,6 +48,10 @@ export function useTypesChart() {
   return useQuery({ queryKey: queryKeys.charts.types, queryFn: ({ signal }) => apiFetch<LineChartDTO>('/api/charts/types', { signal }) })
 }
 
+export function useAllAssetsChart() {
+  return useQuery({ queryKey: queryKeys.charts.allAssets, queryFn: ({ signal }) => apiFetch<LineChartDTO>('/api/charts/assets', { signal }) })
+}
+
 export function useTotalChart() {
   return useQuery({ queryKey: queryKeys.charts.total, queryFn: ({ signal }) => apiFetch<LineChartDTO>('/api/charts/total', { signal }) })
 }
