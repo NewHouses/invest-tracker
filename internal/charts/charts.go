@@ -95,8 +95,8 @@ func padRight(s string, width int) string {
 
 // Series is one line in a multi-series chart.
 type Series struct {
-	Label  string
-	Values []float64
+	Label  string    `json:"label"`
+	Values []float64 `json:"values"`
 }
 
 // RenderLine writes a line chart for the given series. months provides the

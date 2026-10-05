@@ -20,29 +20,59 @@ type Repo interface {
 
 const sep = "========================================================="
 
-// monthAgg agrega valores en bruto para un (year, month) sobre todos os
-// activos pasados.
-type monthAgg struct {
-	year, month       int
-	totalInvested     float64 // suma de TotalInvestedUpTo
-	investedInMonth   float64 // suma de InvestedInMonth
-	holding           float64 // suma de EstimatedHolding dos activos con capital
-	holdingWithResult float64 // suma de EstimatedHolding dos activos con resultado
-	resultSum         float64 // suma de monthly_results para ese mes
-	dividends         float64 // dividendos do mes
-	dividendsPrev     float64 // dividendos do mes anterior
-	assetsActive      int     // activos con EstimatedHolding > 0
-	assetsWithResult  int     // activos con resultado rexistrado
-	totalAssetsInPool int     // tamaño do pool de activos consultados
+type Averages struct {
+	Months      int     `json:"months"`
+	PctNoDiv    float64 `json:"pctNoDiv"`
+	GainNoDiv   float64 `json:"gainNoDiv"`
+	PctWithDiv  float64 `json:"pctWithDiv"`
+	GainWithDiv float64 `json:"gainWithDiv"`
 }
 
-// monthMetrics recolle métricas derivadas dunha agregación. HasMetrics indica
-// se hai datos suficientes para computar gañanzas (BaseNoDiv > 0 e algún
-// activo con resultado).
+type Report struct {
+	Period                    domain.YearMonth `json:"period"`
+	TotalAssets               int              `json:"totalAssets"`
+	AssetsActive              int              `json:"assetsActive"`
+	AssetsWithResult          int              `json:"assetsWithResult"`
+	Partial                   bool             `json:"partial"`
+	TotalInvested             float64          `json:"totalInvested"`
+	InvestedInMonth           float64          `json:"investedInMonth"`
+	InvestedPlusPrevDividends float64          `json:"investedPlusPrevDividends"`
+	Dividends                 float64          `json:"dividends"`
+	DividendsPrev             float64          `json:"dividendsPrev"`
+	HoldingNoDiv              float64          `json:"holdingNoDiv"`
+	HoldingWithDiv            float64          `json:"holdingWithDiv"`
+	BaseNoDiv                 float64          `json:"baseNoDiv"`
+	BaseWithDiv               float64          `json:"baseWithDiv"`
+	ResultNoDiv               float64          `json:"resultNoDiv"`
+	ResultWithDiv             float64          `json:"resultWithDiv"`
+	GainNoDiv                 float64          `json:"gainNoDiv"`
+	GainWithDiv               float64          `json:"gainWithDiv"`
+	PctNoDiv                  float64          `json:"pctNoDiv"`
+	PctWithDiv                float64          `json:"pctWithDiv"`
+	HasResults                bool             `json:"hasResults"`
+	HasMetrics                bool             `json:"hasMetrics"`
+	HasPctWithDiv             bool             `json:"hasPctWithDiv"`
+	Averages                  Averages         `json:"averages"`
+}
+
+type monthAgg struct {
+	year, month       int
+	totalInvested     float64
+	investedInMonth   float64
+	holding           float64
+	holdingWithResult float64
+	resultSum         float64
+	dividends         float64
+	dividendsPrev     float64
+	assetsActive      int
+	assetsWithResult  int
+	totalAssetsInPool int
+}
+
 type monthMetrics struct {
-	HoldingNoDiv   float64 // capital estimado de tódolos activos con capital
+	HoldingNoDiv   float64
 	HoldingWithDiv float64
-	BaseNoDiv      float64 // capital estimado dos activos con resultado: base da G/P
+	BaseNoDiv      float64
 	BaseWithDiv    float64
 	ResultNoDiv    float64
 	ResultWithDiv  float64
@@ -51,6 +81,87 @@ type monthMetrics struct {
 	PctNoDiv       float64
 	PctWithDiv     float64
 	HasMetrics     bool
+}
+
+func Build(repo Repo, year, month int) (Report, error) {
+	assets, err := repo.ListAssets()
+	if err != nil {
+		return Report{}, fmt.Errorf("listando activos: %w", err)
+	}
+	return buildFromAssets(repo, assets, year, month)
+}
+
+func buildFromAssets(repo Repo, assets []domain.Asset, year, month int) (Report, error) {
+	target, err := aggregateMonth(repo, assets, year, month)
+	if err != nil {
+		return Report{}, err
+	}
+	report := reportFromAgg(target)
+	if report.AssetsActive == 0 {
+		return report, nil
+	}
+
+	monthsWithResults, err := repo.MonthsWithResultsUpTo(year, month)
+	if err != nil {
+		return Report{}, fmt.Errorf("obtendo meses con resultados: %w", err)
+	}
+
+	var sumPctNoDiv, sumGainNoDiv, sumPctWithDiv, sumGainWithDiv float64
+	var nMonths int
+	for _, ym := range monthsWithResults {
+		agg, err := aggregateMonth(repo, assets, ym.Year, ym.Month)
+		if err != nil {
+			return Report{}, err
+		}
+		m := computeMetrics(agg)
+		if !m.HasMetrics {
+			continue
+		}
+		sumPctNoDiv += m.PctNoDiv
+		sumGainNoDiv += m.GainNoDiv
+		sumPctWithDiv += m.PctWithDiv
+		sumGainWithDiv += m.GainWithDiv
+		nMonths++
+	}
+	if nMonths > 0 {
+		report.Averages = Averages{
+			Months:      nMonths,
+			PctNoDiv:    sumPctNoDiv / float64(nMonths),
+			GainNoDiv:   sumGainNoDiv / float64(nMonths),
+			PctWithDiv:  sumPctWithDiv / float64(nMonths),
+			GainWithDiv: sumGainWithDiv / float64(nMonths),
+		}
+	}
+	return report, nil
+}
+
+func reportFromAgg(target monthAgg) Report {
+	cur := computeMetrics(target)
+	return Report{
+		Period:                    domain.YearMonth{Year: target.year, Month: target.month},
+		TotalAssets:               target.totalAssetsInPool,
+		AssetsActive:              target.assetsActive,
+		AssetsWithResult:          target.assetsWithResult,
+		Partial:                   target.assetsWithResult > 0 && target.assetsWithResult < target.assetsActive,
+		TotalInvested:             target.totalInvested,
+		InvestedInMonth:           target.investedInMonth,
+		InvestedPlusPrevDividends: target.investedInMonth + target.dividendsPrev,
+		Dividends:                 target.dividends,
+		DividendsPrev:             target.dividendsPrev,
+		HoldingNoDiv:              cur.HoldingNoDiv,
+		HoldingWithDiv:            cur.HoldingWithDiv,
+		BaseNoDiv:                 cur.BaseNoDiv,
+		BaseWithDiv:               cur.BaseWithDiv,
+		ResultNoDiv:               cur.ResultNoDiv,
+		ResultWithDiv:             cur.ResultWithDiv,
+		GainNoDiv:                 cur.GainNoDiv,
+		GainWithDiv:               cur.GainWithDiv,
+		PctNoDiv:                  cur.PctNoDiv,
+		PctWithDiv:                cur.PctWithDiv,
+		HasResults:                target.assetsWithResult > 0,
+		HasMetrics:                cur.HasMetrics,
+		HasPctWithDiv:             cur.HasMetrics && cur.BaseWithDiv > 0,
+	}
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
@@ -79,40 +190,16 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 
-	target, err := aggregateMonth(repo, assets, year, month)
+	report, err := buildFromAssets(repo, assets, year, month)
 	if err != nil {
 		return err
 	}
-	if target.assetsActive == 0 {
+	if report.AssetsActive == 0 {
 		fmt.Fprintf(w, "Non hai activos con capital investido en %02d/%d.\n", month, year)
 		return nil
 	}
 
-	// Promedios sobre meses con resultados ata target (incluído).
-	monthsWithResults, err := repo.MonthsWithResultsUpTo(year, month)
-	if err != nil {
-		return fmt.Errorf("obtendo meses con resultados: %w", err)
-	}
-
-	var sumPctNoDiv, sumGainNoDiv, sumPctWithDiv, sumGainWithDiv float64
-	var nMonths int
-	for _, ym := range monthsWithResults {
-		agg, err := aggregateMonth(repo, assets, ym.Year, ym.Month)
-		if err != nil {
-			return err
-		}
-		m := computeMetrics(agg)
-		if !m.HasMetrics {
-			continue
-		}
-		sumPctNoDiv += m.PctNoDiv
-		sumGainNoDiv += m.GainNoDiv
-		sumPctWithDiv += m.PctWithDiv
-		sumGainWithDiv += m.GainWithDiv
-		nMonths++
-	}
-
-	renderTable(w, target, nMonths, sumPctNoDiv, sumGainNoDiv, sumPctWithDiv, sumGainWithDiv)
+	renderTable(w, report)
 	return nil
 }
 
@@ -137,9 +224,6 @@ func aggregateMonth(repo Repo, assets []domain.Asset, year, month int) (monthAgg
 			agg.assetsActive++
 			agg.holding += sum.EstimatedHolding
 		}
-		// EstimatedHolding parte do último resultado coñecido do activo (non
-		// só do mes anterior), así que un mes sen resultado non deixa o
-		// activo fóra da base. Resultado e base inclúen o mesmo conxunto.
 		if sum.HasResult {
 			agg.resultSum += sum.Result
 			agg.holdingWithResult += sum.EstimatedHolding
@@ -185,29 +269,25 @@ func computeMetrics(a monthAgg) monthMetrics {
 	return m
 }
 
-func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
-	sumPctNoDiv, sumGainNoDiv, sumPctWithDiv, sumGainWithDiv float64) {
-
-	cur := computeMetrics(target)
-
+func renderTable(w io.Writer, report Report) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Informe total · %02d/%d\n", target.month, target.year)
+	fmt.Fprintf(w, "  Informe total · %02d/%d\n", report.Period.Month, report.Period.Year)
 	fmt.Fprintln(w, sep)
 	fmt.Fprintf(w, "  Activos: %d (%d activos en %02d/%d)\n",
-		target.totalAssetsInPool, target.assetsActive, target.month, target.year)
+		report.TotalAssets, report.AssetsActive, report.Period.Month, report.Period.Year)
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "  Total investido ata o mes\t%s\n", money.USD(target.totalInvested))
-	fmt.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(target.investedInMonth))
+	fmt.Fprintf(tw, "  Total investido ata o mes\t%s\n", money.USD(report.TotalInvested))
+	fmt.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(report.InvestedInMonth))
 	fmt.Fprintf(tw, "  Investimento + dividendos prev. mes\t%s\n",
-		money.USD(target.investedInMonth+target.dividendsPrev))
-	fmt.Fprintf(tw, "  No activo (sen div)\t%s\n", money.USD(cur.HoldingNoDiv))
-	fmt.Fprintf(tw, "  No activo (con div)\t%s\n", money.USD(cur.HoldingWithDiv))
-	fmt.Fprintf(tw, "  Dividendos este mes\t%s\n", money.USD(target.dividends))
+		money.USD(report.InvestedPlusPrevDividends))
+	fmt.Fprintf(tw, "  No activo (sen div)\t%s\n", money.USD(report.HoldingNoDiv))
+	fmt.Fprintf(tw, "  No activo (con div)\t%s\n", money.USD(report.HoldingWithDiv))
+	fmt.Fprintf(tw, "  Dividendos este mes\t%s\n", money.USD(report.Dividends))
 
-	if target.assetsWithResult == 0 {
+	if !report.HasResults {
 		fmt.Fprintln(tw, "  Resultado (sen div)\t—")
 		fmt.Fprintln(tw, "  Resultado total (con div)\t—")
 		fmt.Fprintln(tw, "  Gañanzas/Perdas\t—")
@@ -216,18 +296,18 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 		fmt.Fprintln(tw, "  Índice (con div)\t—")
 	} else {
 		coverage := ""
-		if target.assetsWithResult < target.assetsActive {
+		if report.Partial {
 			coverage = fmt.Sprintf("  (%d/%d activos con resultado)",
-				target.assetsWithResult, target.assetsActive)
+				report.AssetsWithResult, report.AssetsActive)
 		}
-		fmt.Fprintf(tw, "  Resultado (sen div)\t%s%s\n", money.USD(cur.ResultNoDiv), coverage)
-		fmt.Fprintf(tw, "  Resultado total (con div)\t%s\n", money.USD(cur.ResultWithDiv))
-		if cur.HasMetrics {
-			fmt.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(cur.GainNoDiv))
-			fmt.Fprintf(tw, "  Gañanzas/Perdas (con div)\t%s\n", money.SignedUSD(cur.GainWithDiv))
-			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", cur.PctNoDiv)
-			if cur.BaseWithDiv > 0 {
-				fmt.Fprintf(tw, "  Índice (con div)\t%+.2f%%\n", cur.PctWithDiv)
+		fmt.Fprintf(tw, "  Resultado (sen div)\t%s%s\n", money.USD(report.ResultNoDiv), coverage)
+		fmt.Fprintf(tw, "  Resultado total (con div)\t%s\n", money.USD(report.ResultWithDiv))
+		if report.HasMetrics {
+			fmt.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(report.GainNoDiv))
+			fmt.Fprintf(tw, "  Gañanzas/Perdas (con div)\t%s\n", money.SignedUSD(report.GainWithDiv))
+			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", report.PctNoDiv)
+			if report.HasPctWithDiv {
+				fmt.Fprintf(tw, "  Índice (con div)\t%+.2f%%\n", report.PctWithDiv)
 			} else {
 				fmt.Fprintln(tw, "  Índice (con div)\tn/a")
 			}
@@ -242,21 +322,20 @@ func renderTable(w io.Writer, target monthAgg, nAvgMonths int,
 
 	fmt.Fprintln(w, sep)
 
-	// Promedios
-	if nAvgMonths == 0 {
+	if report.Averages.Months == 0 {
 		fmt.Fprintln(w, "  Promedios mensuais: sen meses con resultados.")
 	} else {
 		fmt.Fprintf(w, "  Promedios mensuais (%d mes(es) con resultado ata %02d/%d):\n",
-			nAvgMonths, target.month, target.year)
+			report.Averages.Months, report.Period.Month, report.Period.Year)
 		twAvg := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 		fmt.Fprintf(twAvg, "    Índice medio mensual (sen div)\t%+.2f%%\n",
-			sumPctNoDiv/float64(nAvgMonths))
+			report.Averages.PctNoDiv)
 		fmt.Fprintf(twAvg, "    Gañanza media mensual (sen div)\t%s\n",
-			money.SignedUSD(sumGainNoDiv/float64(nAvgMonths)))
+			money.SignedUSD(report.Averages.GainNoDiv))
 		fmt.Fprintf(twAvg, "    Índice medio mensual (con div)\t%+.2f%%\n",
-			sumPctWithDiv/float64(nAvgMonths))
+			report.Averages.PctWithDiv)
 		fmt.Fprintf(twAvg, "    Gañanza media mensual (con div)\t%s\n",
-			money.SignedUSD(sumGainWithDiv/float64(nAvgMonths)))
+			money.SignedUSD(report.Averages.GainWithDiv))
 		twAvg.Flush()
 	}
 

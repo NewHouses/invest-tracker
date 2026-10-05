@@ -14,6 +14,10 @@ invest-tracker.exe
 *.out
 coverage.out
 
+# Ferramentas locais (Node portátil) e dependencias do frontend
+.tools/
+frontend/node_modules/
+
 # IDE / editores
 .vscode/
 .idea/

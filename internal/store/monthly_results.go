@@ -18,6 +18,37 @@ func (s *Store) InsertMonthlyResult(m domain.MonthlyResult) (int64, error) {
 	return res.LastInsertId()
 }
 
+func (s *Store) InsertMonthlyResults(rs []domain.MonthlyResult) ([]int64, error) {
+	if len(rs) == 0 {
+		return nil, nil
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ids := make([]int64, len(rs))
+	for i, r := range rs {
+		res, err := tx.Exec(
+			`INSERT INTO monthly_results (asset_id, result_usd, month, year) VALUES (?, ?, ?, ?)`,
+			r.AssetID, r.ResultUSD, r.Month, r.Year,
+		)
+		if err != nil {
+			return nil, err
+		}
+		ids[i], err = res.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 func (s *Store) ListMonthlyResultsByAsset(assetID int64) ([]domain.MonthlyResult, error) {
 	rows, err := s.db.Query(
 		`SELECT id, asset_id, result_usd, month, year FROM monthly_results

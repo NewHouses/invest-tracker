@@ -34,6 +34,7 @@ import (
 	"invest-tracker/internal/viewtransactions"
 	"invest-tracker/internal/viewtypehistory"
 	"invest-tracker/internal/viewtypereport"
+	"invest-tracker/internal/web"
 	"invest-tracker/internal/welcome"
 )
 
@@ -130,6 +131,10 @@ func readMenuLine(reader *bufio.Reader) (string, bool) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "web" {
+		os.Exit(web.Main(os.Args[2:]))
+	}
+
 	s, err := store.Open("./investimentos.db")
 	if err != nil {
 		log.Fatalf("non se pode abrir a base de datos: %v", err)

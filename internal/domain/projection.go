@@ -40,13 +40,13 @@ var (
 // ProjectionInput son os parámetros de entrada da proxección.
 type ProjectionInput struct {
 	// AnnualSalary é o salario anual inicial en USD (punto de partida).
-	AnnualSalary float64
+	AnnualSalary float64 `json:"annualSalary"`
 
 	// MonthlyReturn é o retorno mensual esperado como fracción: 0.01 = 1%.
-	MonthlyReturn float64
+	MonthlyReturn float64 `json:"monthlyReturn"`
 
 	// Start é a data de inicio dos investimentos.
-	Start YearMonth
+	Start YearMonth `json:"start"`
 }
 
 // Validate comproba que todos os campos obrigatorios son coherentes.
@@ -57,7 +57,7 @@ func (in ProjectionInput) Validate() error {
 	if in.MonthlyReturn <= MinMonthlyReturn {
 		return ErrReturnTooLow
 	}
-	if in.Start.Month < 1 || in.Start.Month > MonthsPerYear || in.Start.Year < 1 {
+	if !in.Start.Valid() {
 		return ErrInvalidStart
 	}
 	return nil
@@ -66,25 +66,25 @@ func (in ProjectionInput) Validate() error {
 // ProjectionMonth é a foto da carteira ao remate dun mes da proxección.
 type ProjectionMonth struct {
 	// Index é o número de mes dentro da proxección (1..ProjectionMonths).
-	Index int
+	Index int `json:"index"`
 
 	// Date é o ano/mes natural ao que corresponde este período.
-	Date YearMonth
+	Date YearMonth `json:"date"`
 
 	// AnnualSalary e MonthlySalary son os salarios vixentes neste mes.
-	AnnualSalary  float64
-	MonthlySalary float64
+	AnnualSalary  float64 `json:"annualSalary"`
+	MonthlySalary float64 `json:"monthlySalary"`
 
 	// Investment é o aporte feito neste mes; TotalInvested o acumulado.
-	Investment    float64
-	TotalInvested float64
+	Investment    float64 `json:"investment"`
+	TotalInvested float64 `json:"totalInvested"`
 
 	// Return é o rendemento xerado neste mes; TotalGains o acumulado.
-	Return     float64
-	TotalGains float64
+	Return     float64 `json:"return"`
+	TotalGains float64 `json:"totalGains"`
 
 	// TotalCapital é o capital total tras aportar e aplicar o rendemento.
-	TotalCapital float64
+	TotalCapital float64 `json:"totalCapital"`
 }
 
 // Project simula a evolución do patrimonio durante ProjectionMonths meses

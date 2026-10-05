@@ -1,0 +1,1 @@
+import{ct as e,ht as t,yt as n}from"./ErrorAlert-BKGLDRCi.js";import{b as r}from"./index-q30XCqS8.js";var i=n(),a=e(e=>{let n=t([`Input`,`InputWrapper`,`TextInput`],null,e);return(0,i.jsx)(r,{component:`input`,...n,__staticSelector:`TextInput`})});a.classes=r.classes,a.displayName=`@mantine/core/TextInput`;export{a as t};

@@ -19,6 +19,23 @@ func (s *Store) InsertAsset(a domain.Asset) (int64, error) {
 	return res.LastInsertId()
 }
 
+func (s *Store) GetAsset(id int64) (domain.Asset, error) {
+	var a domain.Asset
+	var t string
+	err := s.db.QueryRow(
+		`SELECT id, type, name, amount_usd, month, year FROM assets WHERE id = ?`,
+		id,
+	).Scan(&a.ID, &t, &a.Name, &a.AmountUSD, &a.Month, &a.Year)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Asset{}, fmt.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
+		}
+		return domain.Asset{}, err
+	}
+	a.Type = domain.AssetType(t)
+	return a, nil
+}
+
 func (s *Store) ListAssets() ([]domain.Asset, error) {
 	rows, err := s.db.Query(
 		`SELECT id, type, name, amount_usd, month, year FROM assets ORDER BY id`,

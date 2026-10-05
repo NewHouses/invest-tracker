@@ -23,6 +23,28 @@ type Repo interface {
 	SumDividends(year, month int) (float64, error)
 }
 
+type Distribution struct {
+	Items     []DistributionItem `json:"items"`
+	Total     float64            `json:"total"`
+	HasAssets bool               `json:"hasAssets"`
+}
+
+type DistributionItem struct {
+	Asset domain.Asset `json:"asset"`
+	Label string       `json:"label"`
+	Value float64      `json:"value"`
+	Pct   float64      `json:"pct"`
+
+	colorIndex int
+}
+
+type LineChart struct {
+	Title     string             `json:"title"`
+	Months    []domain.YearMonth `json:"months"`
+	Series    []charts.Series    `json:"series"`
+	HasAssets bool               `json:"hasAssets"`
+}
+
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	fmt.Fprint(w, "\n--- Ver gráficas ---\n")
 
@@ -83,74 +105,51 @@ func promptChartType(r *bufio.Reader, w io.Writer) (int, error) {
 	}
 }
 
-// ---- Chart 1: Distribución de aportes ----
-
-func chart1Distribution(w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Distribución de aportes ---")
+func BuildDistribution(repo Repo) (Distribution, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return Distribution{}, fmt.Errorf("listando activos: %w", err)
 	}
-	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
-		return nil
-	}
-	items := make([]charts.BarItem, 0, len(assets))
-	var total float64
+	dist := Distribution{HasAssets: len(assets) > 0}
 	for i, a := range assets {
 		sum, err := repo.MonthlySummary(a.ID, 9999, 12)
 		if err != nil {
-			return fmt.Errorf("calculando lifetime de %s: %w", a.Name, err)
+			return Distribution{}, fmt.Errorf("calculando lifetime de %s: %w", a.Name, err)
 		}
 		if sum.TotalInvestedUpTo <= 0 {
 			continue
 		}
-		items = append(items, charts.BarItem{
-			Label: fmt.Sprintf("%s — %s", a.Type.Display(), a.Name),
-			Value: sum.TotalInvestedUpTo,
-			Color: charts.PaletteFG(i),
+		dist.Total += sum.TotalInvestedUpTo
+		dist.Items = append(dist.Items, DistributionItem{
+			Asset:      a,
+			Label:      fmt.Sprintf("%s — %s", a.Type.Display(), a.Name),
+			Value:      sum.TotalInvestedUpTo,
+			colorIndex: i,
 		})
-		total += sum.TotalInvestedUpTo
 	}
-	if total <= 0 {
-		fmt.Fprintln(w, "Aínda non hai aportes rexistrados.")
-		return nil
+	if dist.Total > 0 {
+		for i := range dist.Items {
+			dist.Items[i].Pct = dist.Items[i].Value / dist.Total * 100
+		}
 	}
-	fmt.Fprintf(w, "\nTotal aportado: %s\n\n", money.USD(total))
-	charts.RenderBars(w, items, total)
-	return nil
+	return dist, nil
 }
 
-// ---- Chart 2: Evolución dun activo ----
-
-func chart2AssetEvolution(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Evolución dun activo ---")
-	assets, err := repo.ListAssets()
+func BuildAssetEvolution(repo Repo, asset domain.Asset) (LineChart, error) {
+	months, err := repo.MonthsWithResultsForAsset(asset.ID)
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return LineChart{}, fmt.Errorf("obtendo meses: %w", err)
 	}
-	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
-		return nil
-	}
-	chosen, err := prompts.SelectAsset(r, w, assets)
-	if err != nil {
-		return err
-	}
-	months, err := repo.MonthsWithResultsForAsset(chosen.ID)
-	if err != nil {
-		return fmt.Errorf("obtendo meses: %w", err)
-	}
+	chart := LineChart{Title: fmt.Sprintf("%s — %s", asset.Type.Display(), asset.Name), Months: months, HasAssets: true}
 	if len(months) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para este activo.")
-		return nil
+		return chart, nil
 	}
 	results := make([]float64, len(months))
 	aportes := make([]float64, len(months))
 	for i, ym := range months {
-		sum, err := repo.MonthlySummary(chosen.ID, ym.Year, ym.Month)
+		sum, err := repo.MonthlySummary(asset.ID, ym.Year, ym.Month)
 		if err != nil {
-			return fmt.Errorf("calculando resumo: %w", err)
+			return LineChart{}, fmt.Errorf("calculando resumo: %w", err)
 		}
 		if sum.HasResult {
 			results[i] = sum.Result
@@ -159,37 +158,29 @@ func chart2AssetEvolution(r *bufio.Reader, w io.Writer, repo Repo) error {
 		}
 		aportes[i] = sum.TotalInvestedUpTo
 	}
-	series := []charts.Series{
+	chart.Series = []charts.Series{
 		{Label: "Resultado", Values: results},
 		{Label: "Aporte acumulado", Values: aportes},
 	}
-	charts.RenderLine(w, series, months, fmt.Sprintf("%s — %s", chosen.Type.Display(), chosen.Name))
-	return nil
+	return chart, nil
 }
 
-// ---- Chart 3: Evolución dun tipo (agregada) ----
-
-func chart3TypeAggregated(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Evolución dun tipo (agregada) ---")
-	typ, err := prompts.SelectAssetType(r, w)
-	if err != nil {
-		return err
-	}
+func BuildTypeAggregated(repo Repo, typ domain.AssetType) (LineChart, error) {
 	ofType, err := assetsOfType(repo, typ)
 	if err != nil {
-		return err
+		return LineChart{}, err
 	}
+	chart := LineChart{Title: fmt.Sprintf("Tipo: %s", typ.Display()), HasAssets: len(ofType) > 0}
 	if len(ofType) == 0 {
-		fmt.Fprintf(w, "Non hai activos de tipo %s.\n", typ.Display())
-		return nil
+		return chart, nil
 	}
 	months, err := unionMonths(repo, ofType)
 	if err != nil {
-		return err
+		return LineChart{}, err
 	}
+	chart.Months = months
 	if len(months) == 0 {
-		fmt.Fprintf(w, "Aínda non hai resultados rexistrados para activos de tipo %s.\n", typ.Display())
-		return nil
+		return chart, nil
 	}
 	results := make([]float64, len(months))
 	aportes := make([]float64, len(months))
@@ -198,7 +189,7 @@ func chart3TypeAggregated(r *bufio.Reader, w io.Writer, repo Repo) error {
 		for _, a := range ofType {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
-				return fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+				return LineChart{}, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 			}
 			if sum.HasResult {
 				resSum += sum.Result
@@ -208,46 +199,37 @@ func chart3TypeAggregated(r *bufio.Reader, w io.Writer, repo Repo) error {
 		results[i] = resSum
 		aportes[i] = aporteSum
 	}
-	series := []charts.Series{
+	chart.Series = []charts.Series{
 		{Label: "Resultado agregado", Values: results},
 		{Label: "Aporte acumulado", Values: aportes},
 	}
-	charts.RenderLine(w, series, months, fmt.Sprintf("Tipo: %s", typ.Display()))
-	return nil
+	return chart, nil
 }
 
-// ---- Chart 4: Evolución dos activos dun tipo ----
-
-func chart4AssetsOfType(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Evolución dos activos dun tipo ---")
-	typ, err := prompts.SelectAssetType(r, w)
-	if err != nil {
-		return err
-	}
+func BuildAssetsOfType(repo Repo, typ domain.AssetType) (LineChart, error) {
 	ofType, err := assetsOfType(repo, typ)
 	if err != nil {
-		return err
+		return LineChart{}, err
 	}
+	chart := LineChart{Title: fmt.Sprintf("Activos de tipo %s", typ.Display()), HasAssets: len(ofType) > 0}
 	if len(ofType) == 0 {
-		fmt.Fprintf(w, "Non hai activos de tipo %s.\n", typ.Display())
-		return nil
+		return chart, nil
 	}
 	months, err := unionMonths(repo, ofType)
 	if err != nil {
-		return err
+		return LineChart{}, err
 	}
+	chart.Months = months
 	if len(months) == 0 {
-		fmt.Fprintf(w, "Aínda non hai resultados rexistrados para activos de tipo %s.\n", typ.Display())
-		return nil
+		return chart, nil
 	}
-	series := make([]charts.Series, 0, len(ofType))
 	for _, a := range ofType {
 		values := make([]float64, len(months))
 		any := false
 		for i, ym := range months {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
-				return err
+				return LineChart{}, err
 			}
 			if sum.HasResult {
 				values[i] = sum.Result
@@ -256,43 +238,31 @@ func chart4AssetsOfType(r *bufio.Reader, w io.Writer, repo Repo) error {
 				values[i] = math.NaN()
 			}
 		}
-		if !any {
-			continue
+		if any {
+			chart.Series = append(chart.Series, charts.Series{Label: a.Name, Values: values})
 		}
-		series = append(series, charts.Series{Label: a.Name, Values: values})
 	}
-	if len(series) == 0 {
-		fmt.Fprintf(w, "Aínda non hai resultados rexistrados para activos de tipo %s.\n", typ.Display())
-		return nil
-	}
-	charts.RenderLine(w, series, months, fmt.Sprintf("Activos de tipo %s", typ.Display()))
-	return nil
+	return chart, nil
 }
 
-// ---- Chart 5: Evolución dos tipos ----
-
-func chart5AllTypes(w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Evolución dos tipos ---")
+func BuildAllTypes(repo Repo) (LineChart, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return LineChart{}, fmt.Errorf("listando activos: %w", err)
 	}
+	chart := LineChart{Title: "Resultado por tipo", HasAssets: len(assets) > 0}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos.")
-		return nil
+		return chart, nil
 	}
 	months, err := repo.MonthsWithResults()
 	if err != nil {
-		return fmt.Errorf("obtendo meses: %w", err)
+		return LineChart{}, fmt.Errorf("obtendo meses: %w", err)
 	}
+	chart.Months = months
 	if len(months) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados.")
-		return nil
+		return chart, nil
 	}
-	allTypes := []domain.AssetType{
-		domain.Accion, domain.Indice, domain.CopyTrading, domain.Fondo,
-	}
-	series := make([]charts.Series, 0, len(allTypes))
+	allTypes := []domain.AssetType{domain.Accion, domain.Indice, domain.CopyTrading, domain.Fondo}
 	for _, t := range allTypes {
 		var ofType []domain.Asset
 		for _, a := range assets {
@@ -311,7 +281,7 @@ func chart5AllTypes(w io.Writer, repo Repo) error {
 			for _, a := range ofType {
 				sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 				if err != nil {
-					return err
+					return LineChart{}, err
 				}
 				if sum.HasResult {
 					resSum += sum.Result
@@ -325,38 +295,29 @@ func chart5AllTypes(w io.Writer, repo Repo) error {
 				values[i] = math.NaN()
 			}
 		}
-		if !any {
-			continue
+		if any {
+			chart.Series = append(chart.Series, charts.Series{Label: t.Display(), Values: values})
 		}
-		series = append(series, charts.Series{Label: t.Display(), Values: values})
 	}
-	if len(series) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para ningún tipo.")
-		return nil
-	}
-	charts.RenderLine(w, series, months, "Resultado por tipo")
-	return nil
+	return chart, nil
 }
 
-// ---- Chart 6: Evolución do resultado total ----
-
-func chart6Total(w io.Writer, repo Repo) error {
-	fmt.Fprintln(w, "\n--- Evolución do resultado total ---")
+func BuildTotal(repo Repo) (LineChart, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return LineChart{}, fmt.Errorf("listando activos: %w", err)
 	}
+	chart := LineChart{Title: "Resultado total da carteira", HasAssets: len(assets) > 0}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos.")
-		return nil
+		return chart, nil
 	}
 	months, err := repo.MonthsWithResults()
 	if err != nil {
-		return fmt.Errorf("obtendo meses: %w", err)
+		return LineChart{}, fmt.Errorf("obtendo meses: %w", err)
 	}
+	chart.Months = months
 	if len(months) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados.")
-		return nil
+		return chart, nil
 	}
 	values := make([]float64, len(months))
 	var cumDiv float64
@@ -365,7 +326,7 @@ func chart6Total(w io.Writer, repo Repo) error {
 		for _, a := range assets {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
-				return fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+				return LineChart{}, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 			}
 			if sum.HasResult {
 				resSum += sum.Result
@@ -373,19 +334,147 @@ func chart6Total(w io.Writer, repo Repo) error {
 		}
 		div, err := repo.SumDividends(ym.Year, ym.Month)
 		if err != nil {
-			return fmt.Errorf("sumando dividendos: %w", err)
+			return LineChart{}, fmt.Errorf("sumando dividendos: %w", err)
 		}
 		cumDiv += div
 		values[i] = resSum + cumDiv
 	}
-	series := []charts.Series{
-		{Label: "Resultado + dividendos acum.", Values: values},
+	chart.Series = []charts.Series{{Label: "Resultado + dividendos acum.", Values: values}}
+	return chart, nil
+}
+
+func chart1Distribution(w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Distribución de aportes ---")
+	dist, err := BuildDistribution(repo)
+	if err != nil {
+		return err
 	}
-	charts.RenderLine(w, series, months, "Resultado total da carteira")
+	if !dist.HasAssets {
+		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		return nil
+	}
+	if dist.Total <= 0 {
+		fmt.Fprintln(w, "Aínda non hai aportes rexistrados.")
+		return nil
+	}
+	items := make([]charts.BarItem, 0, len(dist.Items))
+	for _, item := range dist.Items {
+		items = append(items, charts.BarItem{Label: item.Label, Value: item.Value, Color: charts.PaletteFG(item.colorIndex)})
+	}
+	fmt.Fprintf(w, "\nTotal aportado: %s\n\n", money.USD(dist.Total))
+	charts.RenderBars(w, items, dist.Total)
 	return nil
 }
 
-// ---- helpers ----
+func chart2AssetEvolution(r *bufio.Reader, w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Evolución dun activo ---")
+	assets, err := repo.ListAssets()
+	if err != nil {
+		return fmt.Errorf("listando activos: %w", err)
+	}
+	if len(assets) == 0 {
+		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		return nil
+	}
+	chosen, err := prompts.SelectAsset(r, w, assets)
+	if err != nil {
+		return err
+	}
+	chart, err := BuildAssetEvolution(repo, chosen)
+	if err != nil {
+		return err
+	}
+	if len(chart.Months) == 0 {
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para este activo.")
+		return nil
+	}
+	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	return nil
+}
+
+func chart3TypeAggregated(r *bufio.Reader, w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Evolución dun tipo (agregada) ---")
+	typ, err := prompts.SelectAssetType(r, w)
+	if err != nil {
+		return err
+	}
+	chart, err := BuildTypeAggregated(repo, typ)
+	if err != nil {
+		return err
+	}
+	if !chart.HasAssets {
+		fmt.Fprintf(w, "Non hai activos de tipo %s.\n", typ.Display())
+		return nil
+	}
+	if len(chart.Months) == 0 {
+		fmt.Fprintf(w, "Aínda non hai resultados rexistrados para activos de tipo %s.\n", typ.Display())
+		return nil
+	}
+	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	return nil
+}
+
+func chart4AssetsOfType(r *bufio.Reader, w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Evolución dos activos dun tipo ---")
+	typ, err := prompts.SelectAssetType(r, w)
+	if err != nil {
+		return err
+	}
+	chart, err := BuildAssetsOfType(repo, typ)
+	if err != nil {
+		return err
+	}
+	if !chart.HasAssets {
+		fmt.Fprintf(w, "Non hai activos de tipo %s.\n", typ.Display())
+		return nil
+	}
+	if len(chart.Months) == 0 || len(chart.Series) == 0 {
+		fmt.Fprintf(w, "Aínda non hai resultados rexistrados para activos de tipo %s.\n", typ.Display())
+		return nil
+	}
+	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	return nil
+}
+
+func chart5AllTypes(w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Evolución dos tipos ---")
+	chart, err := BuildAllTypes(repo)
+	if err != nil {
+		return err
+	}
+	if !chart.HasAssets {
+		fmt.Fprintln(w, "Aínda non hai activos.")
+		return nil
+	}
+	if len(chart.Months) == 0 {
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados.")
+		return nil
+	}
+	if len(chart.Series) == 0 {
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados para ningún tipo.")
+		return nil
+	}
+	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	return nil
+}
+
+func chart6Total(w io.Writer, repo Repo) error {
+	fmt.Fprintln(w, "\n--- Evolución do resultado total ---")
+	chart, err := BuildTotal(repo)
+	if err != nil {
+		return err
+	}
+	if !chart.HasAssets {
+		fmt.Fprintln(w, "Aínda non hai activos.")
+		return nil
+	}
+	if len(chart.Months) == 0 {
+		fmt.Fprintln(w, "Aínda non hai resultados rexistrados.")
+		return nil
+	}
+	charts.RenderLine(w, chart.Series, chart.Months, chart.Title)
+	return nil
+}
 
 func assetsOfType(repo Repo, typ domain.AssetType) ([]domain.Asset, error) {
 	all, err := repo.ListAssets()

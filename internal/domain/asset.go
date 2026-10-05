@@ -32,10 +32,25 @@ func (t AssetType) Display() string {
 }
 
 type Asset struct {
-	ID        int64
-	Type      AssetType
-	Name      string
-	AmountUSD float64
-	Month     int
-	Year      int
+	ID        int64     `json:"id"`
+	Type      AssetType `json:"type"`
+	Name      string    `json:"name"`
+	AmountUSD float64   `json:"amountUsd"`
+	Month     int       `json:"month"`
+	Year      int       `json:"year"`
+}
+
+// Start devolve o mes no que se creou o activo.
+func (a Asset) Start() YearMonth {
+	return YearMonth{Year: a.Year, Month: a.Month}
+}
+
+// CreatedBy indica se o activo xa existía no mes indicado.
+func (a Asset) CreatedBy(ym YearMonth) bool {
+	return !ym.Before(a.Start())
+}
+
+// AssetTypes devolve os tipos de activo nunha orde estable.
+func AssetTypes() []AssetType {
+	return []AssetType{Accion, Indice, CopyTrading, Fondo}
 }

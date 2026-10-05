@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -18,15 +19,26 @@ type Repo interface {
 
 const sep = "==================================================================="
 
-type assetAlloc struct {
-	name   string
-	amount float64
+type TypeSelection struct {
+	Type   domain.AssetType `json:"type"`
+	Assets []domain.Asset   `json:"assets"`
 }
 
-type typeAlloc struct {
-	label  string
-	amount float64
-	assets []assetAlloc
+type Allocation struct {
+	Total float64          `json:"total"`
+	Types []TypeAllocation `json:"types"`
+}
+
+type TypeAllocation struct {
+	Type   domain.AssetType  `json:"type"`
+	Label  string            `json:"label"`
+	Amount float64           `json:"amount"`
+	Assets []AssetAllocation `json:"assets"`
+}
+
+type AssetAllocation struct {
+	Asset  domain.Asset `json:"asset"`
+	Amount float64      `json:"amount"`
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
@@ -46,20 +58,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return nil
 	}
 
-	// Tipos presentes nos activos, en orde estable.
-	allTypes := []domain.AssetType{
-		domain.Accion, domain.Indice, domain.CopyTrading, domain.Fondo,
-	}
-	present := make(map[domain.AssetType]bool)
-	for _, a := range assets {
-		present[a.Type] = true
-	}
-	var availTypes []domain.AssetType
-	for _, t := range allTypes {
-		if present[t] {
-			availTypes = append(availTypes, t)
-		}
-	}
+	availTypes := AvailableTypes(assets)
 
 	selectedTypes, err := promptSelectTypes(r, w, availTypes)
 	if err != nil {
@@ -67,30 +66,77 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	amountPerType := total / float64(len(selectedTypes))
-
-	allocs := make([]typeAlloc, 0, len(selectedTypes))
+	selection := make([]TypeSelection, 0, len(selectedTypes))
 	for _, t := range selectedTypes {
-		var ofType []domain.Asset
-		for _, a := range assets {
-			if a.Type == t {
-				ofType = append(ofType, a)
-			}
-		}
+		ofType := assetsByType(assets, t)
 		fmt.Fprintf(w, "\n→ %.2f USD a %s\n", amountPerType, t.Display())
 		selectedAssets, err := promptSelectAssets(r, w, ofType)
 		if err != nil {
 			return err
 		}
-		amountPerAsset := amountPerType / float64(len(selectedAssets))
-		alloc := typeAlloc{label: t.Display(), amount: amountPerType}
-		for _, a := range selectedAssets {
-			alloc.assets = append(alloc.assets, assetAlloc{name: a.Name, amount: amountPerAsset})
-		}
-		allocs = append(allocs, alloc)
+		selection = append(selection, TypeSelection{Type: t, Assets: selectedAssets})
 	}
 
-	renderReport(w, total, allocs)
+	allocation, err := Allocate(total, selection)
+	if err != nil {
+		return err
+	}
+	renderReport(w, allocation)
 	return nil
+}
+
+func AvailableTypes(assets []domain.Asset) []domain.AssetType {
+	present := make(map[domain.AssetType]bool)
+	for _, a := range assets {
+		present[a.Type] = true
+	}
+	allTypes := []domain.AssetType{domain.Accion, domain.Indice, domain.CopyTrading, domain.Fondo}
+	out := make([]domain.AssetType, 0, len(allTypes))
+	for _, t := range allTypes {
+		if present[t] {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+func Allocate(total float64, selection []TypeSelection) (Allocation, error) {
+	if total <= 0 || math.IsNaN(total) || math.IsInf(total, 0) {
+		return Allocation{}, fmt.Errorf("a cantidade total debe ser maior ca 0")
+	}
+	if len(selection) == 0 {
+		return Allocation{}, fmt.Errorf("debes seleccionar polo menos un tipo")
+	}
+
+	amountPerType := total / float64(len(selection))
+	alloc := Allocation{Total: total, Types: make([]TypeAllocation, 0, len(selection))}
+	for _, sel := range selection {
+		if len(sel.Assets) == 0 {
+			return Allocation{}, fmt.Errorf("o tipo %s non ten activos seleccionados", sel.Type.Display())
+		}
+		amountPerAsset := amountPerType / float64(len(sel.Assets))
+		typeAlloc := TypeAllocation{
+			Type:   sel.Type,
+			Label:  sel.Type.Display(),
+			Amount: amountPerType,
+			Assets: make([]AssetAllocation, 0, len(sel.Assets)),
+		}
+		for _, a := range sel.Assets {
+			typeAlloc.Assets = append(typeAlloc.Assets, AssetAllocation{Asset: a, Amount: amountPerAsset})
+		}
+		alloc.Types = append(alloc.Types, typeAlloc)
+	}
+	return alloc, nil
+}
+
+func assetsByType(assets []domain.Asset, typ domain.AssetType) []domain.Asset {
+	var out []domain.Asset
+	for _, a := range assets {
+		if a.Type == typ {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 func promptSelectTypes(r *bufio.Reader, w io.Writer, types []domain.AssetType) ([]domain.AssetType, error) {
@@ -165,16 +211,16 @@ func parseIndices(input string, max int) ([]int, error) {
 	return out, nil
 }
 
-func renderReport(w io.Writer, total float64, allocs []typeAlloc) {
+func renderReport(w io.Writer, allocation Allocation) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Reparto de aporte mensual: %.2f USD\n", total)
+	fmt.Fprintf(w, "  Reparto de aporte mensual: %.2f USD\n", allocation.Total)
 	fmt.Fprintln(w, sep)
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	for _, a := range allocs {
-		fmt.Fprintf(tw, "  %s\t%.2f USD\n", a.label, a.amount)
-		for _, asset := range a.assets {
-			fmt.Fprintf(tw, "    %s\t%.2f USD\n", asset.name, asset.amount)
+	for _, a := range allocation.Types {
+		fmt.Fprintf(tw, "  %s\t%.2f USD\n", a.Label, a.Amount)
+		for _, asset := range a.Assets {
+			fmt.Fprintf(tw, "    %s\t%.2f USD\n", asset.Asset.Name, asset.Amount)
 		}
 	}
 	tw.Flush()

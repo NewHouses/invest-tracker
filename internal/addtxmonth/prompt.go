@@ -38,7 +38,9 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 
-	isCreated := func(a domain.Asset) bool { return createdBy(a, year, month) }
+	isCreated := func(a domain.Asset) bool {
+		return a.CreatedBy(domain.YearMonth{Year: year, Month: month})
+	}
 	if !slices.ContainsFunc(assets, isCreated) {
 		fmt.Fprintf(w, "Non hai activos creados en %02d/%d ou antes.\n", month, year)
 		return nil
@@ -83,12 +85,6 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	return nil
 }
 
-// createdBy indica se o activo xa existía en (year, month). Os informes
-// ignoran as transaccións anteriores á data do activo, así que non se piden.
-func createdBy(a domain.Asset, year, month int) bool {
-	return a.Year*domain.MonthsPerYear+a.Month <= year*domain.MonthsPerYear+month
-}
-
 // promptOptionalAmount permite cantidade > 0 ou liña baleira para saltar.
 func promptOptionalAmount(r *bufio.Reader, w io.Writer, label string) (float64, bool, error) {
 	for {
@@ -102,7 +98,7 @@ func promptOptionalAmount(r *bufio.Reader, w io.Writer, label string) (float64, 
 		}
 		normalized := strings.ReplaceAll(line, ",", ".")
 		v, perr := strconv.ParseFloat(normalized, 64)
-		if perr == nil && v > 0 {
+		if perr == nil && domain.ValidAmount(v) {
 			return v, false, nil
 		}
 		fmt.Fprintln(w, "  ⚠ Valor non válido (debe ser > 0; baleiro para saltar)")

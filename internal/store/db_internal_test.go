@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// Test interno porque o pool de conexións non se ve dende a API pública: as
-// foreign keys deben estar activas en tódalas conexións que abra
-// database/sql, non só na primeira.
-func TestOpen_ForeignKeysOnEveryConnection(t *testing.T) {
+// Test interno porque o pool de conexións non se ve dende a API pública: os
+// pragmas deben estar activos en tódalas conexións que abra database/sql, non
+// só na primeira.
+func TestOpen_PragmasOnEveryConnection(t *testing.T) {
 	s, err := Open(filepath.Join(t.TempDir(), "fk.db"))
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -36,6 +36,14 @@ func TestOpen_ForeignKeysOnEveryConnection(t *testing.T) {
 		}
 		if on != 1 {
 			t.Errorf("conexión %d: foreign_keys = %d, esperabamos 1", i, on)
+		}
+
+		var timeout int
+		if err := c.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&timeout); err != nil {
+			t.Fatalf("PRAGMA busy_timeout na conexión %d: %v", i, err)
+		}
+		if timeout != 5000 {
+			t.Errorf("conexión %d: busy_timeout = %d, esperabamos 5000", i, timeout)
 		}
 	}
 }

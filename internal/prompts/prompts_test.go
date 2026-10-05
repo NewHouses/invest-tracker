@@ -119,6 +119,20 @@ func TestAmount_RejectsNonNumeric(t *testing.T) {
 	}
 }
 
+func TestAmount_RejectsInfinity(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.Amount(newReader("inf\n50\n"), &w)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 50 {
+		t.Errorf("got %v, esperabamos 50", v)
+	}
+	if got := strings.Count(w.String(), "Cantidade non válida"); got != 1 {
+		t.Errorf("esperabamos 1 aviso, got %d: %s", got, w.String())
+	}
+}
+
 func TestMonth_AcceptsValidRange(t *testing.T) {
 	var w bytes.Buffer
 	for _, m := range []string{"1", "6", "12"} {
@@ -255,6 +269,20 @@ func TestPercent_RejectsAtOrBelowMin(t *testing.T) {
 	}
 	if !strings.Contains(w.String(), "maior ca -100%") {
 		t.Errorf("esperabamos o límite na mensaxe, got: %s", w.String())
+	}
+}
+
+func TestPercent_RejectsNaN(t *testing.T) {
+	var w bytes.Buffer
+	v, err := prompts.Percent(newReader("NaN\n2\n"), &w, "Retorno", -100)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if v != 0.02 {
+		t.Errorf("got %v, esperabamos 0.02", v)
+	}
+	if got := strings.Count(w.String(), "Porcentaxe non válida"); got != 1 {
+		t.Errorf("esperabamos 1 aviso, got %d: %s", got, w.String())
 	}
 }
 

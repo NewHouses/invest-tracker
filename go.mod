@@ -2,6 +2,9 @@ module invest-tracker
 
 go 1.25.0
 
+// O frontend (node_modules) non contén paquetes Go do proxecto.
+ignore ./frontend
+
 require (
 	github.com/guptarohit/asciigraph v0.9.0
 	modernc.org/sqlite v1.50.0

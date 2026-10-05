@@ -19,13 +19,19 @@ type Repo interface {
 
 const sep = "============================================================"
 
-type displayRow struct {
-	isInitial bool
-	id        int64
-	year      int
-	month     int
-	isVenda   bool
-	amount    float64 // sempre positivo
+type Row struct {
+	IsInitial bool    `json:"isInitial"`
+	ID        int64   `json:"id"`
+	Year      int     `json:"year"`
+	Month     int     `json:"month"`
+	IsVenda   bool    `json:"isVenda"`
+	Amount    float64 `json:"amount"`
+}
+
+type Totals struct {
+	Compra float64 `json:"compra"`
+	Venda  float64 `json:"venda"`
+	Neto   float64 `json:"neto"`
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
@@ -50,20 +56,19 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return fmt.Errorf("listando transaccións: %w", err)
 	}
 
-	rows := buildRows(chosen, txs)
+	rows := BuildRows(chosen, txs)
 	renderTable(w, chosen, rows)
 	return nil
 }
 
-func buildRows(asset domain.Asset, txs []domain.Transaction) []displayRow {
-	rows := []displayRow{
-		// Compra inicial: o activo créase mercando por primeira vez.
+func BuildRows(asset domain.Asset, txs []domain.Transaction) []Row {
+	rows := []Row{
 		{
-			isInitial: true,
-			year:      asset.Year,
-			month:     asset.Month,
-			isVenda:   false,
-			amount:    asset.AmountUSD,
+			IsInitial: true,
+			Year:      asset.Year,
+			Month:     asset.Month,
+			IsVenda:   false,
+			Amount:    asset.AmountUSD,
 		},
 	}
 	for _, tx := range txs {
@@ -73,40 +78,45 @@ func buildRows(asset domain.Asset, txs []domain.Transaction) []displayRow {
 			amount = -amount
 			isVenda = true
 		}
-		rows = append(rows, displayRow{
-			id:      tx.ID,
-			year:    tx.Year,
-			month:   tx.Month,
-			isVenda: isVenda,
-			amount:  amount,
+		rows = append(rows, Row{
+			ID:      tx.ID,
+			Year:    tx.Year,
+			Month:   tx.Month,
+			IsVenda: isVenda,
+			Amount:  amount,
 		})
 	}
 	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i].year != rows[j].year {
-			return rows[i].year < rows[j].year
+		if rows[i].Year != rows[j].Year {
+			return rows[i].Year < rows[j].Year
 		}
-		if rows[i].month != rows[j].month {
-			return rows[i].month < rows[j].month
+		if rows[i].Month != rows[j].Month {
+			return rows[i].Month < rows[j].Month
 		}
 		// Mesma data: a compra inicial primeiro, despois por id.
-		if rows[i].isInitial != rows[j].isInitial {
-			return rows[i].isInitial
+		if rows[i].IsInitial != rows[j].IsInitial {
+			return rows[i].IsInitial
 		}
-		return rows[i].id < rows[j].id
+		return rows[i].ID < rows[j].ID
 	})
 	return rows
 }
 
-func renderTable(w io.Writer, asset domain.Asset, rows []displayRow) {
-	var totalCompra, totalVenda float64
+func ComputeTotals(rows []Row) Totals {
+	var totals Totals
 	for _, r := range rows {
-		if r.isVenda {
-			totalVenda += r.amount
+		if r.IsVenda {
+			totals.Venda += r.Amount
 		} else {
-			totalCompra += r.amount
+			totals.Compra += r.Amount
 		}
 	}
-	neto := totalCompra - totalVenda
+	totals.Neto = totals.Compra - totals.Venda
+	return totals
+}
+
+func renderTable(w io.Writer, asset domain.Asset, rows []Row) {
+	totals := ComputeTotals(rows)
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
@@ -114,22 +124,22 @@ func renderTable(w io.Writer, asset domain.Asset, rows []displayRow) {
 	fmt.Fprintln(w, sep)
 	fmt.Fprintf(w, "  Total: %d entradas (incluíndo a compra inicial)\n", len(rows))
 	fmt.Fprintf(w, "  Compras: %s · Vendas: %s · Neto: %s\n",
-		money.USD(totalCompra), money.USD(totalVenda), money.SignedUSD(neto))
+		money.USD(totals.Compra), money.USD(totals.Venda), money.SignedUSD(totals.Neto))
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
 	fmt.Fprintln(tw, "  ID\tAno\tMes\tCompra/Venda\tCantidade\t")
 	for _, row := range rows {
-		idStr := fmt.Sprintf("%d", row.id)
-		if row.isInitial {
+		idStr := fmt.Sprintf("%d", row.ID)
+		if row.IsInitial {
 			idStr = "—"
 		}
 		typeLabel := "COMPRA"
-		if row.isVenda {
+		if row.IsVenda {
 			typeLabel = "VENDA"
 		}
 		fmt.Fprintf(tw, "  %s\t%d\t%d\t%s\t%s\t\n",
-			idStr, row.year, row.month, typeLabel, money.USD(row.amount),
+			idStr, row.Year, row.Month, typeLabel, money.USD(row.Amount),
 		)
 	}
 	tw.Flush()

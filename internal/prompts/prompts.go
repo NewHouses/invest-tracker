@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
+
+	"invest-tracker/internal/domain"
 )
 
 // ErrCancelled é un sentinel devolto por ReadLine cando o usuario escribe
@@ -47,7 +50,7 @@ func Amount(r *bufio.Reader, w io.Writer) (float64, error) {
 			return 0, err
 		}
 		v, perr := parseDecimal(line)
-		if perr == nil && v > 0 {
+		if perr == nil && domain.ValidAmount(v) {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ca 0")
@@ -65,7 +68,7 @@ func NonNegativeAmount(r *bufio.Reader, w io.Writer, label string) (float64, err
 			return 0, err
 		}
 		v, perr := parseDecimal(line)
-		if perr == nil && v >= 0 {
+		if perr == nil && domain.ValidNonNegativeAmount(v) {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ou igual a 0")
@@ -83,7 +86,7 @@ func Percent(r *bufio.Reader, w io.Writer, label string, minPct float64) (float6
 			return 0, err
 		}
 		v, perr := parseDecimal(line)
-		if perr == nil && v > minPct {
+		if perr == nil && v > minPct && !math.IsNaN(v) && !math.IsInf(v, 0) {
 			return v / 100, nil
 		}
 		fmt.Fprintf(w, "⚠ Porcentaxe non válida, debe ser un número maior ca %g%%\n", minPct)
@@ -104,7 +107,7 @@ func Month(r *bufio.Reader, w io.Writer) (int, error) {
 			return 0, err
 		}
 		v, perr := strconv.Atoi(line)
-		if perr == nil && v >= 1 && v <= 12 {
+		if perr == nil && domain.ValidMonth(v) {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Mes non válido, debe estar entre 1 e 12")
@@ -119,7 +122,7 @@ func Year(r *bufio.Reader, w io.Writer) (int, error) {
 			return 0, err
 		}
 		v, perr := strconv.Atoi(line)
-		if perr == nil && v >= 1900 && v <= 2100 {
+		if perr == nil && domain.ValidYear(v) {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Ano non válido")

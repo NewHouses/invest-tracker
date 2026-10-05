@@ -37,3 +37,14 @@ CREATE TABLE IF NOT EXISTS dividends (
     year       INTEGER NOT NULL,
     created_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT    PRIMARY KEY,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);

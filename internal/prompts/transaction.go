@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+
+	"invest-tracker/internal/domain"
 )
 
 // SelectTransactionType pide ao usuario que escolla entre Compra (1) ou Venda (2).
@@ -28,7 +30,7 @@ func SelectTransactionType(r *bufio.Reader, w io.Writer) (bool, error) {
 	}
 }
 
-// DateNotBefore pide mes e ano e valida que (year*12+month) >= (minYear*12+minMonth).
+// DateNotBefore pide mes e ano e valida que a data non sexa anterior á mínima.
 // Re-pregunta ambos ante data anterior.
 func DateNotBefore(r *bufio.Reader, w io.Writer, minMonth, minYear int) (int, int, error) {
 	for {
@@ -40,7 +42,9 @@ func DateNotBefore(r *bufio.Reader, w io.Writer, minMonth, minYear int) (int, in
 		if err != nil {
 			return 0, 0, err
 		}
-		if year*12+month >= minYear*12+minMonth {
+		date := domain.YearMonth{Year: year, Month: month}
+		minDate := domain.YearMonth{Year: minYear, Month: minMonth}
+		if !date.Before(minDate) {
 			return month, year, nil
 		}
 		fmt.Fprintf(w, "⚠ A transacción non pode ser anterior á data do activo (%02d/%d). Tenta de novo.\n",
