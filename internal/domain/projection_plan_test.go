@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -120,6 +121,35 @@ func TestProjectPlan_YearsLength(t *testing.T) {
 	months := mustProjectPlan(t, in)
 	if len(months) != 36 || months[35].Date != (domain.YearMonth{Year: 2028, Month: 12}) {
 		t.Fatalf("lonxitude ou data final inesperada: len=%d last=%#v", len(months), months[35].Date)
+	}
+}
+
+// Valores que desbordan float64 producirían Inf/NaN: a API devolvía un 200
+// baleiro e a gráfica da CLI entraba en pánico.
+func TestProjectPlan_OverflowReturnsError(t *testing.T) {
+	cases := map[string]func(*domain.PlanInput){
+		"retorno desorbitado": func(in *domain.PlanInput) {
+			in.Years = 60
+			in.InitialInvestment = 1000
+			in.MonthlyReturn = 10 // +1000 % ao mes
+		},
+		"regra fixa enorme": func(in *domain.PlanInput) {
+			in.MonthlyContribution = 1e308
+			in.Rules = []domain.GrowthRule{{Kind: domain.GrowthKindFixed, Value: 1e308, EveryMonths: 1, From: in.Start}}
+		},
+	}
+	for name, mut := range cases {
+		t.Run(name, func(t *testing.T) {
+			in := planBase()
+			mut(&in)
+			months, err := domain.ProjectPlan(in)
+			if !errors.Is(err, domain.ErrProjectionOverflow) {
+				t.Fatalf("err=%v, esperabamos ErrProjectionOverflow", err)
+			}
+			if months != nil {
+				t.Fatalf("non debería devolver meses: %d", len(months))
+			}
+		})
 	}
 }
 

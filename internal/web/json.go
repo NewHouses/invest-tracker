@@ -19,11 +19,20 @@ type apiError struct {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
 	if status == http.StatusNoContent {
+		w.WriteHeader(status)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(v)
+	// Serialízase antes de escribir a cabeceira: se falla (p.e. un importe
+	// infinito ou NaN), mellor un 500 explícito ca un 200 co corpo baleiro.
+	body, err := json.Marshal(v)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"erro interno"}` + "\n"))
+		return
+	}
+	w.WriteHeader(status)
+	_, _ = w.Write(append(body, '\n'))
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {

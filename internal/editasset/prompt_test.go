@@ -15,6 +15,7 @@ import (
 type fakeRepo struct {
 	assets  []domain.Asset
 	updated []domain.Asset
+	first   map[int64]domain.YearMonth
 	listEr  error
 	updEr   error
 }
@@ -32,6 +33,11 @@ func (f *fakeRepo) UpdateAsset(a domain.Asset) error {
 	}
 	f.updated = append(f.updated, a)
 	return nil
+}
+
+func (f *fakeRepo) FirstMovementMonth(assetID int64) (domain.YearMonth, bool, error) {
+	ym, ok := f.first[assetID]
+	return ym, ok, nil
 }
 
 func runWith(assets []domain.Asset, input string) (string, *fakeRepo, error) {
@@ -229,5 +235,32 @@ func TestRun_PropagatesRepoError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "actualizando activo") {
 		t.Errorf("erro = %v, esperabamos wrap", err)
+	}
+}
+
+// Mover o inicio dun activo despois da súa primeira transacción ou resultado
+// deixaba eses movementos fóra dos totais sen avisar.
+func TestRun_RejectsStartAfterFirstMovement(t *testing.T) {
+	repo := &fakeRepo{assets: sampleAssets, first: map[int64]domain.YearMonth{10: {Year: 2026, Month: 5}}}
+	var buf bytes.Buffer
+	// AAPL (03/2026) con primeiro movemento en 05/2026: 06/2026 rexéitase.
+	err := editasset.Run(bufio.NewReader(strings.NewReader("1\n2\n6\n2026\n")), &buf, repo)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(buf.String(), "non pode ser posterior á primeira transacción ou resultado do activo (05/2026)") {
+		t.Errorf("saída non contén o aviso:\n%s", buf.String())
+	}
+	if len(repo.updated) != 0 {
+		t.Fatalf("non debería actualizar: %+v", repo.updated)
+	}
+
+	// Ata o mes do primeiro movemento (ou antes) si se pode.
+	buf.Reset()
+	if err := editasset.Run(bufio.NewReader(strings.NewReader("1\n2\n5\n2026\n")), &buf, repo); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(repo.updated) != 1 || repo.updated[0].Month != 5 || repo.updated[0].Year != 2026 {
+		t.Fatalf("actualizado = %+v, esperabamos 05/2026", repo.updated)
 	}
 }

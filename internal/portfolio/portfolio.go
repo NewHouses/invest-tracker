@@ -67,7 +67,7 @@ func Build(repo Repo, now domain.YearMonth) (Portfolio, error) {
 		if len(history.Rows) > 0 {
 			last := history.Rows[len(history.Rows)-1]
 			period := last.Period
-			row.CurrentValue = last.Result
+			row.CurrentValue = history.CurrentValue
 			row.HasCurrentValue = true
 			row.LastResult = &period
 		}

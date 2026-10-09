@@ -212,6 +212,22 @@ func TestRun_RejectsInvalidResult(t *testing.T) {
 	}
 }
 
+// strconv.ParseFloat acepta "inf" e "Infinity": un resultado infinito
+// rompería todos os informes e a API web, así que debe rexeitarse.
+func TestRun_RejectsNonFiniteResult(t *testing.T) {
+	sums := summariesFor(2026, 4, map[int64]float64{10: 1500})
+	out, repo, err := runWith(threeAssets, sums, "4\n2026\ninf\nInfinity\nNaN\n1800\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := strings.Count(out, "Resultado non válido"); got != 3 {
+		t.Errorf("avisos de resultado non válido = %d, esperabamos 3:\n%s", got, out)
+	}
+	if len(repo.saved) != 1 || repo.saved[0].ResultUSD != 1800 {
+		t.Errorf("saved = %+v, esperabamos só 1800", repo.saved)
+	}
+}
+
 func TestRun_ShowsGainAfterEachSave(t *testing.T) {
 	sums := summariesFor(2026, 4, map[int64]float64{10: 1500})
 	out, _, err := runWith(threeAssets, sums, "4\n2026\n1800\n")

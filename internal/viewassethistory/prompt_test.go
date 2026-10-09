@@ -81,8 +81,10 @@ func gainSetup() *fakeRepo {
 				EstimatedHolding: 2000, HasPrevResult: true,
 				Result: 1900, HasResult: true,
 			},
-			// Lifetime call → Year=9999, Month=12.
-			{10, 9999, 12}: {TotalInvestedUpTo: 1700},
+			// Lifetime call → Year=9999, Month=12. O store devolve como
+			// EstimatedHolding o último resultado (1900) máis os movementos
+			// posteriores (ningún).
+			{10, 9999, 12}: {TotalInvestedUpTo: 1700, EstimatedHolding: 1900, HasPrevResult: true},
 		},
 	}
 }
@@ -244,7 +246,7 @@ func TestRun_LossOnly(t *testing.T) {
 				TotalInvestedUpTo: 1000, InvestedInMonth: 1000,
 				EstimatedHolding: 1000, Result: 800, HasResult: true,
 			},
-			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
+			{10, 9999, 12}: {TotalInvestedUpTo: 1000, EstimatedHolding: 800, HasPrevResult: true},
 		},
 	}
 	out, err := runWith(repo, "1\n")
@@ -280,7 +282,7 @@ func TestRun_ColorsRowsByGainSign(t *testing.T) {
 			// 0% exacto
 			{10, 2026, 6}: {InvestedInMonth: 0, EstimatedHolding: 1080,
 				HasPrevResult: true, Result: 1080, HasResult: true, TotalInvestedUpTo: 1000},
-			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
+			{10, 9999, 12}: {TotalInvestedUpTo: 1000, EstimatedHolding: 1080, HasPrevResult: true},
 		},
 	}
 	out, err := runWith(repo, "1\n")
@@ -312,7 +314,7 @@ func TestRun_ZeroHoldingRow_ShowsNA(t *testing.T) {
 				TotalInvestedUpTo: 0, InvestedInMonth: 0,
 				EstimatedHolding: 0, Result: 100, HasResult: true,
 			},
-			{10, 9999, 12}: {TotalInvestedUpTo: 0},
+			{10, 9999, 12}: {TotalInvestedUpTo: 0, EstimatedHolding: 100, HasPrevResult: true},
 		},
 	}
 	out, err := runWith(repo, "1\n")

@@ -159,6 +159,13 @@ func TestProjectionValidation(t *testing.T) {
 	if rr.Code != http.StatusBadRequest || !contains(rr.Body.String(), "campo descoñecido") {
 		t.Fatalf("campo descoñecido debe ser 400: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
+
+	// Un retorno desorbitado desborda float64: antes respondía 200 co corpo
+	// baleiro porque o JSON non admite Inf.
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 60, InitialInvestment: 1000, MonthlyReturnPct: 100000, Mode: domain.ProjectionModeContribution, MonthlyContribution: 100}, cookie)
+	if rr.Code != http.StatusBadRequest || !contains(rr.Body.String(), "rango numérico") {
+		t.Fatalf("desbordamento debe ser 400: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
 }
 
 func TestProjectionContributionHappyPath(t *testing.T) {

@@ -26,6 +26,7 @@ type History struct {
 	Asset         domain.Asset `json:"asset"`
 	Rows          []Row        `json:"rows"`
 	TotalInvested float64      `json:"totalInvested"`
+	CurrentValue  float64      `json:"currentValue"`
 	AvgIndexPct   float64      `json:"avgIndexPct"`
 	AvgGain       float64      `json:"avgGain"`
 	HasAverages   bool         `json:"hasAverages"`
@@ -60,25 +61,28 @@ func Current(repo Repo, asset domain.Asset, now domain.YearMonth) (*Row, error) 
 	if err != nil {
 		return nil, fmt.Errorf("calculando resumo: %w", err)
 	}
-	if sum.EstimatedHolding <= 0 && sum.InvestedInMonth == 0 {
+	if !domain.HasHolding(sum.EstimatedHolding) && sum.InvestedInMonth == 0 {
 		return nil, nil
 	}
 	return &Row{Period: now, Aporte: sum.InvestedInMonth, Holding: sum.EstimatedHolding}, nil
 }
 
 func Build(repo Repo, asset domain.Asset) (History, error) {
+	lifetimeSum, err := repo.MonthlySummary(asset.ID, 9999, 12)
+	if err != nil {
+		return History{}, fmt.Errorf("calculando lifetime: %w", err)
+	}
+	history := History{Asset: asset, TotalInvested: lifetimeSum.TotalInvestedUpTo}
+
 	months, err := repo.MonthsWithResultsForAsset(asset.ID)
 	if err != nil {
 		return History{}, fmt.Errorf("obtendo meses con resultados: %w", err)
 	}
 	if len(months) == 0 {
-		return History{Asset: asset}, nil
+		return history, nil
 	}
 
-	history := History{
-		Asset: asset,
-		Rows:  make([]Row, 0, len(months)),
-	}
+	history.Rows = make([]Row, 0, len(months))
 	var sumPct, sumGain float64
 	var nValid int
 
@@ -93,7 +97,7 @@ func Build(repo Repo, asset domain.Asset) (History, error) {
 			Holding: sum.EstimatedHolding,
 			Result:  sum.Result,
 		}
-		if sum.HasResult && sum.EstimatedHolding > 0 {
+		if sum.HasResult && domain.HasHolding(sum.EstimatedHolding) {
 			row.Gain = sum.Result - sum.EstimatedHolding
 			row.GainPct = row.Gain / sum.EstimatedHolding * 100
 			row.HasMetrics = true
@@ -104,14 +108,13 @@ func Build(repo Repo, asset domain.Asset) (History, error) {
 		history.Rows = append(history.Rows, row)
 	}
 
-	last := history.Rows[len(history.Rows)-1]
-	lifetimeSum, err := repo.MonthlySummary(asset.ID, 9999, 12)
-	if err != nil {
-		return History{}, fmt.Errorf("calculando lifetime: %w", err)
-	}
-	history.TotalInvested = lifetimeSum.TotalInvestedUpTo
-	history.TotalGain = last.Result - history.TotalInvested
-	history.HasTotalGain = history.TotalInvested > 0 && last.Result > 0
+	// O valor neto é o último resultado máis os aportes e vendas posteriores,
+	// non só o último resultado: se non, un activo vendido despois do seu
+	// último resultado seguiría contando e un aporte do mes en curso
+	// (aínda sen pechar) apareceria como unha perda.
+	history.CurrentValue = lifetimeSum.CurrentHolding()
+	history.TotalGain = history.CurrentValue - history.TotalInvested
+	history.HasTotalGain = true
 	if nValid > 0 {
 		history.AvgIndexPct = sumPct / float64(nValid)
 		history.AvgGain = sumGain / float64(nValid)

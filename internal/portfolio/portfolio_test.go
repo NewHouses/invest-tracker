@@ -156,3 +156,56 @@ func TestBuildConsistentWithTotalHistory(t *testing.T) {
 func closeTo(got, want float64) bool {
 	return math.Abs(got-want) < 0.000001
 }
+
+// O valor neto e a G/P teñen que ter en conta os movementos posteriores ao
+// último resultado: un aporte do mes aínda sen pechar non é unha perda, un
+// activo vendido xa non vale nada e uns restos de redondeo non deixan o
+// activo pendente de pechar para sempre.
+func TestBuildUsesMovementsAfterLastResult(t *testing.T) {
+	st := openStore(t)
+	aporte := insertAsset(t, st, domain.Asset{Type: domain.Indice, Name: "Aporte do mes", AmountUSD: 1000, Year: 2026, Month: 1})
+	vendido := insertAsset(t, st, domain.Asset{Type: domain.Accion, Name: "Vendido", AmountUSD: 1000, Year: 2026, Month: 1})
+	novo := insertAsset(t, st, domain.Asset{Type: domain.Fondo, Name: "Sen resultado", AmountUSD: 300, Year: 2026, Month: 10})
+	restos := insertAsset(t, st, domain.Asset{Type: domain.CopyTrading, Name: "Restos", AmountUSD: 100, Year: 2026, Month: 1})
+
+	insertResult(t, st, aporte, 2026, 9, 1200)
+	insertTransaction(t, st, aporte, 2026, 10, 500)
+	insertResult(t, st, vendido, 2026, 8, 1100)
+	insertTransaction(t, st, vendido, 2026, 9, -1150)
+	insertResult(t, st, restos, 2026, 8, 100.004)
+	insertTransaction(t, st, restos, 2026, 9, -100)
+
+	got, err := portfolio.Build(st, domain.YearMonth{Year: 2026, Month: 10})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	rows := make(map[int64]portfolio.Row, len(got.Rows))
+	for _, row := range got.Rows {
+		rows[row.Asset.ID] = row
+	}
+
+	if r := rows[aporte.ID]; !closeTo(r.TotalInvested, 1500) || !closeTo(r.CurrentValue, 1700) || !closeTo(r.Gain, 200) || !r.HasGain || !closeTo(r.GainPct, 200.0/1500*100) || !r.Pending {
+		t.Fatalf("o aporte do mes non pode contar como perda: %#v", r)
+	}
+	if r := rows[vendido.ID]; r.CurrentValue != 0 || !r.HasCurrentValue || !r.HasGain || !closeTo(r.Gain, 150) || r.HasGainPct || r.Pending {
+		t.Fatalf("un activo vendido non pode conservar o valor do último resultado: %#v", r)
+	}
+	if r := rows[novo.ID]; !closeTo(r.TotalInvested, 300) || r.HasCurrentValue || r.HasGain || !r.Pending {
+		t.Fatalf("un activo sen resultados debe mostrar o investido e quedar pendente: %#v", r)
+	}
+	if r := rows[restos.ID]; r.Pending || r.CurrentValue != 0 {
+		t.Fatalf("uns restos de 0,004 USD non poden deixar o activo pendente: %#v", r)
+	}
+	if got.PendingCount != 2 {
+		t.Fatalf("pendentes=%d, esperabamos 2 (aporte do mes e activo novo)", got.PendingCount)
+	}
+
+	total, err := viewtotalhistory.Build(st)
+	if err != nil {
+		t.Fatalf("viewtotalhistory.Build: %v", err)
+	}
+	// Aporte: 1500 − 150 + 300 + 0. Valor neto: 1200+500, 0, 300 ao custo, 0.
+	if !closeTo(total.LifetimeAporte, 1650) || !closeTo(total.CurrentValue, 2000) || !closeTo(total.TotalGain, 350) || !total.HasTotalGain {
+		t.Fatalf("KPIs totais inesperados: aporte=%.4f valor=%.4f G/P=%.4f (%v)", total.LifetimeAporte, total.CurrentValue, total.TotalGain, total.HasTotalGain)
+	}
+}

@@ -1,1 +1,0 @@
-import{A as e,N as t,j as n,k as r,yt as i}from"./ErrorAlert-BKGLDRCi.js";var a=i();function o({title:i,description:o,actions:s}){return(0,a.jsxs)(t,{justify:`space-between`,align:`flex-start`,gap:`md`,mb:`lg`,children:[(0,a.jsxs)(e,{gap:4,children:[(0,a.jsx)(r,{order:1,children:i}),o?(0,a.jsx)(n,{c:`dimmed`,children:o}):null]}),s]})}export{o as t};

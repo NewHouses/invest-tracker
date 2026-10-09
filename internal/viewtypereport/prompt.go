@@ -69,7 +69,7 @@ func buildFromAssets(repo Repo, typ domain.AssetType, assets []domain.Asset, yea
 		if err != nil {
 			return report, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
-		if sum.EstimatedHolding <= 0 {
+		if !domain.HasHolding(sum.EstimatedHolding) {
 			continue
 		}
 		report.Active = append(report.Active, Entry{Asset: a, Summary: sum})

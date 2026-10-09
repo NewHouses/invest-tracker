@@ -74,6 +74,27 @@ func (s *Store) FirstInvestmentMonth() (domain.YearMonth, bool, error) {
 	return ym, true, nil
 }
 
+// FirstMovementMonth devolve o mes máis antigo no que un activo ten unha
+// transacción ou un resultado. ok=false se aínda non ten ningún.
+func (s *Store) FirstMovementMonth(assetID int64) (domain.YearMonth, bool, error) {
+	var ym domain.YearMonth
+	err := s.db.QueryRow(
+		`SELECT year, month FROM (
+			SELECT year, month FROM transactions WHERE asset_id = ?1
+			UNION ALL
+			SELECT year, month FROM monthly_results WHERE asset_id = ?1
+		) ORDER BY year, month LIMIT 1`,
+		assetID,
+	).Scan(&ym.Year, &ym.Month)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.YearMonth{}, false, nil
+		}
+		return domain.YearMonth{}, false, err
+	}
+	return ym, true, nil
+}
+
 // UpdateAsset actualiza nome, cantidade e data dun activo existente.
 // Non cambia o tipo. Devolve sql.ErrNoRows envolto se o id non existe.
 func (s *Store) UpdateAsset(a domain.Asset) error {

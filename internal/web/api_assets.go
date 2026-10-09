@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"invest-tracker/internal/domain"
@@ -90,6 +91,20 @@ func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
 	name := validateName(fields, "name", req.Name)
 	validateAmount(fields, "amountUsd", req.AmountUSD)
 	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	if start := (domain.YearMonth{Year: req.Year, Month: req.Month}); start.Valid() && start != current.Start() {
+		// Mover o inicio despois da primeira transacción ou resultado deixaría
+		// eses movementos fóra dos totais sen avisar. Só se comproba se a data
+		// cambia, para poder seguir editando o nome ou o importe de activos que
+		// xa quedaron así con versións anteriores.
+		first, ok, err := s.store.FirstMovementMonth(current.ID)
+		if err != nil {
+			s.internalError(w, r, err)
+			return
+		}
+		if ok && first.Before(start) {
+			fields["month"] = fmt.Sprintf("a data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d)", first.Month, first.Year)
+		}
+	}
 	if len(fields) > 0 {
 		writeFieldErrors(w, fields)
 		return

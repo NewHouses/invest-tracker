@@ -123,6 +123,21 @@ func TestRun_PrintsErrorOnInvalidDividend(t *testing.T) {
 	}
 }
 
+// strconv.ParseFloat acepta "inf" e "Infinity": un dividendo infinito
+// rompería todos os informes e a API web, así que debe rexeitarse.
+func TestRun_RejectsNonFiniteDividend(t *testing.T) {
+	out, saver, err := runWith("inf\nInfinity\nNaN\n125\n4\n2026\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := strings.Count(out, "Dividendo non válido"); got != 3 {
+		t.Errorf("avisos de dividendo non válido = %d, esperabamos 3:\n%s", got, out)
+	}
+	if len(saver.saved) != 1 || saver.saved[0].AmountUSD != 125 {
+		t.Errorf("saved = %+v, esperabamos só 125", saver.saved)
+	}
+}
+
 func TestRun_PrintsErrorOnInvalidMonth(t *testing.T) {
 	out, saver, err := runWith("125\n13\n4\n2026\n")
 	if err != nil {

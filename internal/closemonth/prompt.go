@@ -110,7 +110,7 @@ func Eligible(repo EligibilityRepo, year, month int) ([]EligibleAsset, error) {
 		if err != nil {
 			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
-		if sum.EstimatedHolding > 0 {
+		if domain.HasHolding(sum.EstimatedHolding) {
 			eligible = append(eligible, EligibleAsset{
 				Asset:     a,
 				Holding:   sum.EstimatedHolding,
@@ -134,7 +134,7 @@ func promptOptionalResult(r *bufio.Reader, w io.Writer) (float64, bool, error) {
 		}
 		normalized := strings.ReplaceAll(line, ",", ".")
 		v, perr := strconv.ParseFloat(normalized, 64)
-		if perr == nil && v > 0 {
+		if perr == nil && domain.ValidAmount(v) {
 			return v, false, nil
 		}
 		fmt.Fprintln(w, "   ⚠ Resultado non válido (debe ser > 0, ou baleiro para saltar)")

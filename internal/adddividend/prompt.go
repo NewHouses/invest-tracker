@@ -55,7 +55,7 @@ func promptDividend(r *bufio.Reader, w io.Writer) (float64, error) {
 		}
 		normalized := strings.ReplaceAll(line, ",", ".")
 		v, perr := strconv.ParseFloat(normalized, 64)
-		if perr == nil && v > 0 {
+		if perr == nil && domain.ValidAmount(v) {
 			return v, nil
 		}
 		fmt.Fprintln(w, "⚠ Dividendo non válido, debe ser un número maior ca 0")

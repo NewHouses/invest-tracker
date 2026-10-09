@@ -101,3 +101,48 @@ func TestAPIAssets(t *testing.T) {
 func itoa(id int64) string {
 	return strconvFormatInt(id)
 }
+
+// Mover o inicio dun activo despois da súa primeira transacción ou resultado
+// deixaba eses movementos fóra dos totais (p.e. S&P500 pasaba de 9067 a 3068
+// USD investidos) sen ningún aviso.
+func TestAPIAssetsRejectsStartAfterFirstMovement(t *testing.T) {
+	s := testServer(t)
+	h := s.Handler()
+	cookie := authCookie(t, s)
+	assetID := mustAsset(t, s, domain.Asset{Type: domain.Indice, Name: "S&P500", AmountUSD: 1000, Month: 1, Year: 2026})
+	if _, err := s.store.InsertTransaction(domain.Transaction{AssetID: assetID, AmountUSD: 100, Month: 3, Year: 2026}); err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+
+	later := map[string]any{"name": "S&P500", "amountUsd": 1000, "month": 4, "year": 2026}
+	rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), later, cookie)
+	assertFieldErrors(t, rr, "month")
+	if !strings.Contains(rr.Body.String(), "03/2026") {
+		t.Fatalf("a mensaxe debería indicar o primeiro movemento: %s", rr.Body.String())
+	}
+	if got, err := s.store.GetAsset(assetID); err != nil || got.Month != 1 {
+		t.Fatalf("o activo non debería cambiar: %#v, %v", got, err)
+	}
+
+	for _, month := range []int{3, 2} {
+		ok := map[string]any{"name": "S&P500", "amountUsd": 1000, "month": month, "year": 2026}
+		if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), ok, cookie); rr.Code != http.StatusOK {
+			t.Fatalf("inicio en %02d/2026: código=%d corpo=%s", month, rr.Code, rr.Body.String())
+		}
+	}
+
+	// Un activo que xa quedou así cunha versión anterior debe poder seguir
+	// editándose (nome, importe) mentres non se cambie a data.
+	legacy, err := s.store.GetAsset(assetID)
+	if err != nil {
+		t.Fatalf("GetAsset: %v", err)
+	}
+	legacy.Month = 6
+	if err := s.store.UpdateAsset(legacy); err != nil {
+		t.Fatalf("UpdateAsset: %v", err)
+	}
+	rename := map[string]any{"name": "S&P 500", "amountUsd": 1100, "month": 6, "year": 2026}
+	if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), rename, cookie); rr.Code != http.StatusOK {
+		t.Fatalf("editar sen cambiar a data: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
+}

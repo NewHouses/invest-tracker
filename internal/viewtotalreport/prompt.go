@@ -220,7 +220,7 @@ func aggregateMonth(repo Repo, assets []domain.Asset, year, month int) (monthAgg
 		}
 		agg.totalInvested += sum.TotalInvestedUpTo
 		agg.investedInMonth += sum.InvestedInMonth
-		if sum.EstimatedHolding > 0 {
+		if domain.HasHolding(sum.EstimatedHolding) {
 			agg.assetsActive++
 			agg.holding += sum.EstimatedHolding
 		}

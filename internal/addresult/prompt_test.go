@@ -225,6 +225,22 @@ func TestRun_AcceptsCommaDecimal(t *testing.T) {
 	}
 }
 
+// strconv.ParseFloat acepta "inf" e "Infinity": un resultado infinito
+// rompería todos os informes e a API web, así que debe rexeitarse.
+func TestRun_RejectsNonFiniteResult(t *testing.T) {
+	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
+	out, repo, err := runWith(sampleAssets, sums, "4\n2026\n1\ninf\n+Infinity\nNaN\n1100\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := strings.Count(out, "Resultado non válido"); got != 3 {
+		t.Errorf("avisos de resultado non válido = %d, esperabamos 3:\n%s", got, out)
+	}
+	if len(repo.saved) != 1 || repo.saved[0].ResultUSD != 1100 {
+		t.Errorf("saved = %+v, esperabamos só 1100", repo.saved)
+	}
+}
+
 func TestRun_PrintsErrorOnInvalidSelection(t *testing.T) {
 	sums := summariesForHolding(2026, 4, map[int64]float64{10: 1000})
 	out, repo, err := runWith(sampleAssets, sums, "4\n2026\n99\n1\n1100\n")

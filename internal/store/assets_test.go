@@ -271,3 +271,26 @@ func TestStore_FirstInvestmentMonth(t *testing.T) {
 		t.Errorf("FirstInvestmentMonth = %+v, queremos %+v", got, want)
 	}
 }
+
+func TestStore_FirstMovementMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	if _, ok, err := s.FirstMovementMonth(assetID); err != nil || ok {
+		t.Fatalf("sen movementos: ok=%v err=%v, esperabamos ok=false", ok, err)
+	}
+	if _, err := s.InsertTransaction(domain.Transaction{AssetID: assetID, AmountUSD: 100, Month: 6, Year: 2026}); err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+	if _, err := s.InsertMonthlyResult(domain.MonthlyResult{AssetID: assetID, ResultUSD: 1000, Month: 5, Year: 2026}); err != nil {
+		t.Fatalf("InsertMonthlyResult: %v", err)
+	}
+	got, ok, err := s.FirstMovementMonth(assetID)
+	if err != nil || !ok || got != (domain.YearMonth{Year: 2026, Month: 5}) {
+		t.Fatalf("FirstMovementMonth = %+v, %v, %v; esperabamos 05/2026", got, ok, err)
+	}
+}

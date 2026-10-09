@@ -28,6 +28,55 @@ func TestStore_InsertMonthlyResult(t *testing.T) {
 	}
 }
 
+// Corrixir o resultado dun mes substitúe o anterior: antes engadíase unha
+// fila nova e, ao borrar a visible, reaparecía o valor vello.
+func TestStore_InsertMonthlyResult_ReplacesSameMonth(t *testing.T) {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	assetID := seedAsset(t, s)
+	first, err := s.InsertMonthlyResult(domain.MonthlyResult{AssetID: assetID, ResultUSD: 1100, Month: 4, Year: 2026})
+	if err != nil {
+		t.Fatalf("InsertMonthlyResult: %v", err)
+	}
+	second, err := s.InsertMonthlyResult(domain.MonthlyResult{AssetID: assetID, ResultUSD: 1150, Month: 4, Year: 2026})
+	if err != nil {
+		t.Fatalf("InsertMonthlyResult (corrección): %v", err)
+	}
+	ids, err := s.InsertMonthlyResults([]domain.MonthlyResult{
+		{AssetID: assetID, ResultUSD: 1175, Month: 4, Year: 2026},
+		{AssetID: assetID, ResultUSD: 1200, Month: 5, Year: 2026},
+	})
+	if err != nil {
+		t.Fatalf("InsertMonthlyResults: %v", err)
+	}
+	if second != first || ids[0] != first || ids[1] == first {
+		t.Fatalf("ids = %d, %d, %v; esperabamos reutilizar %d no mesmo mes", first, second, ids, first)
+	}
+
+	got, err := s.ListMonthlyResultsByAsset(assetID)
+	if err != nil {
+		t.Fatalf("ListMonthlyResultsByAsset: %v", err)
+	}
+	if len(got) != 2 || got[0].ResultUSD != 1175 || got[1].ResultUSD != 1200 {
+		t.Fatalf("resultados = %+v, esperabamos un por mes (1175 en 04, 1200 en 05)", got)
+	}
+
+	if err := s.DeleteMonthlyResult(first); err != nil {
+		t.Fatalf("DeleteMonthlyResult: %v", err)
+	}
+	sum, err := s.MonthlySummary(assetID, 2026, 4)
+	if err != nil {
+		t.Fatalf("MonthlySummary: %v", err)
+	}
+	if sum.HasResult {
+		t.Fatalf("tras borrar o resultado de 04/2026 non debería quedar ningún: %+v", sum)
+	}
+}
+
 func TestStore_RejectsOrphanResult(t *testing.T) {
 	s, err := store.Open(":memory:")
 	if err != nil {

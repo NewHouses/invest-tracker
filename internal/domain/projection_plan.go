@@ -1,9 +1,14 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"math"
 )
+
+// ErrProjectionOverflow indica que os importes da proxección crecen tanto que
+// deixan de ser números finitos (p.e. un retorno mensual desorbitado).
+var ErrProjectionOverflow = errors.New("a proxección supera o rango numérico: reduce o retorno, os aportes ou as regras de crecemento")
 
 type ProjectionMode string
 
@@ -143,6 +148,9 @@ func ProjectPlan(in PlanInput) ([]PlanMonth, error) {
 		monthReturn := beforeReturn * in.MonthlyReturn
 		capital = beforeReturn + monthReturn
 		totalInvested += contribution
+		if !finite(base) || !finite(capital) || !finite(totalInvested) {
+			return nil, ErrProjectionOverflow
+		}
 
 		months = append(months, PlanMonth{
 			Index:         i + 1,

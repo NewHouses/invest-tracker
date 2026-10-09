@@ -98,8 +98,8 @@ func gainSetup() *fakeRepo {
 				TotalInvestedUpTo: 2000, InvestedInMonth: 0,
 				EstimatedHolding: 2100, Result: 2150, HasResult: true, HasPrevResult: true,
 			},
-			{10, 9999, 12}: {TotalInvestedUpTo: 1200},
-			{11, 9999, 12}: {TotalInvestedUpTo: 2000},
+			{10, 9999, 12}: {TotalInvestedUpTo: 1200, EstimatedHolding: 1500, HasPrevResult: true},
+			{11, 9999, 12}: {TotalInvestedUpTo: 2000, EstimatedHolding: 2150, HasPrevResult: true},
 		},
 		dividends: map[divKey]float64{
 			{2026, 3}: 20,
@@ -234,7 +234,7 @@ func TestRun_HandlesMonthWithoutMetrics(t *testing.T) {
 		assets: twoAssets,
 		summaries: map[sumKey]domain.MonthlySummary{
 			{10, 2026, 5}:  {Result: 100, HasResult: true},
-			{10, 9999, 12}: {TotalInvestedUpTo: 0},
+			{10, 9999, 12}: {TotalInvestedUpTo: 0, EstimatedHolding: 100, HasPrevResult: true},
 			{11, 9999, 12}: {TotalInvestedUpTo: 0},
 		},
 		months: []domain.YearMonth{{Year: 2026, Month: 5}},

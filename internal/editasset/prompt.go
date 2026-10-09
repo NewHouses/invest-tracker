@@ -13,6 +13,7 @@ import (
 type Repo interface {
 	ListAssets() ([]domain.Asset, error)
 	UpdateAsset(domain.Asset) error
+	FirstMovementMonth(assetID int64) (domain.YearMonth, bool, error)
 }
 
 const (
@@ -62,6 +63,17 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		y, err := prompts.Year(r, w)
 		if err != nil {
 			return err
+		}
+		// Mover o inicio despois da primeira transacción ou resultado deixaría
+		// eses movementos fóra dos totais sen avisar.
+		first, ok, err := repo.FirstMovementMonth(chosen.ID)
+		if err != nil {
+			return fmt.Errorf("comprobando os movementos do activo: %w", err)
+		}
+		if ok && first.Before(domain.YearMonth{Year: y, Month: m}) {
+			fmt.Fprintf(w, "⚠ A data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d). Non se cambiou nada.\n",
+				first.Month, first.Year)
+			return nil
 		}
 		updated.Month = m
 		updated.Year = y

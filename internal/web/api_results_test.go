@@ -111,3 +111,38 @@ func TestAPIResults(t *testing.T) {
 		t.Fatalf("delete: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 }
+
+// Corrixir un resultado (desde "Engadir resultado" ou "Pechar mes") debe
+// substituílo: antes quedaban as dúas filas na lista e, ao borrar a visible,
+// o mes volvía mostrar o valor vello.
+func TestAPIResultsCorrectionReplacesPreviousValue(t *testing.T) {
+	s := testServer(t)
+	h := s.Handler()
+	cookie := authCookie(t, s)
+	assetID := mustAsset(t, s, domain.Asset{Type: domain.Indice, Name: "Índice", AmountUSD: 1000, Month: 1, Year: 2026})
+
+	for _, value := range []float64{1100, 1150} {
+		if rr := doJSON(t, h, http.MethodPost, "/api/results", map[string]any{"assetId": assetID, "resultUsd": value, "month": 1, "year": 2026}, cookie); rr.Code != http.StatusCreated {
+			t.Fatalf("gardar %.0f: código=%d corpo=%s", value, rr.Code, rr.Body.String())
+		}
+	}
+	close := closeMonthRequest{Month: 1, Year: 2026, Items: []closeMonthRequestItem{{AssetID: assetID, ResultUSD: 1175}}}
+	if rr := doJSON(t, h, http.MethodPost, "/api/results/close-month", close, cookie); rr.Code != http.StatusCreated {
+		t.Fatalf("pechar mes: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
+
+	rr := doJSON(t, h, http.MethodGet, "/api/assets/"+itoa(assetID)+"/results", nil, cookie)
+	var results []domain.MonthlyResult
+	decodeBody(t, rr, &results)
+	if len(results) != 1 || results[0].ResultUSD != 1175 {
+		t.Fatalf("lista tras corrixir = %#v, esperabamos un só resultado con 1175", results)
+	}
+
+	if rr := doJSON(t, h, http.MethodDelete, "/api/results/"+itoa(results[0].ID), nil, cookie); rr.Code != http.StatusNoContent {
+		t.Fatalf("borrar: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
+	rr = doJSON(t, h, http.MethodGet, "/api/reports/asset/"+itoa(assetID)+"/month?year=2026&month=1", nil, cookie)
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"hasResult":false`) {
+		t.Fatalf("tras borrar o resultado o mes non debería ter ningún: código=%d corpo=%s", rr.Code, rr.Body.String())
+	}
+}

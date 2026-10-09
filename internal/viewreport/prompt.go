@@ -39,7 +39,7 @@ func Build(repo Repo, asset domain.Asset, year, month int) (Report, error) {
 		Period:     domain.YearMonth{Year: year, Month: month},
 		Summary:    summary,
 		HasResult:  summary.HasResult,
-		HasGainPct: summary.HasResult && summary.EstimatedHolding > 0,
+		HasGainPct: summary.HasResult && domain.HasHolding(summary.EstimatedHolding),
 	}
 	if report.HasResult {
 		report.Gain = summary.Result - summary.EstimatedHolding

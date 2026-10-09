@@ -78,7 +78,7 @@ func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
 		totalTx += sum.InvestedInMonth
-		if sum.EstimatedHolding > 0 {
+		if domain.HasHolding(sum.EstimatedHolding) {
 			fondos += sum.EstimatedHolding
 		}
 	}
@@ -154,33 +154,22 @@ func Build(repo Repo) (History, error) {
 		history.Rows = append(history.Rows, row)
 	}
 
+	var currentHoldings float64
 	for _, a := range assets {
 		lifeSum, err := repo.MonthlySummary(a.ID, 9999, 12)
 		if err != nil {
 			return History{}, fmt.Errorf("calculando lifetime de %s: %w", a.Name, err)
 		}
 		history.LifetimeAporte += lifeSum.TotalInvestedUpTo
+		// Valor neto de cada activo: último resultado máis aportes e vendas
+		// posteriores (un activo sen resultados conta polo investido).
+		currentHoldings += lifeSum.CurrentHolding()
 	}
 
-	var lifetimeLastResult float64
-	var hasAnyResult bool
-	for _, a := range assets {
-		for i := len(months) - 1; i >= 0; i-- {
-			sum, err := repo.MonthlySummary(a.ID, months[i].Year, months[i].Month)
-			if err != nil {
-				return History{}, fmt.Errorf("buscando último resultado de %s: %w", a.Name, err)
-			}
-			if sum.HasResult {
-				lifetimeLastResult += sum.Result
-				hasAnyResult = true
-				break
-			}
-		}
-	}
-	history.CurrentValue = lifetimeLastResult + history.TotalDividends
-	history.HasCurrentValue = hasAnyResult
+	history.CurrentValue = currentHoldings + history.TotalDividends
+	history.HasCurrentValue = true
 	history.TotalGain = history.CurrentValue - history.LifetimeAporte
-	history.HasTotalGain = history.LifetimeAporte > 0 && hasAnyResult
+	history.HasTotalGain = true
 	if nValid > 0 {
 		history.AvgIndexPct = sumPct / float64(nValid)
 		history.AvgGain = sumGain / float64(nValid)

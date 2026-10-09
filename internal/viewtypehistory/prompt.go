@@ -76,7 +76,7 @@ func Current(repo Repo, typ domain.AssetType, now domain.YearMonth) (*Row, error
 			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
 		aporte += sum.InvestedInMonth
-		if sum.EstimatedHolding > 0 {
+		if domain.HasHolding(sum.EstimatedHolding) {
 			holding += sum.EstimatedHolding
 		}
 	}
@@ -163,7 +163,7 @@ func Build(repo Repo, typ domain.AssetType) (History, error) {
 		history.Rows = append(history.Rows, row)
 	}
 
-	var lifetimeResult float64
+	var currentValue float64
 	var hasAnyResult bool
 	for _, a := range ofType {
 		lifeSum, err := repo.MonthlySummary(a.ID, 9999, 12)
@@ -171,23 +171,14 @@ func Build(repo Repo, typ domain.AssetType) (History, error) {
 			return History{}, fmt.Errorf("calculando lifetime de %s: %w", a.Name, err)
 		}
 		history.TotalInvested += lifeSum.TotalInvestedUpTo
-
-		ms := monthsByAsset[a.ID]
-		if len(ms) == 0 {
-			continue
-		}
-		last := ms[len(ms)-1]
-		lastSum, err := repo.MonthlySummary(a.ID, last.Year, last.Month)
-		if err != nil {
-			return History{}, fmt.Errorf("calculando último resumo de %s: %w", a.Name, err)
-		}
-		if lastSum.HasResult {
-			lifetimeResult += lastSum.Result
+		// Valor neto: último resultado máis aportes e vendas posteriores.
+		currentValue += lifeSum.CurrentHolding()
+		if len(monthsByAsset[a.ID]) > 0 {
 			hasAnyResult = true
 		}
 	}
-	history.TotalGain = lifetimeResult - history.TotalInvested
-	history.HasTotalGain = history.TotalInvested > 0 && hasAnyResult
+	history.TotalGain = currentValue - history.TotalInvested
+	history.HasTotalGain = hasAnyResult
 	if nValid > 0 {
 		history.AvgIndexPct = sumPct / float64(nValid)
 		history.AvgGain = sumGain / float64(nValid)

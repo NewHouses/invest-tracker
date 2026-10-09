@@ -7,17 +7,25 @@ import (
 	"invest-tracker/internal/domain"
 )
 
+// upsertMonthlyResultSQL garda o resultado dun activo nun mes. Só pode haber
+// un por activo e mes: se xa existía, substitúese o seu valor.
+const upsertMonthlyResultSQL = `INSERT INTO monthly_results (asset_id, result_usd, month, year) VALUES (?, ?, ?, ?)
+	ON CONFLICT (asset_id, year, month) DO UPDATE SET result_usd = excluded.result_usd
+	RETURNING id`
+
+// InsertMonthlyResult garda o resultado mensual dun activo, substituíndo o
+// que houbese nese mes. Devolve o id da fila gardada.
 func (s *Store) InsertMonthlyResult(m domain.MonthlyResult) (int64, error) {
-	res, err := s.db.Exec(
-		`INSERT INTO monthly_results (asset_id, result_usd, month, year) VALUES (?, ?, ?, ?)`,
-		m.AssetID, m.ResultUSD, m.Month, m.Year,
-	)
+	var id int64
+	err := s.db.QueryRow(upsertMonthlyResultSQL, m.AssetID, m.ResultUSD, m.Month, m.Year).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
+// InsertMonthlyResults garda varios resultados nunha única transacción, coa
+// mesma semántica de substitución ca InsertMonthlyResult.
 func (s *Store) InsertMonthlyResults(rs []domain.MonthlyResult) ([]int64, error) {
 	if len(rs) == 0 {
 		return nil, nil
@@ -31,15 +39,7 @@ func (s *Store) InsertMonthlyResults(rs []domain.MonthlyResult) ([]int64, error)
 
 	ids := make([]int64, len(rs))
 	for i, r := range rs {
-		res, err := tx.Exec(
-			`INSERT INTO monthly_results (asset_id, result_usd, month, year) VALUES (?, ?, ?, ?)`,
-			r.AssetID, r.ResultUSD, r.Month, r.Year,
-		)
-		if err != nil {
-			return nil, err
-		}
-		ids[i], err = res.LastInsertId()
-		if err != nil {
+		if err := tx.QueryRow(upsertMonthlyResultSQL, r.AssetID, r.ResultUSD, r.Month, r.Year).Scan(&ids[i]); err != nil {
 			return nil, err
 		}
 	}

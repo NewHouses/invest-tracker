@@ -177,3 +177,39 @@ func TestRun_EndToEnd_AssetSkipsMonth(t *testing.T) {
 		}
 	}
 }
+
+// Uns restos de redondeo (0,004 USD tras retirar todo o capital) non deben
+// contar como activo con capital: o mes marcábase como "parcial" para sempre.
+func TestBuild_DustHoldingIsNotActive(t *testing.T) {
+	s, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	activoID, err := s.InsertAsset(domain.Asset{Type: domain.Indice, Name: "Activo", AmountUSD: 1000, Month: 1, Year: 2026})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+	restosID, err := s.InsertAsset(domain.Asset{Type: domain.CopyTrading, Name: "Restos", AmountUSD: 100, Month: 1, Year: 2026})
+	if err != nil {
+		t.Fatalf("InsertAsset: %v", err)
+	}
+	if _, err := s.InsertMonthlyResult(domain.MonthlyResult{AssetID: restosID, ResultUSD: 100.004, Month: 8, Year: 2026}); err != nil {
+		t.Fatalf("InsertMonthlyResult: %v", err)
+	}
+	if _, err := s.InsertTransaction(domain.Transaction{AssetID: restosID, AmountUSD: -100, Month: 9, Year: 2026}); err != nil {
+		t.Fatalf("InsertTransaction: %v", err)
+	}
+	if _, err := s.InsertMonthlyResult(domain.MonthlyResult{AssetID: activoID, ResultUSD: 1050, Month: 9, Year: 2026}); err != nil {
+		t.Fatalf("InsertMonthlyResult: %v", err)
+	}
+
+	report, err := viewtotalreport.Build(s, 2026, 9)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if report.AssetsActive != 1 || report.AssetsWithResult != 1 || report.Partial {
+		t.Fatalf("activos=%d con resultado=%d parcial=%v, esperabamos 1/1/false", report.AssetsActive, report.AssetsWithResult, report.Partial)
+	}
+}

@@ -52,7 +52,8 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 	months, err := domain.Project(in)
 	if err != nil {
-		return fmt.Errorf("calculando a proxección: %w", err)
+		// main.go xa prefixa "erro calculando a proxección".
+		return err
 	}
 
 	renderReport(w, in, months)

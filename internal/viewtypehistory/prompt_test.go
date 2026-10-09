@@ -83,12 +83,13 @@ func gainSetup() *fakeRepo {
 			11: {{Year: 2026, Month: 4}, {Year: 2026, Month: 5}},
 		},
 		summaries: map[sumKey]domain.MonthlySummary{
-			{10, 2026, 4}:  {InvestedInMonth: 1000, EstimatedHolding: 1000, Result: 1100, HasResult: true, TotalInvestedUpTo: 1000},
-			{11, 2026, 4}:  {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
-			{10, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 1100, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
-			{11, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 550, HasPrevResult: true, Result: 605, HasResult: true, TotalInvestedUpTo: 500},
-			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
-			{11, 9999, 12}: {TotalInvestedUpTo: 500},
+			{10, 2026, 4}: {InvestedInMonth: 1000, EstimatedHolding: 1000, Result: 1100, HasResult: true, TotalInvestedUpTo: 1000},
+			{11, 2026, 4}: {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
+			{10, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 1100, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
+			{11, 2026, 5}: {InvestedInMonth: 0, EstimatedHolding: 550, HasPrevResult: true, Result: 605, HasResult: true, TotalInvestedUpTo: 500},
+			// Lifetime: o store devolve o último resultado máis os movementos posteriores.
+			{10, 9999, 12}: {TotalInvestedUpTo: 1000, EstimatedHolding: 1320, HasPrevResult: true},
+			{11, 9999, 12}: {TotalInvestedUpTo: 500, EstimatedHolding: 605, HasPrevResult: true},
 		},
 	}
 }
@@ -246,8 +247,8 @@ func TestRun_OnlyAssetsWithResultThisMonth(t *testing.T) {
 			{11, 2026, 4}:  {InvestedInMonth: 500, EstimatedHolding: 500, HasResult: false},
 			{10, 2026, 5}:  {InvestedInMonth: 0, EstimatedHolding: 1200, HasPrevResult: true, Result: 1320, HasResult: true, TotalInvestedUpTo: 1000},
 			{11, 2026, 5}:  {InvestedInMonth: 500, EstimatedHolding: 500, Result: 550, HasResult: true, TotalInvestedUpTo: 500},
-			{10, 9999, 12}: {TotalInvestedUpTo: 1000},
-			{11, 9999, 12}: {TotalInvestedUpTo: 500},
+			{10, 9999, 12}: {TotalInvestedUpTo: 1000, EstimatedHolding: 1320, HasPrevResult: true},
+			{11, 9999, 12}: {TotalInvestedUpTo: 500, EstimatedHolding: 550, HasPrevResult: true},
 		},
 	}
 	out, err := runWith(repo, "1\n")
