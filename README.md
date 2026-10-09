@@ -7,6 +7,9 @@ Tes dúas formas de usala, que comparten a mesma base de datos (`investimentos.d
   da rede local, como o móbil. Está protexida con contrasinal.
 - **Terminal (CLI)**: os menús de texto de sempre.
 
+> `investimentos.db` non se sube a GitHub (está en `.gitignore`): garda ti unha
+> copia de seguridade dela.
+
 ## Requisitos para compilar
 
 - [Go](https://go.dev/dl/) 1.25 ou superior.
