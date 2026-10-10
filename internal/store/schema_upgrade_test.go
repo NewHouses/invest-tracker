@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -152,5 +153,39 @@ INSERT INTO monthly_results (asset_id, result_usd, month, year) VALUES
 	}
 	if len(got) != 2 || got[0].ResultUSD != 1110 {
 		t.Fatalf("tras corrixir 01/2026 = %+v, esperabamos un só resultado con 1110", got)
+	}
+}
+
+// A base de datos non se versiona: na primeira execución non existe e Open
+// debe creala baleira, co esquema completo, na ruta indicada.
+func TestOpen_CreatesEmptyDatabaseWhenMissing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "investimentos.db")
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("a base de datos non debería existir aínda: %v", err)
+	}
+
+	s, err := store.Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("non se creou o ficheiro da base de datos: %v", err)
+	}
+	assets, err := s.ListAssets()
+	if err != nil || len(assets) != 0 {
+		t.Fatalf("activos = %+v, %v; esperabamos ningún", assets, err)
+	}
+	months, err := s.MonthsWithResults()
+	if err != nil || len(months) != 0 {
+		t.Fatalf("meses con resultados = %+v, %v; esperabamos ningún", months, err)
+	}
+	dividends, err := s.ListDividends()
+	if err != nil || len(dividends) != 0 {
+		t.Fatalf("dividendos = %+v, %v; esperabamos ningún", dividends, err)
+	}
+	if _, hasPassword, err := s.GetSetting("password_hash"); err != nil || hasPassword {
+		t.Fatalf("contrasinal configurado = %v, %v; esperabamos que non", hasPassword, err)
 	}
 }

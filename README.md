@@ -8,7 +8,9 @@ Tes dúas formas de usala, que comparten a mesma base de datos (`investimentos.d
 - **Terminal (CLI)**: os menús de texto de sempre.
 
 > `investimentos.db` non se sube a GitHub (está en `.gitignore`): garda ti unha
-> copia de seguridade dela.
+> copia de seguridade dela. Se non existe, a aplicación créaa baleira ao
+> arrancar, no cartafol desde o que se executa (`invest-tracker-web.cmd` usa
+> sempre o cartafol do programa).
 
 ## Requisitos para compilar
 
