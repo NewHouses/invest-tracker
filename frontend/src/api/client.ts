@@ -1,4 +1,5 @@
 import type { ApiErrorBody } from '@/api/types'
+import { getLanguage, t } from '@/i18n'
 
 export class ApiError extends Error {
   readonly status: number
@@ -27,12 +28,14 @@ async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
   try {
     return JSON.parse(text) as ApiErrorBody
   } catch {
-    return { error: 'Non se puido ler a resposta do servidor.' }
+    return { error: t('Non se puido ler a resposta do servidor.') }
   }
 }
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const headers = new Headers({ Accept: 'application/json' })
+  // O servidor responde no idioma da web (mensaxes de erro, tipos de activo,
+  // títulos das gráficas...).
+  const headers = new Headers({ Accept: 'application/json', 'Accept-Language': getLanguage() })
   const init: RequestInit = {
     method: options.method ?? 'GET',
     credentials: 'same-origin',
@@ -52,7 +55,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   if (!response.ok) {
     const body = await parseErrorBody(response)
-    const message = body.error ?? 'Produciuse un erro ao falar co servidor.'
+    const message = body.error ?? t('Produciuse un erro ao falar co servidor.')
     throw new ApiError(message, response.status, body.fields)
   }
 

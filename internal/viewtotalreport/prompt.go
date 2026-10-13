@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
@@ -86,7 +87,7 @@ type monthMetrics struct {
 func Build(repo Repo, year, month int) (Report, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return Report{}, fmt.Errorf("listando activos: %w", err)
+		return Report{}, i18n.Errorf("listando activos: %w", err)
 	}
 	return buildFromAssets(repo, assets, year, month)
 }
@@ -103,7 +104,7 @@ func buildFromAssets(repo Repo, assets []domain.Asset, year, month int) (Report,
 
 	monthsWithResults, err := repo.MonthsWithResultsUpTo(year, month)
 	if err != nil {
-		return Report{}, fmt.Errorf("obtendo meses con resultados: %w", err)
+		return Report{}, i18n.Errorf("obtendo meses con resultados: %w", err)
 	}
 
 	var sumPctNoDiv, sumGainNoDiv, sumPctWithDiv, sumGainWithDiv float64
@@ -165,18 +166,18 @@ func reportFromAgg(target monthAgg) Report {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Informe mensual total ---\n")
+	i18n.Fprint(w, "\n--- Informe mensual total ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
-	fmt.Fprintln(w, "Activos:")
+	i18n.Fprintln(w, "Activos:")
 	for _, a := range assets {
 		fmt.Fprintf(w, "  - %s — %s\n", a.Type.Display(), a.Name)
 	}
@@ -195,7 +196,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 	if report.AssetsActive == 0 {
-		fmt.Fprintf(w, "Non hai activos con capital investido en %02d/%d.\n", month, year)
+		i18n.Fprintf(w, "Non hai activos con capital investido en %02d/%d.\n", month, year)
 		return nil
 	}
 
@@ -216,7 +217,7 @@ func aggregateMonth(repo Repo, assets []domain.Asset, year, month int) (monthAgg
 	for _, a := range assets {
 		sum, err := repo.MonthlySummary(a.ID, year, month)
 		if err != nil {
-			return agg, fmt.Errorf("calculando %s: %w", a.Name, err)
+			return agg, i18n.Errorf("calculando %s: %w", a.Name, err)
 		}
 		agg.totalInvested += sum.TotalInvestedUpTo
 		agg.investedInMonth += sum.InvestedInMonth
@@ -272,50 +273,50 @@ func computeMetrics(a monthAgg) monthMetrics {
 func renderTable(w io.Writer, report Report) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Informe total · %02d/%d\n", report.Period.Month, report.Period.Year)
+	i18n.Fprintf(w, "  Informe total · %02d/%d\n", report.Period.Month, report.Period.Year)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Activos: %d (%d activos en %02d/%d)\n",
+	i18n.Fprintf(w, "  Activos: %d (%d activos en %02d/%d)\n",
 		report.TotalAssets, report.AssetsActive, report.Period.Month, report.Period.Year)
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "  Total investido ata o mes\t%s\n", money.USD(report.TotalInvested))
-	fmt.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(report.InvestedInMonth))
-	fmt.Fprintf(tw, "  Investimento + dividendos prev. mes\t%s\n",
+	i18n.Fprintf(tw, "  Total investido ata o mes\t%s\n", money.USD(report.TotalInvested))
+	i18n.Fprintf(tw, "  Investido este mes\t%s\n", money.USD(report.InvestedInMonth))
+	i18n.Fprintf(tw, "  Investimento + dividendos prev. mes\t%s\n",
 		money.USD(report.InvestedPlusPrevDividends))
-	fmt.Fprintf(tw, "  No activo (sen div)\t%s\n", money.USD(report.HoldingNoDiv))
-	fmt.Fprintf(tw, "  No activo (con div)\t%s\n", money.USD(report.HoldingWithDiv))
-	fmt.Fprintf(tw, "  Dividendos este mes\t%s\n", money.USD(report.Dividends))
+	i18n.Fprintf(tw, "  No activo (sen div)\t%s\n", money.USD(report.HoldingNoDiv))
+	i18n.Fprintf(tw, "  No activo (con div)\t%s\n", money.USD(report.HoldingWithDiv))
+	i18n.Fprintf(tw, "  Dividendos este mes\t%s\n", money.USD(report.Dividends))
 
 	if !report.HasResults {
-		fmt.Fprintln(tw, "  Resultado (sen div)\t—")
-		fmt.Fprintln(tw, "  Resultado total (con div)\t—")
-		fmt.Fprintln(tw, "  Gañanzas/Perdas\t—")
-		fmt.Fprintln(tw, "  Gañanzas/Perdas (con div)\t—")
-		fmt.Fprintln(tw, "  Índice\t—")
-		fmt.Fprintln(tw, "  Índice (con div)\t—")
+		i18n.Fprintln(tw, "  Resultado (sen div)\t—")
+		i18n.Fprintln(tw, "  Resultado total (con div)\t—")
+		i18n.Fprintln(tw, "  Gañanzas/Perdas\t—")
+		i18n.Fprintln(tw, "  Gañanzas/Perdas (con div)\t—")
+		i18n.Fprintln(tw, "  Índice\t—")
+		i18n.Fprintln(tw, "  Índice (con div)\t—")
 	} else {
 		coverage := ""
 		if report.Partial {
-			coverage = fmt.Sprintf("  (%d/%d activos con resultado)",
+			coverage = i18n.Sprintf("  (%d/%d activos con resultado)",
 				report.AssetsWithResult, report.AssetsActive)
 		}
-		fmt.Fprintf(tw, "  Resultado (sen div)\t%s%s\n", money.USD(report.ResultNoDiv), coverage)
-		fmt.Fprintf(tw, "  Resultado total (con div)\t%s\n", money.USD(report.ResultWithDiv))
+		i18n.Fprintf(tw, "  Resultado (sen div)\t%s%s\n", money.USD(report.ResultNoDiv), coverage)
+		i18n.Fprintf(tw, "  Resultado total (con div)\t%s\n", money.USD(report.ResultWithDiv))
 		if report.HasMetrics {
-			fmt.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(report.GainNoDiv))
-			fmt.Fprintf(tw, "  Gañanzas/Perdas (con div)\t%s\n", money.SignedUSD(report.GainWithDiv))
-			fmt.Fprintf(tw, "  Índice\t%+.2f%%\n", report.PctNoDiv)
+			i18n.Fprintf(tw, "  Gañanzas/Perdas\t%s\n", money.SignedUSD(report.GainNoDiv))
+			i18n.Fprintf(tw, "  Gañanzas/Perdas (con div)\t%s\n", money.SignedUSD(report.GainWithDiv))
+			i18n.Fprintf(tw, "  Índice\t%+.2f%%\n", report.PctNoDiv)
 			if report.HasPctWithDiv {
-				fmt.Fprintf(tw, "  Índice (con div)\t%+.2f%%\n", report.PctWithDiv)
+				i18n.Fprintf(tw, "  Índice (con div)\t%+.2f%%\n", report.PctWithDiv)
 			} else {
-				fmt.Fprintln(tw, "  Índice (con div)\tn/a")
+				i18n.Fprintln(tw, "  Índice (con div)\tn/a")
 			}
 		} else {
-			fmt.Fprintln(tw, "  Gañanzas/Perdas\tn/a")
-			fmt.Fprintln(tw, "  Gañanzas/Perdas (con div)\tn/a")
-			fmt.Fprintln(tw, "  Índice\tn/a")
-			fmt.Fprintln(tw, "  Índice (con div)\tn/a")
+			i18n.Fprintln(tw, "  Gañanzas/Perdas\tn/a")
+			i18n.Fprintln(tw, "  Gañanzas/Perdas (con div)\tn/a")
+			i18n.Fprintln(tw, "  Índice\tn/a")
+			i18n.Fprintln(tw, "  Índice (con div)\tn/a")
 		}
 	}
 	tw.Flush()
@@ -323,18 +324,18 @@ func renderTable(w io.Writer, report Report) {
 	fmt.Fprintln(w, sep)
 
 	if report.Averages.Months == 0 {
-		fmt.Fprintln(w, "  Promedios mensuais: sen meses con resultados.")
+		i18n.Fprintln(w, "  Promedios mensuais: sen meses con resultados.")
 	} else {
-		fmt.Fprintf(w, "  Promedios mensuais (%d mes(es) con resultado ata %02d/%d):\n",
+		i18n.Fprintf(w, "  Promedios mensuais (%d mes(es) con resultado ata %02d/%d):\n",
 			report.Averages.Months, report.Period.Month, report.Period.Year)
 		twAvg := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(twAvg, "    Índice medio mensual (sen div)\t%+.2f%%\n",
+		i18n.Fprintf(twAvg, "    Índice medio mensual (sen div)\t%+.2f%%\n",
 			report.Averages.PctNoDiv)
-		fmt.Fprintf(twAvg, "    Gañanza media mensual (sen div)\t%s\n",
+		i18n.Fprintf(twAvg, "    Gañanza media mensual (sen div)\t%s\n",
 			money.SignedUSD(report.Averages.GainNoDiv))
-		fmt.Fprintf(twAvg, "    Índice medio mensual (con div)\t%+.2f%%\n",
+		i18n.Fprintf(twAvg, "    Índice medio mensual (con div)\t%+.2f%%\n",
 			report.Averages.PctWithDiv)
-		fmt.Fprintf(twAvg, "    Gañanza media mensual (con div)\t%s\n",
+		i18n.Fprintf(twAvg, "    Gañanza media mensual (con div)\t%s\n",
 			money.SignedUSD(report.Averages.GainWithDiv))
 		twAvg.Flush()
 	}

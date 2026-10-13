@@ -61,6 +61,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	readmeEN, err := readText("installers/macos/README.txt")
+	if err != nil {
+		return err
+	}
 	icon, err := os.ReadFile("installers/macos/AppIcon.icns")
 	if err != nil {
 		return err
@@ -87,6 +91,7 @@ func run() error {
 		{appDir + "Contents/Resources/servidor.command", []byte(server), 0o755},
 		{appDir + "Contents/Resources/AppIcon.icns", icon, 0o644},
 		{"LEME.txt", []byte(readme), 0o644},
+		{"README.txt", []byte(readmeEN), 0o644},
 	}
 
 	var buf bytes.Buffer

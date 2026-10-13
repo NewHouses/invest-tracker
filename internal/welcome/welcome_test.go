@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"invest-tracker/internal/i18n"
 )
 
 func TestWelcomeMessage_ContainsTitle(t *testing.T) {
@@ -93,8 +95,8 @@ func TestCategories_Stable(t *testing.T) {
 
 func TestTopOptions_ContainsAllCategoriesAndSair(t *testing.T) {
 	top := TopOptions()
-	if len(top) != len(Categories())+1 {
-		t.Fatalf("TopOptions len = %d, esperabamos %d", len(top), len(Categories())+1)
+	if len(top) != len(Categories())+2 {
+		t.Fatalf("TopOptions len = %d, esperabamos %d", len(top), len(Categories())+2)
 	}
 	for i, cat := range Categories() {
 		if top[i].Key != cat.Key || top[i].Label != cat.Label {
@@ -102,9 +104,27 @@ func TestTopOptions_ContainsAllCategoriesAndSair(t *testing.T) {
 				i, top[i], cat.Key, cat.Label)
 		}
 	}
+	lang := top[len(top)-2]
+	if lang.Key != LanguageKey || lang.Label != "Idioma / Language" {
+		t.Errorf("TopOptions[penúltima] = %+v, queremos {%d, Idioma / Language}", lang, LanguageKey)
+	}
 	last := top[len(top)-1]
 	if last.Key != 0 || last.Label != "Saír" {
 		t.Errorf("TopOptions[last] = %+v, queremos {0, Saír}", last)
+	}
+}
+
+// En inglés cambian os textos do menú, pero non a opción do idioma, que vai
+// sempre nos dous idiomas.
+func TestTopOptions_English(t *testing.T) {
+	defer i18n.SetCurrent(i18n.Current())
+	i18n.SetCurrent(i18n.English)
+	top := TopOptions()
+	if top[0].Label != "Asset operations" || top[len(top)-1].Label != "Exit" || top[len(top)-2].Label != "Idioma / Language" {
+		t.Errorf("menú en inglés inesperado: %+v", top)
+	}
+	if !strings.Contains(WelcomeMessage(), "Welcome! Choose an option:") {
+		t.Errorf("benvida en inglés inesperada:\n%s", WelcomeMessage())
 	}
 }
 

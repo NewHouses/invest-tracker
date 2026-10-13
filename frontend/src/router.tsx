@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router'
 
 import { AppLayout } from '@/components/layout/AppLayout'
+import { t } from '@/i18n'
 
 // As seccións cárganse baixo demanda para que gráficas e informes (Recharts)
 // non engorden o paquete inicial.
@@ -31,7 +32,7 @@ const AxustesPage = lazy(() => import('@/pages/axustes/AxustesPage').then((m) =>
 function LoadingScreen() {
   return (
     <Center h="60vh">
-      <Loader aria-label="Cargando" />
+      <Loader aria-label={t('Cargando')} />
     </Center>
   )
 }
@@ -45,7 +46,7 @@ export function NotFoundPage() {
     <Center h="60vh">
       <Stack align="center" gap="xs">
         <Title order={1}>404</Title>
-        <Text c="dimmed">Non atopamos esta páxina.</Text>
+        <Text c="dimmed">{t('Non atopamos esta páxina.')}</Text>
       </Stack>
     </Center>
   )

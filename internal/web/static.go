@@ -22,7 +22,7 @@ func DistFS() fs.FS {
 func (s *Server) staticHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			http.Error(w, "método non permitido", http.StatusMethodNotAllowed)
+			http.Error(w, langOf(r).T("método non permitido"), http.StatusMethodNotAllowed)
 			return
 		}
 

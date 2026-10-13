@@ -10,6 +10,7 @@ import { ErrorAlert } from '@/components/ErrorAlert'
 import { PageHeader } from '@/components/PageHeader'
 import { DistributionChart } from '@/features/charts/DistributionChart'
 import { mapLineChartDTO } from '@/features/charts/lineChartMapper'
+import { t } from '@/i18n'
 import { formatAxisUSD, formatPct, formatSignedUSD, formatUSD, formatYearMonth } from '@/lib/format'
 import { gainColor } from '@/lib/gain'
 
@@ -26,18 +27,18 @@ function PortfolioNumber({ value, available, pct = false, signed = false }: { va
 }
 
 function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
-  if (rows.length === 0) return <Text c="dimmed">Aínda non hai ativos na carteira.</Text>
+  if (rows.length === 0) return <Text c="dimmed">{t('Aínda non hai activos na carteira.')}</Text>
 
   return (
     <ScrollArea type="auto">
       <Table verticalSpacing="sm" miw={760}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Ativo</Table.Th>
-            <Table.Th>Tipo</Table.Th>
-            <Table.Th>Aportado</Table.Th>
-            <Table.Th>Valor neto</Table.Th>
-            <Table.Th>G/P</Table.Th>
+            <Table.Th>{t('Activo')}</Table.Th>
+            <Table.Th>{t('Tipo')}</Table.Th>
+            <Table.Th>{t('Aportado')}</Table.Th>
+            <Table.Th>{t('Valor neto')}</Table.Th>
+            <Table.Th>{t('G/P')}</Table.Th>
             <Table.Th>%</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -47,7 +48,7 @@ function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
               <Table.Td>
                 <Group gap="xs" wrap="nowrap">
                   <Text component={Link} to={`/activos/${row.asset.id}`} fw={600} c="teal.7" td="none">{row.asset.name}</Text>
-                  {row.pending ? <Badge color="yellow" variant="light" size="sm">pendente</Badge> : null}
+                  {row.pending ? <Badge color="yellow" variant="light" size="sm">{t('pendente')}</Badge> : null}
                 </Group>
               </Table.Td>
               <Table.Td><AssetTypeBadge type={row.asset.type} /></Table.Td>
@@ -65,40 +66,40 @@ function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
 
 export function InicioPage() {
   const dashboard = useDashboard()
-  if (dashboard.isLoading) return <Loader aria-label="Cargando inicio" />
-  if (dashboard.isError) return <ErrorAlert error={dashboard.error} title="Non se puido cargar o inicio" />
+  if (dashboard.isLoading) return <Loader aria-label={t('Cargando inicio')} />
+  if (dashboard.isError) return <ErrorAlert error={dashboard.error} title={t('Non se puido cargar o inicio')} />
   const data = dashboard.data
   if (!data) return null
   if (data.assetCount === 0) {
-    return <EmptyState title="Aínda non hai ativos" description="Engade o primeiro ativo para comezar a ver o resumo." action={<Button component={Link} to="/activos">Ir a Portofolio</Button>} />
+    return <EmptyState title={t('Aínda non hai activos')} description={t('Engade o primeiro activo para comezar a ver o resumo.')} action={<Button component={Link} to="/activos">{t('Ir a Portofolio')}</Button>} />
   }
   const evo = mapLineChartDTO(data.evolution)
   const pendingText = data.portfolio.pendingCount > 0
-    ? `${data.portfolio.pendingCount} pendente(s) de pechar en ${formatYearMonth(data.portfolio.period)}`
-    : `Todo pechado en ${formatYearMonth(data.portfolio.period)} ✓`
+    ? t('{count} pendente(s) de pechar en {period}', { count: data.portfolio.pendingCount, period: formatYearMonth(data.portfolio.period) })
+    : t('Todo pechado en {period} ✓', { period: formatYearMonth(data.portfolio.period) })
 
   return (
     <Stack>
-      <PageHeader title="Inicio" description="Resumo da carteira" />
+      <PageHeader title={t('Inicio')} description={t('Resumo da carteira')} />
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }}>
-        <KpiCard label="Aporte total" value={formatUSD(data.kpis.totalInvested)} />
-        <KpiCard label="Valor neto" value={data.kpis.hasCurrentValue ? formatUSD(data.kpis.currentValue) : '—'} />
-        <KpiCard label="G/P total" value={data.kpis.hasTotalGain ? formatSignedUSD(data.kpis.totalGain) : '—'} {...(data.kpis.totalGain > 0 ? { color: 'green' } : data.kpis.totalGain < 0 ? { color: 'red' } : {})} />
-        <KpiCard label="Dividendos totais" value={formatUSD(data.kpis.totalDividends)} />
-        <KpiCard label="Índice medio mensual" value={data.kpis.hasAverages ? formatPct(data.kpis.avgIndexPct) : '—'} />
+        <KpiCard label={t('Aporte total')} value={formatUSD(data.kpis.totalInvested)} />
+        <KpiCard label={t('Valor neto')} value={data.kpis.hasCurrentValue ? formatUSD(data.kpis.currentValue) : '—'} />
+        <KpiCard label={t('G/P total')} value={data.kpis.hasTotalGain ? formatSignedUSD(data.kpis.totalGain) : '—'} {...(data.kpis.totalGain > 0 ? { color: 'green' } : data.kpis.totalGain < 0 ? { color: 'red' } : {})} />
+        <KpiCard label={t('Dividendos totais')} value={formatUSD(data.kpis.totalDividends)} />
+        <KpiCard label={t('Índice medio mensual')} value={data.kpis.hasAverages ? formatPct(data.kpis.avgIndexPct) : '—'} />
       </SimpleGrid>
       <SimpleGrid cols={{ base: 1, lg: 2 }}>
-        <Card withBorder><Stack><Title order={3}>Evolución total</Title>{data.evolution.months.length === 0 ? <Text c="dimmed">Aínda non hai resultados rexistrados.</Text> : <LineChart h={300} data={evo.data} dataKey="month" series={evo.series} valueFormatter={formatUSD} yAxisProps={{ tickFormatter: formatAxisUSD, width: 64 }} connectNulls={false} withLegend />}</Stack></Card>
-        <Card withBorder><Stack><Title order={3}>Distribución</Title>{data.distribution.total <= 0 ? <Text c="dimmed">Aínda non hai aportes rexistrados.</Text> : <DistributionChart distribution={data.distribution} size={200} />}</Stack></Card>
+        <Card withBorder><Stack><Title order={3}>{t('Evolución total')}</Title>{data.evolution.months.length === 0 ? <Text c="dimmed">{t('Aínda non hai resultados rexistrados.')}</Text> : <LineChart h={300} data={evo.data} dataKey="month" series={evo.series} valueFormatter={formatUSD} yAxisProps={{ tickFormatter: formatAxisUSD, width: 64 }} connectNulls={false} withLegend />}</Stack></Card>
+        <Card withBorder><Stack><Title order={3}>{t('Distribución')}</Title>{data.distribution.total <= 0 ? <Text c="dimmed">{t('Aínda non hai aportes rexistrados.')}</Text> : <DistributionChart distribution={data.distribution} size={200} />}</Stack></Card>
       </SimpleGrid>
       <Card withBorder>
         <Stack>
           <Group justify="space-between" align="flex-start">
             <Stack gap={2}>
-              <Title order={3}>Portofolio</Title>
+              <Title order={3}>{t('Portofolio')}</Title>
               <Text c={data.portfolio.pendingCount > 0 ? 'yellow.8' : 'green'}>{pendingText}</Text>
             </Stack>
-            <Button component={Link} to="/resultados?tab=pechar" variant={data.portfolio.pendingCount > 0 ? 'filled' : 'light'}>Pechar mes</Button>
+            <Button component={Link} to="/resultados?tab=pechar" variant={data.portfolio.pendingCount > 0 ? 'filled' : 'light'}>{t('Pechar mes')}</Button>
           </Group>
           <PortfolioTable rows={data.portfolio.rows} />
         </Stack>

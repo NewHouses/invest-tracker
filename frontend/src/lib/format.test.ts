@@ -1,6 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { formatAxisUSD, formatNumber, formatPct, formatSignedUSD, formatUSD, formatYearMonth, galicianMonthNames } from '@/lib/format'
+import { setLanguage } from '@/i18n'
+import {
+  formatAxisUSD,
+  formatNumber,
+  formatPct,
+  formatSignedUSD,
+  formatUSD,
+  formatYearMonth,
+  galicianMonthNames,
+  numberInputSeparators,
+} from '@/lib/format'
 
 describe('format helpers', () => {
   it('formats USD amounts with Galician locale', () => {
@@ -40,5 +50,29 @@ describe('format helpers', () => {
   it('formats and names months', () => {
     expect(formatYearMonth({ year: 2026, month: 3 })).toBe('03/2026')
     expect(galicianMonthNames[2]).toBe('marzo')
+  })
+
+  describe('in English', () => {
+    beforeEach(() => {
+      setLanguage('en')
+    })
+
+    it('swaps the separators and puts the dollar sign first', () => {
+      expect(formatNumber(1234567.891)).toBe('1,234,567.89')
+      expect(formatNumber(-0.001)).toBe('0.00')
+      expect(formatUSD(1234.5)).toBe('$1,234.50')
+      expect(formatUSD(-12)).toBe('-$12.00')
+      expect(formatSignedUSD(12)).toBe('+$12.00')
+      expect(formatSignedUSD(-12)).toBe('−$12.00')
+      expect(formatPct(-7.33)).toBe('−7.33%')
+      expect(numberInputSeparators()).toEqual({ decimalSeparator: '.', thousandSeparator: ',' })
+    })
+
+    it('formats compact axis amounts', () => {
+      expect(formatAxisUSD(12500)).toBe('$12.5k')
+      expect(formatAxisUSD(2_400_000)).toBe('$2.4M')
+      expect(formatAxisUSD(750)).toBe('$750')
+      expect(formatAxisUSD(-5000)).toBe('-$5k')
+    })
   })
 })

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -19,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/store"
 )
 
@@ -45,12 +45,12 @@ func Main(args []string) int {
 	cfg := Config{}
 	fs := flag.NewFlagSet("web", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
-	fs.StringVar(&cfg.Addr, "addr", "0.0.0.0:8080", "enderezo no que escoitar")
-	fs.StringVar(&cfg.DBPath, "db", "./investimentos.db", "ruta da base de datos SQLite")
-	fs.BoolVar(&cfg.NoOpen, "no-open", false, "non abrir o navegador automaticamente")
+	fs.StringVar(&cfg.Addr, "addr", "0.0.0.0:8080", i18n.T("enderezo no que escoitar"))
+	fs.StringVar(&cfg.DBPath, "db", "./investimentos.db", i18n.T("ruta da base de datos SQLite"))
+	fs.BoolVar(&cfg.NoOpen, "no-open", false, i18n.T("non abrir o navegador automaticamente"))
 	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), "Uso: invest-tracker web [opcións]")
-		fmt.Fprintln(fs.Output(), "Opcións:")
+		i18n.Fprintln(fs.Output(), "Uso: invest-tracker web [opcións]")
+		i18n.Fprintln(fs.Output(), "Opcións:")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
@@ -59,7 +59,7 @@ func Main(args []string) int {
 
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "non se pode abrir a base de datos:", err)
+		i18n.Fprintf(os.Stderr, "non se pode abrir a base de datos: %v\n", err)
 		return 1
 	}
 	defer st.Close()
@@ -71,17 +71,17 @@ func Main(args []string) int {
 			// directo) non é un erro: abonda con abrir o navegador.
 			localURL := "http://localhost:" + portFromAddr(cfg.Addr)
 			if alreadyRunning(localURL) {
-				fmt.Fprintf(os.Stdout, "Control de Investimentos xa está aberto en %s.\n", localURL)
+				i18n.Fprintf(os.Stdout, "Control de Investimentos xa está aberto en %s.\n", localURL)
 				if !cfg.NoOpen {
 					if err := openBrowser(localURL); err != nil {
-						fmt.Fprintln(os.Stderr, "non se puido abrir o navegador:", err)
+						i18n.Fprintf(os.Stderr, "non se puido abrir o navegador: %v\n", err)
 					}
 				}
 				return 0
 			}
-			fmt.Fprintf(os.Stderr, "non se pode iniciar o servidor: o porto %s xa está en uso\n", portFromAddr(cfg.Addr))
+			i18n.Fprintf(os.Stderr, "non se pode iniciar o servidor: o porto %s xa está en uso\n", portFromAddr(cfg.Addr))
 		} else {
-			fmt.Fprintln(os.Stderr, "non se pode iniciar o servidor:", err)
+			i18n.Fprintf(os.Stderr, "non se pode iniciar o servidor: %v\n", err)
 		}
 		return 1
 	}
@@ -89,7 +89,7 @@ func Main(args []string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	if err := Run(ctx, st, ln, cfg, os.Stdout); err != nil {
-		fmt.Fprintln(os.Stderr, "erro no servidor web:", err)
+		i18n.Fprintf(os.Stderr, "erro no servidor web: %v\n", err)
 		return 1
 	}
 	return 0
@@ -107,19 +107,19 @@ func Run(ctx context.Context, st *store.Store, ln net.Listener, cfg Config, out 
 
 	port := listenerPort(ln)
 	localURL := "http://localhost:" + port
-	fmt.Fprintln(out, "Control de Investimentos — modo web")
-	fmt.Fprintf(out, "  Local:      %s\n", localURL)
+	i18n.Fprintln(out, "Control de Investimentos — modo web")
+	i18n.Fprintf(out, "  Local:      %s\n", localURL)
 	for _, url := range networkURLs(ln, port) {
-		fmt.Fprintf(out, "  Rede local: %s\n", url)
+		i18n.Fprintf(out, "  Rede local: %s\n", url)
 	}
 	if cfg.DBPath != "" {
-		fmt.Fprintf(out, "  Datos:      %s\n", absPath(cfg.DBPath))
+		i18n.Fprintf(out, "  Datos:      %s\n", absPath(cfg.DBPath))
 	}
-	fmt.Fprintln(out, "Preme Ctrl+C para parar.")
+	i18n.Fprintln(out, "Preme Ctrl+C para parar.")
 
 	if !cfg.NoOpen {
 		if err := openBrowser(localURL); err != nil {
-			fmt.Fprintln(out, "non se puido abrir o navegador:", err)
+			i18n.Fprintf(out, "non se puido abrir o navegador: %v\n", err)
 		}
 	}
 

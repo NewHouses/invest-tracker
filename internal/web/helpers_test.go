@@ -13,6 +13,13 @@ import (
 // body pode ser nil, un string (enviado tal cal) ou calquera valor (en JSON).
 func doJSON(t *testing.T, h http.Handler, method, path string, body any) *httptest.ResponseRecorder {
 	t.Helper()
+	return doJSONLang(t, h, "", method, path, body)
+}
+
+// doJSONLang é coma doJSON pero enviando a cabeceira Accept-Language, como fai
+// a web co idioma que escolleu o usuario.
+func doJSONLang(t *testing.T, h http.Handler, acceptLanguage, method, path string, body any) *httptest.ResponseRecorder {
+	t.Helper()
 	var buf bytes.Buffer
 	switch b := body.(type) {
 	case nil:
@@ -27,6 +34,9 @@ func doJSON(t *testing.T, h http.Handler, method, path string, body any) *httpte
 	req.Host = "localhost:8080"
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	if acceptLanguage != "" {
+		req.Header.Set("Accept-Language", acceptLanguage)
 	}
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)

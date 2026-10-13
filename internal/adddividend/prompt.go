@@ -2,12 +2,12 @@ package adddividend
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -16,7 +16,7 @@ type Saver interface {
 }
 
 func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
-	fmt.Fprint(w, "\n--- Engadir dividendo mensual ---\n")
+	i18n.Fprint(w, "\n--- Engadir dividendo mensual ---\n")
 
 	amount, err := promptDividend(r, w)
 	if err != nil {
@@ -38,17 +38,17 @@ func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
 	}
 	id, err := saver.InsertDividend(d)
 	if err != nil {
-		return fmt.Errorf("gardando dividendo: %w", err)
+		return i18n.Errorf("gardando dividendo: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Dividendo gardado #%d: %.2f USD — %02d/%d\n",
+	i18n.Fprintf(w, "✓ Dividendo gardado #%d: %.2f USD — %02d/%d\n",
 		id, amount, month, year)
 	return nil
 }
 
 func promptDividend(r *bufio.Reader, w io.Writer) (float64, error) {
 	for {
-		fmt.Fprint(w, "Dividendo (USD): ")
+		i18n.Fprint(w, "Dividendo (USD): ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -58,6 +58,6 @@ func promptDividend(r *bufio.Reader, w io.Writer) (float64, error) {
 		if perr == nil && domain.ValidAmount(v) {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Dividendo non válido, debe ser un número maior ca 0")
+		i18n.Fprintln(w, "⚠ Dividendo non válido, debe ser un número maior ca 0")
 	}
 }

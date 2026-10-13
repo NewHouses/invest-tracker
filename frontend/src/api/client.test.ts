@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { apiFetch } from '@/api/client'
+import { setLanguage } from '@/i18n'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -35,5 +36,26 @@ describe('apiFetch', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 204 })))
 
     await expect(apiFetch<void>('/api/dividends/1', { method: 'DELETE' })).resolves.toBeUndefined()
+  })
+
+  it('asks the server to answer in the current language', async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response('{}', { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await apiFetch('/api/meta')
+    setLanguage('en')
+    await apiFetch('/api/meta')
+
+    const languages = fetchMock.mock.calls.map(([, init]) => new Headers(init?.headers).get('Accept-Language'))
+    expect(languages).toEqual(['gl', 'en'])
+  })
+
+  it('uses an English fallback for non-JSON errors in English', async () => {
+    setLanguage('en')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html></html>', { status: 500 })))
+
+    await expect(apiFetch('/api/meta')).rejects.toThrow('Could not read the server response.')
   })
 })

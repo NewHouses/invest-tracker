@@ -13,7 +13,7 @@ func (s *Server) routes() {
 	s.registerToolRoutes()
 	s.registerDashboardRoutes()
 	s.mux.Handle("/api/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeError(w, http.StatusNotFound, "recurso non atopado")
+		writeError(w, http.StatusNotFound, langOf(r).T("recurso non atopado"))
 	}))
 	s.mux.Handle("/", s.staticHandler())
 }

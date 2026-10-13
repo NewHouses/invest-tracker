@@ -42,7 +42,7 @@ func TestChartsHappyAndNaNAsNull(t *testing.T) {
 
 	rr = doJSON(t, h, http.MethodGet, "/api/charts/assets", nil)
 	decodeBody(t, rr, &chart)
-	if chart.Title != "Todos os ativos" || len(chart.Series) != 2 || chart.Series[0].Values[1] != nil {
+	if chart.Title != "Todos os activos" || len(chart.Series) != 2 || chart.Series[0].Values[1] != nil {
 		t.Fatalf("todos os activos debe conservar o gap como null: %#v", chart)
 	}
 	if !bytes.Contains(rr.Body.Bytes(), []byte(`"values":[1000,null,1100]`)) {

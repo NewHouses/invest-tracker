@@ -14,6 +14,22 @@ usala, que comparten a mesma base de datos (`investimentos.db`):
 > (`invest-tracker-web.cmd` en Windows, os `.command` en macOS) usan sempre o
 > cartafol do programa, e ao arrancar móstrase a ruta da base de datos.
 
+## Idioma / Language
+
+A aplicación está en galego e en inglés (*available in Galician and English*):
+
+- **Web**: por defecto, en inglés se o navegador está en inglés e en galego en
+  calquera outro caso. Cámbiase co selector da cabeceira (`GL`/`EN`) ou en
+  *Axustes*, e cada navegador lémbrao.
+- **Terminal**: por defecto, o idioma do sistema (inglés se o sistema está en
+  inglés; se non, galego). Cámbiase coa opción *Idioma / Language* do menú
+  principal e gárdase en `idioma.txt`, no cartafol de configuración
+  (`%APPDATA%\Control de Investimentos` en Windows,
+  `~/Library/Application Support/Control de Investimentos` en macOS).
+- **Instaladores**: o de Windows está nos dous idiomas e o que se escolla na
+  instalación pasa a ser o da terminal; a app de macOS leva `LEME.txt` e
+  `README.txt`.
+
 ## Instalar
 
 Descarga o instalador da túa plataforma desde
@@ -121,7 +137,8 @@ Para parar o servidor, preme `Ctrl+C` na consola.
 - **macOS**: dobre clic en `invest-tracker.command`, ou `./invest-tracker-macos-arm64`
   (`-amd64` nun Mac con Intel).
 
-Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú.
+Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú (en inglés,
+`:q` ou `cancel`).
 
 ### Primeira vez en macOS
 
@@ -170,7 +187,11 @@ npm run dev
 - `internal/<operación>`: unha operación da CLI cada paquete. Exportan funcións
   `Build…` cos cálculos, que comparten a CLI e a web.
 - `internal/web`: servidor HTTP, API JSON (`/api`) e web embebida (`dist/`).
+- `internal/i18n`: traducións da CLI e da API. Os textos escríbense en galego e
+  úsanse como clave; o inglés de cada paquete está no seu `i18n_en.go`. A API
+  responde no idioma da cabeceira `Accept-Language`.
 - `frontend/`: React + TypeScript + Mantine (Vite). Compílase en `internal/web/dist`.
+  As súas traducións ao inglés están en `frontend/src/i18n/en/`.
 - `installers/`: instalador de Windows (Inno Setup), empaquetado da app de macOS
   e xerador das iconas.
 
@@ -180,3 +201,6 @@ npm run dev
 go test ./...
 cd frontend; npm test
 ```
+
+Hai tests que comproban que todos os textos (Go e web) teñen a súa tradución ao
+inglés cos mesmos parámetros.

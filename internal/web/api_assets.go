@@ -3,7 +3,6 @@ package web
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"invest-tracker/internal/domain"
@@ -24,7 +23,7 @@ type assetUpdateRequest struct {
 	Year      int     `json:"year"`
 }
 
-// registerAssetRoutes rexistra as rutas de ativos da API.
+// registerAssetRoutes rexistra as rutas de activos da API.
 func (s *Server) registerAssetRoutes() {
 	s.handleAPI("GET /api/assets", s.listAssets)
 	s.handleAPI("GET /api/assets/{id}", s.getAsset)
@@ -51,6 +50,7 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createAsset(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req assetCreateRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -58,13 +58,13 @@ func (s *Server) createAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	fields := map[string]string{}
 	if !req.Type.Valid() {
-		fields["type"] = "o tipo de ativo non é válido"
+		fields["type"] = lang.T("o tipo de activo non é válido")
 	}
-	name := validateName(fields, "name", req.Name)
-	validateAmount(fields, "amountUsd", req.AmountUSD)
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	name := validateName(fields, lang, "name", req.Name)
+	validateAmount(fields, lang, "amountUsd", req.AmountUSD)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	asset := domain.Asset{Type: req.Type, Name: name, AmountUSD: req.AmountUSD, Month: req.Month, Year: req.Year}
@@ -78,6 +78,7 @@ func (s *Server) createAsset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	current, ok := s.loadAsset(w, r)
 	if !ok {
 		return
@@ -88,9 +89,9 @@ func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fields := map[string]string{}
-	name := validateName(fields, "name", req.Name)
-	validateAmount(fields, "amountUsd", req.AmountUSD)
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	name := validateName(fields, lang, "name", req.Name)
+	validateAmount(fields, lang, "amountUsd", req.AmountUSD)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	if start := (domain.YearMonth{Year: req.Year, Month: req.Month}); start.Valid() && start != current.Start() {
 		// Mover o inicio despois da primeira transacción ou resultado deixaría
 		// eses movementos fóra dos totais sen avisar. Só se comproba se a data
@@ -102,17 +103,17 @@ func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if ok && first.Before(start) {
-			fields["month"] = fmt.Sprintf("a data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d)", first.Month, first.Year)
+			fields["month"] = lang.Sprintf("a data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d)", first.Month, first.Year)
 		}
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	updated := domain.Asset{ID: current.ID, Type: current.Type, Name: name, AmountUSD: req.AmountUSD, Month: req.Month, Year: req.Year}
 	if err := s.store.UpdateAsset(updated); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "ativo non atopado")
+			writeError(w, http.StatusNotFound, lang.T("activo non atopado"))
 			return
 		}
 		s.internalError(w, r, err)
@@ -122,6 +123,7 @@ func (s *Server) updateAsset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	id, err := pathID(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -129,7 +131,7 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteAsset(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "ativo non atopado")
+			writeError(w, http.StatusNotFound, lang.T("activo non atopado"))
 			return
 		}
 		s.internalError(w, r, err)

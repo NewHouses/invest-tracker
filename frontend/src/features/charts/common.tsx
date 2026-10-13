@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 
 import type { LineChartDTO } from '@/api/charts'
 import { EmptyState } from '@/components/EmptyState'
+import { t, tKey } from '@/i18n'
 import { formatAxisUSD, formatUSD } from '@/lib/format'
 
 import { getVisibleSeries, isSeriesVisible, toggleSeriesVisibility } from './lineLegend'
@@ -33,7 +34,7 @@ type LineChartLegendProps = {
 function LineChartLegend({ series, hiddenSeries, onToggle }: LineChartLegendProps) {
   const theme = useMantineTheme()
   return (
-    <Group gap="xs" wrap="wrap" aria-label="Lenda da gráfica">
+    <Group gap="xs" wrap="wrap" aria-label={t('Lenda da gráfica')}>
       {series.map((item) => {
         const visible = isSeriesVisible(hiddenSeries, item.name)
         return (
@@ -77,7 +78,7 @@ function LineChartContent({ mapped, h, title }: LineChartContentProps) {
       <Stack>
         {title === null ? null : <Text fw={700}>{title}</Text>}
         {hasCustomLegend ? <LineChartLegend series={mapped.series} hiddenSeries={hiddenSeries} onToggle={(seriesName) => setHiddenSeries((current) => toggleSeriesVisibility(current, seriesName))} /> : null}
-        {visibleSeries.length === 0 ? <Text c="dimmed" size="sm">Escolle polo menos unha serie para ver a evolución.</Text> : null}
+        {visibleSeries.length === 0 ? <Text c="dimmed" size="sm">{t('Escolle polo menos unha serie para ver a evolución.')}</Text> : null}
         <LineChart
           h={h}
           data={mapped.data}
@@ -93,14 +94,14 @@ function LineChartContent({ mapped, h, title }: LineChartContentProps) {
   )
 }
 
-export function LineChartPanel({ chart, loading, emptyNoAssets, emptyNoResults, h = 320, title = 'Evolución' }: LineChartPanelProps) {
+export function LineChartPanel({ chart, loading, emptyNoAssets, emptyNoResults, h = 320, title = tKey('Evolución') }: LineChartPanelProps) {
   const mapped = useMemo(() => (chart ? mapLineChartDTO(chart) : null), [chart])
 
-  if (loading) return <Loader aria-label="Cargando gráfica" />
+  if (loading) return <Loader aria-label={t('Cargando gráfica')} />
   if (!chart || !mapped) return null
-  if (!chart.hasAssets) return <EmptyState title={emptyNoAssets ?? 'Aínda non hai ativos'} />
-  if (chart.months.length === 0) return <EmptyState title={emptyNoResults ?? 'Aínda non hai resultados rexistrados.'} />
+  if (!chart.hasAssets) return <EmptyState title={t(emptyNoAssets ?? tKey('Aínda non hai activos'))} />
+  if (chart.months.length === 0) return <EmptyState title={t(emptyNoResults ?? tKey('Aínda non hai resultados rexistrados.'))} />
 
   const contentKey = `${title ?? 'sen-titulo'}:${chart.months.length}:${chart.series.map((item) => item.label).join('|')}`
-  return <LineChartContent key={contentKey} mapped={mapped} h={h} title={title} />
+  return <LineChartContent key={contentKey} mapped={mapped} h={h} title={title === null ? null : t(title)} />
 }

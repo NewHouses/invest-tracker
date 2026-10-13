@@ -2,8 +2,9 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"math"
+
+	"invest-tracker/internal/i18n"
 )
 
 // ErrProjectionOverflow indica que os importes da proxección crecen tanto que
@@ -59,47 +60,47 @@ type PlanMonth struct {
 
 func (in PlanInput) Validate() error {
 	if !in.Start.Valid() {
-		return fmt.Errorf("a data de inicio non é válida")
+		return i18n.Errorf("a data de inicio non é válida")
 	}
 	if in.Years < 1 || in.Years > MaxProjectionPlanYears {
-		return fmt.Errorf("os anos deben estar entre 1 e %d", MaxProjectionPlanYears)
+		return i18n.Errorf("os anos deben estar entre 1 e %d", MaxProjectionPlanYears)
 	}
 	if !finite(in.InitialInvestment) || in.InitialInvestment < 0 {
-		return fmt.Errorf("o investimento inicial debe ser unha cantidade non negativa")
+		return i18n.Errorf("o investimento inicial debe ser unha cantidade non negativa")
 	}
 	if !finite(in.MonthlyReturn) || in.MonthlyReturn <= MinMonthlyReturn {
-		return fmt.Errorf("o retorno mensual debe ser maior ca -100%%")
+		return i18n.Errorf("o retorno mensual debe ser maior ca -100%%")
 	}
 	if in.Mode != ProjectionModeContribution && in.Mode != ProjectionModeSalary {
-		return fmt.Errorf("o modo de proxección non é válido")
+		return i18n.Errorf("o modo de proxección non é válido")
 	}
 	if in.Mode == ProjectionModeContribution {
 		if !finite(in.MonthlyContribution) || in.MonthlyContribution < 0 {
-			return fmt.Errorf("o aporte mensual debe ser unha cantidade non negativa")
+			return i18n.Errorf("o aporte mensual debe ser unha cantidade non negativa")
 		}
 	} else {
 		if !finite(in.AnnualSalary) || in.AnnualSalary < 0 {
-			return fmt.Errorf("o salario anual debe ser unha cantidade non negativa")
+			return i18n.Errorf("o salario anual debe ser unha cantidade non negativa")
 		}
 		if !finite(in.InvestmentRate) || in.InvestmentRate <= 0 || in.InvestmentRate > 1 {
-			return fmt.Errorf("a porcentaxe de investimento debe estar entre 0 e 100")
+			return i18n.Errorf("a porcentaxe de investimento debe estar entre 0 e 100")
 		}
 	}
 	if len(in.Rules) > MaxGrowthRules {
-		return fmt.Errorf("non se poden definir máis de %d regras", MaxGrowthRules)
+		return i18n.Errorf("non se poden definir máis de %d regras", MaxGrowthRules)
 	}
 	for i, rule := range in.Rules {
 		if rule.Kind != GrowthKindFixed && rule.Kind != GrowthKindPercent {
-			return fmt.Errorf("a regra %d ten un tipo de crecemento non válido", i)
+			return i18n.Errorf("a regra %d ten un tipo de crecemento non válido", i)
 		}
 		if !finite(rule.Value) || (rule.Kind == GrowthKindPercent && rule.Value <= -100) {
-			return fmt.Errorf("a regra %d ten un valor non válido", i)
+			return i18n.Errorf("a regra %d ten un valor non válido", i)
 		}
 		if rule.EveryMonths < 0 || rule.EveryMonths > MaxRuleEveryMonths {
-			return fmt.Errorf("a regra %d ten unha periodicidade non válida", i)
+			return i18n.Errorf("a regra %d ten unha periodicidade non válida", i)
 		}
 		if !rule.From.Valid() {
-			return fmt.Errorf("a regra %d ten unha data de inicio non válida", i)
+			return i18n.Errorf("a regra %d ten unha data de inicio non válida", i)
 		}
 	}
 	return nil

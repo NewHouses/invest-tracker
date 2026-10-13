@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/store"
 )
 
@@ -68,12 +69,12 @@ func (s *Server) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				s.log.Printf("pánico atendendo %s %s: %v", r.Method, r.URL.Path, rec)
+				s.log.Print(i18n.Sprintf("pánico atendendo %s %s: %v", r.Method, r.URL.Path, rec))
 				if isAPIPath(r.URL.Path) {
-					writeError(w, http.StatusInternalServerError, "erro interno")
+					writeError(w, http.StatusInternalServerError, langOf(r).T("erro interno"))
 					return
 				}
-				http.Error(w, "erro interno", http.StatusInternalServerError)
+				http.Error(w, langOf(r).T("erro interno"), http.StatusInternalServerError)
 			}
 		}()
 		next.ServeHTTP(w, r)

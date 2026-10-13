@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/viewassethistory"
 )
 
@@ -96,6 +97,30 @@ func TestRun_PrintsHeader(t *testing.T) {
 	}
 	if !strings.Contains(out, "Reporte histórico dun activo") {
 		t.Errorf("saída non contén a cabeceira:\n%s", out)
+	}
+}
+
+func TestRun_EnglishOutput(t *testing.T) {
+	i18n.SetCurrent(i18n.English)
+	defer i18n.SetCurrent(i18n.Galician)
+
+	out, err := runWith(gainSetup(), "1\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, want := range []string{
+		"Asset history report",
+		"Stock — AAPL",
+		"Total Contributed",
+		"Average Monthly Return",
+		"Monthly Contribution",
+		"Holding",
+		"Return",
+		"Gain/Loss",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output does not contain %q:\n%s", want, out)
+		}
 	}
 }
 

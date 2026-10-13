@@ -10,6 +10,7 @@ import { ActivosPage } from '@/pages/activos/ActivosPage'
 import { TransaccionsPage } from '@/pages/transaccions/TransaccionsPage'
 import { ResultadosPage } from '@/pages/resultados/ResultadosPage'
 import { DividendosPage } from '@/pages/dividendos/DividendosPage'
+import { setLanguage } from '@/i18n'
 import { renderWithProviders } from '@/test/utils'
 
 const meta = { assetTypes: [{ value: 'accion', label: 'Acción' }, { value: 'indice', label: 'Índice' }, { value: 'fondo', label: 'Fondo' }, { value: 'copy_trading', label: 'Copy-trading' }], minYear: 1900, maxYear: 2200 }
@@ -49,7 +50,7 @@ function AssetCreateHarness() {
   return (
     <>
       <button type="button" onClick={() => void create.mutateAsync({ type: 'indice', name: 'SP500', amountUsd: 1000, year: 2026, month: 1 })}>
-        Crear ativo
+        Crear activo
       </button>
       <ul>{(assets.data ?? []).map((asset) => <li key={asset.id}>{asset.name}</li>)}</ul>
     </>
@@ -69,7 +70,7 @@ describe('asset pages', () => {
     })
 
     renderWithProviders(<AssetCreateHarness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Crear ativo' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Crear activo' }))
 
     await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === '/api/assets')).toBe(true))
     const post = calls.find((call) => call.method === 'POST' && call.path === '/api/assets')
@@ -106,6 +107,22 @@ describe('asset pages', () => {
           { asset: assetB, totalInvested: 250, currentValue: 0, hasCurrentValue: false, gain: 0, gainPct: 0, hasGain: false, hasGainPct: false, lastResult: null, pending: true },
         ],
       })
+
+      it('renders the portfolio page in English', async () => {
+        setLanguage('en')
+        stubFetch((path) => {
+          if (path === '/api/assets') return json([assetA])
+          if (path === '/api/portfolio') return json({ period: { year: 2026, month: 10 }, pendingCount: 0, rows: [] })
+          return json([])
+        })
+
+        renderWithProviders(<ActivosPage />)
+
+        expect(await screen.findByRole('heading', { name: 'Portfolio' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'New asset' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Name/ })).toBeInTheDocument()
+        expect(screen.getByText('Initial amount')).toBeInTheDocument()
+      })
       return json([])
     })
 
@@ -141,7 +158,7 @@ describe('transaction page', () => {
   it('shows the server month field error in the Nova tab', async () => {
     stubFetch((path, init) => {
       if (path === '/api/assets') return json([assetA])
-      if (path === '/api/transactions' && init?.method === 'POST') return json({ error: 'Erro de validación', fields: { month: 'a transacción non pode ser anterior á data do ativo (01/2026)' } }, 400)
+      if (path === '/api/transactions' && init?.method === 'POST') return json({ error: 'Erro de validación', fields: { month: 'a transacción non pode ser anterior á data do activo (01/2026)' } }, 400)
       return json([])
     })
 

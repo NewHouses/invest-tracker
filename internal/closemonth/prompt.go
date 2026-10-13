@@ -2,12 +2,12 @@ package closemonth
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -30,7 +30,7 @@ type EligibleAsset struct {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Pechar mes (resultados) ---\n")
+	i18n.Fprint(w, "\n--- Pechar mes (resultados) ---\n")
 
 	month, err := prompts.Month(r, w)
 	if err != nil {
@@ -47,19 +47,19 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	if len(eligible) == 0 {
-		fmt.Fprintf(w, "Non hai activos con capital investido para %02d/%d.\n", month, year)
+		i18n.Fprintf(w, "Non hai activos con capital investido para %02d/%d.\n", month, year)
 		return nil
 	}
 
-	fmt.Fprintf(w, "Vanse pedir os resultados para %d activo(s) en %02d/%d.\n", len(eligible), month, year)
-	fmt.Fprintln(w, "(Deixa baleiro para saltar un activo.)")
+	i18n.Fprintf(w, "Vanse pedir os resultados para %d activo(s) en %02d/%d.\n", len(eligible), month, year)
+	i18n.Fprintln(w, "(Deixa baleiro para saltar un activo.)")
 
 	saved, skipped := 0, 0
 	for i, ea := range eligible {
-		fmt.Fprintf(w, "\n[%d/%d] %s — %s (no activo: %.2f USD)\n",
+		i18n.Fprintf(w, "\n[%d/%d] %s — %s (no activo: %.2f USD)\n",
 			i+1, len(eligible), ea.Asset.Type.Display(), ea.Asset.Name, ea.Holding)
 		if ea.HasResult {
-			fmt.Fprintf(w, "   Xa hai un resultado rexistrado este mes: %.2f USD. Baleiro mantenno.\n", ea.Result)
+			i18n.Fprintf(w, "   Xa hai un resultado rexistrado este mes: %.2f USD. Baleiro mantenno.\n", ea.Result)
 		}
 
 		result, skip, err := promptOptionalResult(r, w)
@@ -67,7 +67,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 			return err
 		}
 		if skip {
-			fmt.Fprintln(w, "   ↷ Saltado.")
+			i18n.Fprintln(w, "   ↷ Saltado.")
 			skipped++
 			continue
 		}
@@ -80,20 +80,20 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		}
 		id, err := repo.InsertMonthlyResult(mr)
 		if err != nil {
-			return fmt.Errorf("gardando resultado para %s: %w", ea.Asset.Name, err)
+			return i18n.Errorf("gardando resultado para %s: %w", ea.Asset.Name, err)
 		}
 
 		gain := result - ea.Holding
 		if ea.Holding > 0 {
 			pct := gain / ea.Holding * 100
-			fmt.Fprintf(w, "   ✓ Gardado #%d — Gañanzas/Perdas: %+.2f USD (%+.2f%%)\n", id, gain, pct)
+			i18n.Fprintf(w, "   ✓ Gardado #%d — Gañanzas/Perdas: %+.2f USD (%+.2f%%)\n", id, gain, pct)
 		} else {
-			fmt.Fprintf(w, "   ✓ Gardado #%d — Gañanzas/Perdas: %+.2f USD (n/a%%)\n", id, gain)
+			i18n.Fprintf(w, "   ✓ Gardado #%d — Gañanzas/Perdas: %+.2f USD (n/a%%)\n", id, gain)
 		}
 		saved++
 	}
 
-	fmt.Fprintf(w, "\n✓ Pechouse %02d/%d: %d resultado(s) gardado(s), %d saltado(s).\n",
+	i18n.Fprintf(w, "\n✓ Pechouse %02d/%d: %d resultado(s) gardado(s), %d saltado(s).\n",
 		month, year, saved, skipped)
 	return nil
 }
@@ -101,14 +101,14 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 func Eligible(repo EligibilityRepo, year, month int) ([]EligibleAsset, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return nil, fmt.Errorf("listando activos: %w", err)
+		return nil, i18n.Errorf("listando activos: %w", err)
 	}
 
 	eligible := make([]EligibleAsset, 0, len(assets))
 	for _, a := range assets {
 		sum, err := repo.MonthlySummary(a.ID, year, month)
 		if err != nil {
-			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+			return nil, i18n.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
 		if domain.HasHolding(sum.EstimatedHolding) {
 			eligible = append(eligible, EligibleAsset{
@@ -124,7 +124,7 @@ func Eligible(repo EligibilityRepo, year, month int) ([]EligibleAsset, error) {
 
 func promptOptionalResult(r *bufio.Reader, w io.Writer) (float64, bool, error) {
 	for {
-		fmt.Fprint(w, "   Resultado (USD, baleiro = saltar): ")
+		i18n.Fprint(w, "   Resultado (USD, baleiro = saltar): ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return 0, false, err
@@ -137,6 +137,6 @@ func promptOptionalResult(r *bufio.Reader, w io.Writer) (float64, bool, error) {
 		if perr == nil && domain.ValidAmount(v) {
 			return v, false, nil
 		}
-		fmt.Fprintln(w, "   ⚠ Resultado non válido (debe ser > 0, ou baleiro para saltar)")
+		i18n.Fprintln(w, "   ⚠ Resultado non válido (debe ser > 0, ou baleiro para saltar)")
 	}
 }

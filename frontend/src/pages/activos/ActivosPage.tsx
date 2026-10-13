@@ -19,6 +19,7 @@ import { SortableTh } from '@/features/portfolio/SortableTh'
 import { sortRows, type PortfolioSortKey, type SortDirection } from '@/features/portfolio/sortRows'
 import { RowActions } from '@/features/shared/RowActions'
 import { formatPeriod } from '@/features/shared/PeriodCell'
+import { t } from '@/i18n'
 import { formatPct, formatSignedUSD, formatUSD } from '@/lib/format'
 import { gainColor } from '@/lib/gain'
 
@@ -63,18 +64,18 @@ export function ActivosPage() {
   return (
     <Stack>
       <PageHeader
-        title="Portofolio"
-        description="Ativos da carteira, valor e rendemento."
-        actions={<Button onClick={() => setCreating(true)}>Novo ativo</Button>}
+        title={t('Portofolio')}
+        description={t('Activos da carteira, valor e rendemento.')}
+        actions={<Button onClick={() => setCreating(true)}>{t('Novo activo')}</Button>}
       />
 
-      {assets.isLoading ? <Loader aria-label="Cargando ativos" /> : null}
+      {assets.isLoading ? <Loader aria-label={t('Cargando activos')} /> : null}
       {assets.error ? <ErrorAlert error={assets.error} /> : null}
-      {portfolio.error ? <ErrorAlert error={portfolio.error} title="Non se puido cargar o Portofolio" /> : null}
+      {portfolio.error ? <ErrorAlert error={portfolio.error} title={t('Non se puido cargar o Portofolio')} /> : null}
       {!assets.isLoading && !assets.error && rows.length === 0 ? (
         <EmptyState
-          title="Aínda non hai ativos. Engade o primeiro."
-          action={<Button onClick={() => setCreating(true)}>Novo ativo</Button>}
+          title={t('Aínda non hai activos. Engade o primeiro.')}
+          action={<Button onClick={() => setCreating(true)}>{t('Novo activo')}</Button>}
         />
       ) : null}
 
@@ -84,15 +85,15 @@ export function ActivosPage() {
             <Table highlightOnHover verticalSpacing="sm" miw={980}>
               <Table.Thead>
                 <Table.Tr>
-                  <SortableTh sortKey="type" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Tipo</SortableTh>
-                  <SortableTh sortKey="name" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Nome</SortableTh>
-                  <SortableTh sortKey="period" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Data inicial</SortableTh>
-                  <SortableTh sortKey="initialAmount" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Importe inicial</SortableTh>
-                  <SortableTh sortKey="totalInvested" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Aportado</SortableTh>
-                  <SortableTh sortKey="currentValue" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>Valor neto</SortableTh>
-                  <SortableTh sortKey="gain" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>G/P</SortableTh>
+                  <SortableTh sortKey="type" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Tipo')}</SortableTh>
+                  <SortableTh sortKey="name" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Nome')}</SortableTh>
+                  <SortableTh sortKey="period" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Data inicial')}</SortableTh>
+                  <SortableTh sortKey="initialAmount" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Importe inicial')}</SortableTh>
+                  <SortableTh sortKey="totalInvested" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Aportado')}</SortableTh>
+                  <SortableTh sortKey="currentValue" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('Valor neto')}</SortableTh>
+                  <SortableTh sortKey="gain" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>{t('G/P')}</SortableTh>
                   <SortableTh sortKey="gainPct" activeKey={sortKey} direction={sortDirection} onSort={handleSort}>%</SortableTh>
-                  <Table.Th ta="right">Accións</Table.Th>
+                  <Table.Th ta="right">{t('Accións')}</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -115,11 +116,11 @@ export function ActivosPage() {
                         onEdit={() => setEditing(asset)}
                         onDelete={() =>
                           openConfirmDelete({
-                            title: `Eliminar ${asset.name}`,
-                            message: 'Eliminarase o ativo e tamén todas as súas transaccións e resultados mensuais.',
+                            title: t('Eliminar {name}', { name: asset.name }),
+                            message: t('Eliminarase o activo e tamén todas as súas transaccións e resultados mensuais.'),
                             onConfirm: async () => {
                               await deleteAsset.mutateAsync(asset.id)
-                              notifications.show({ color: 'green', message: 'Ativo eliminado.' })
+                              notifications.show({ color: 'green', message: t('Activo eliminado.') })
                             },
                           })
                         }
@@ -133,21 +134,21 @@ export function ActivosPage() {
         </Paper>
       ) : null}
 
-      <Modal opened={creating} onClose={() => setCreating(false)} title="Novo ativo" transitionProps={{ duration: 0 }}>
+      <Modal opened={creating} onClose={() => setCreating(false)} title={t('Novo activo')} transitionProps={{ duration: 0 }}>
         {createAsset.error ? <ErrorAlert error={createAsset.error} /> : null}
         <CreateAssetForm
           submitting={createAsset.isPending}
           error={createAsset.error}
           onSubmit={async (values) => {
             await createAsset.mutateAsync(values)
-            notifications.show({ color: 'green', message: 'Ativo creado.' })
+            notifications.show({ color: 'green', message: t('Activo creado.') })
             setCreating(false)
             createAsset.reset()
           }}
         />
       </Modal>
 
-      <Modal opened={editing !== null} onClose={() => setEditing(null)} title="Editar ativo" transitionProps={{ duration: 0 }}>
+      <Modal opened={editing !== null} onClose={() => setEditing(null)} title={t('Editar activo')} transitionProps={{ duration: 0 }}>
         {editing ? (
           <>
             {updateAsset.error ? <ErrorAlert error={updateAsset.error} /> : null}
@@ -159,7 +160,7 @@ export function ActivosPage() {
               error={updateAsset.error}
               onSubmit={async (values) => {
                 await updateAsset.mutateAsync(values)
-                notifications.show({ color: 'green', message: 'Ativo actualizado.' })
+                notifications.show({ color: 'green', message: t('Activo actualizado.') })
                 setEditing(null)
                 updateAsset.reset()
               }}

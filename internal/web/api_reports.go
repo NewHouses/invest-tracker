@@ -38,13 +38,14 @@ func (s *Server) registerReportRoutes() {
 }
 
 func (s *Server) reportAssetMonth(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	asset, ok := s.loadAsset(w, r)
 	if !ok {
 		return
 	}
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	report, err := viewreport.Build(s.store, asset, period.Year, period.Month)
@@ -56,13 +57,14 @@ func (s *Server) reportAssetMonth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) reportTypeMonth(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	typ, ok := pathAssetType(w, r)
 	if !ok {
 		return
 	}
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	report, err := viewtypereport.Build(s.store, typ, period.Year, period.Month)
@@ -74,9 +76,10 @@ func (s *Server) reportTypeMonth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) reportTotalMonth(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	report, err := viewtotalreport.Build(s.store, period.Year, period.Month)

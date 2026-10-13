@@ -31,16 +31,17 @@ func (s *Server) listDividends(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createDividend(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req dividendRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	fields := map[string]string{}
-	validateAmount(fields, "amountUsd", req.AmountUSD)
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	validateAmount(fields, lang, "amountUsd", req.AmountUSD)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	dividend := domain.Dividend{AmountUSD: req.AmountUSD, Month: req.Month, Year: req.Year}
@@ -54,6 +55,7 @@ func (s *Server) createDividend(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteDividend(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	id, err := pathID(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -61,7 +63,7 @@ func (s *Server) deleteDividend(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteDividend(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "dividendo non atopado")
+			writeError(w, http.StatusNotFound, lang.T("dividendo non atopado"))
 			return
 		}
 		s.internalError(w, r, err)

@@ -2,12 +2,12 @@ package addtxbatch
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -23,14 +23,14 @@ const (
 )
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Engadir varias transaccións ---\n")
+	i18n.Fprint(w, "\n--- Engadir varias transaccións ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -38,7 +38,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "Sobre %s — %s (creado en %02d/%d)\n",
+	i18n.Fprintf(w, "Sobre %s — %s (creado en %02d/%d)\n",
 		chosen.Type.Display(), chosen.Name, chosen.Month, chosen.Year)
 
 	mode, err := promptMode(r, w)
@@ -48,7 +48,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	var fixedMonth, fixedYear int
 	if mode == modeFixedMonth || mode == modeAutoIncrement {
-		fmt.Fprintln(w, "Introduce a data de inicio:")
+		i18n.Fprintln(w, "Introduce a data de inicio:")
 		fixedMonth, fixedYear, err = prompts.DateNotBefore(r, w, chosen.Month, chosen.Year)
 		if err != nil {
 			return err
@@ -61,17 +61,17 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		var txMonth, txYear int
 		switch mode {
 		case modePerTx:
-			fmt.Fprintf(w, "\n--- Transacción #%d ---\n", saved+1)
+			i18n.Fprintf(w, "\n--- Transacción #%d ---\n", saved+1)
 			txMonth, txYear, err = prompts.DateNotBefore(r, w, chosen.Month, chosen.Year)
 			if err != nil {
 				return err
 			}
 		case modeFixedMonth:
 			txMonth, txYear = fixedMonth, fixedYear
-			fmt.Fprintf(w, "\n--- Transacción #%d en %02d/%d ---\n", saved+1, txMonth, txYear)
+			i18n.Fprintf(w, "\n--- Transacción #%d en %02d/%d ---\n", saved+1, txMonth, txYear)
 		case modeAutoIncrement:
 			txMonth, txYear = curMonth, curYear
-			fmt.Fprintf(w, "\n--- Transacción #%d en %02d/%d ---\n", saved+1, txMonth, txYear)
+			i18n.Fprintf(w, "\n--- Transacción #%d en %02d/%d ---\n", saved+1, txMonth, txYear)
 		}
 
 		isVenda, err := prompts.SelectTransactionType(r, w)
@@ -98,10 +98,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		}
 		id, err := repo.InsertTransaction(tx)
 		if err != nil {
-			return fmt.Errorf("gardando transacción: %w", err)
+			return i18n.Errorf("gardando transacción: %w", err)
 		}
-		fmt.Fprintf(w, "✓ Gardada #%d: %s %.2f USD — %02d/%d\n",
-			id, typeLabel, amount, txMonth, txYear)
+		i18n.Fprintf(w, "✓ Gardada #%d: %s %.2f USD — %02d/%d\n",
+			id, i18n.T(typeLabel), amount, txMonth, txYear)
 		saved++
 
 		if mode == modeAutoIncrement {
@@ -117,18 +117,18 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		}
 	}
 
-	fmt.Fprintf(w, "\n✓ Engadíronse %d transacción(s) sobre %s — %s.\n",
+	i18n.Fprintf(w, "\n✓ Engadíronse %d transacción(s) sobre %s — %s.\n",
 		saved, chosen.Type.Display(), chosen.Name)
 	return nil
 }
 
 func promptMode(r *bufio.Reader, w io.Writer) (int, error) {
-	fmt.Fprintln(w, "Modo de entrada:")
-	fmt.Fprintln(w, "  [1] Establecer mes/ano en cada transacción")
-	fmt.Fprintln(w, "  [2] Engadir todas no mesmo mes")
-	fmt.Fprintln(w, "  [3] Unha por mes (auto-incrementa) dende un mes inicial")
+	i18n.Fprintln(w, "Modo de entrada:")
+	i18n.Fprintln(w, "  [1] Establecer mes/ano en cada transacción")
+	i18n.Fprintln(w, "  [2] Engadir todas no mesmo mes")
+	i18n.Fprintln(w, "  [3] Unha por mes (auto-incrementa) dende un mes inicial")
 	for {
-		fmt.Fprint(w, "> ")
+		i18n.Fprint(w, "> ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -137,13 +137,13 @@ func promptMode(r *bufio.Reader, w io.Writer) (int, error) {
 		if perr == nil && v >= 1 && v <= 3 {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Modo non válido, escolle 1-3")
+		i18n.Fprintln(w, "⚠ Modo non válido, escolle 1-3")
 	}
 }
 
 func promptContinue(r *bufio.Reader, w io.Writer) (bool, error) {
 	for {
-		fmt.Fprint(w, "Engadir outra transacción? [S/n]: ")
+		i18n.Fprint(w, "Engadir outra transacción? [S/n]: ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return false, err
@@ -155,7 +155,7 @@ func promptContinue(r *bufio.Reader, w io.Writer) (bool, error) {
 		if low == "n" || low == "no" || low == "non" {
 			return false, nil
 		}
-		fmt.Fprintln(w, "⚠ Resposta non válida, escolle S ou N")
+		i18n.Fprintln(w, "⚠ Resposta non válida, escolle S ou N")
 	}
 }
 

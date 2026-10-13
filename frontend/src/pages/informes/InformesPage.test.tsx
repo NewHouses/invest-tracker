@@ -30,7 +30,7 @@ describe('InformesPage', () => {
     installFetch({ '/api/assets': [asset], '/api/reports/total/month?year=2026&month=10': { period: { year: 2026, month: 10 }, totalAssets: 2, assetsActive: 2, assetsWithResult: 1, partial: true, totalInvested: 1000, investedInMonth: 100, investedPlusPrevDividends: 105, dividends: 3, dividendsPrev: 5, holdingNoDiv: 1200, holdingWithDiv: 1205, baseNoDiv: 600, baseWithDiv: 605, resultNoDiv: 660, resultWithDiv: 663, gainNoDiv: 60, gainWithDiv: 58, pctNoDiv: 10, pctWithDiv: 9.59, hasResults: true, hasMetrics: true, hasPctWithDiv: true, averages: { months: 2, pctNoDiv: 5, gainNoDiv: 30, pctWithDiv: 4, gainWithDiv: 25 } } })
     renderWithProviders(<InformesPage />, { initialEntries: ['/informes?vista=mensual&ambito=total'] })
     expect(await screen.findByText('Resultado (sen div)')).toBeInTheDocument()
-    expect(screen.getByText(/1\/2 ativos con resultado/)).toBeInTheDocument()
+    expect(screen.getByText(/1\/2 activos con resultado/)).toBeInTheDocument()
     expect(screen.getByText('Promedios mensuais (2 mes(es) con resultado ata 10/2026)')).toBeInTheDocument()
   })
 
@@ -48,14 +48,14 @@ describe('InformesPage', () => {
     expect(screen.queryByLabelText('Mes')).not.toBeInTheDocument()
   })
 
-  it('ordena o selector de ámbito como Total, Tipo e Ativo', async () => {
+  it('ordena o selector de ámbito como Total, Tipo e Activo', async () => {
     installFetch({ '/api/assets': [asset], '/api/reports/total/history': totalHistory() })
     renderWithProviders(<InformesPage />, { initialEntries: ['/informes'] })
     await screen.findByText('Aporte histórico total')
 
     const total = screen.getByText('Total')
     const tipo = screen.getByText('Tipo')
-    const ativo = screen.getByText('Ativo')
+    const ativo = screen.getByText('Activo')
 
     expect(total.compareDocumentPosition(tipo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(tipo.compareDocumentPosition(ativo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

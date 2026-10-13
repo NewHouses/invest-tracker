@@ -1,10 +1,9 @@
 package portfolio
 
 import (
-	"fmt"
-
 	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/viewassethistory"
 )
 
@@ -36,7 +35,7 @@ type Portfolio struct {
 func Build(repo Repo, now domain.YearMonth) (Portfolio, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return Portfolio{}, fmt.Errorf("listando activos: %w", err)
+		return Portfolio{}, i18n.Errorf("listando activos: %w", err)
 	}
 
 	eligible, err := closemonth.Eligible(repo, now.Year, now.Month)
@@ -54,7 +53,7 @@ func Build(repo Repo, now domain.YearMonth) (Portfolio, error) {
 	for _, asset := range assets {
 		history, err := viewassethistory.Build(repo, asset)
 		if err != nil {
-			return Portfolio{}, fmt.Errorf("construíndo carteira de %s: %w", asset.Name, err)
+			return Portfolio{}, i18n.Errorf("construíndo carteira de %s: %w", asset.Name, err)
 		}
 
 		row := Row{

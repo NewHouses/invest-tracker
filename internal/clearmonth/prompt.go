@@ -2,9 +2,9 @@ package clearmonth
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -13,7 +13,7 @@ type Repo interface {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Limpar mes ---\n")
+	i18n.Fprint(w, "\n--- Limpar mes ---\n")
 
 	month, err := prompts.Month(r, w)
 	if err != nil {
@@ -26,13 +26,13 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	n, err := repo.DeleteMonthlyResultsByMonth(year, month)
 	if err != nil {
-		return fmt.Errorf("limpando mes: %w", err)
+		return i18n.Errorf("limpando mes: %w", err)
 	}
 
 	if n == 0 {
-		fmt.Fprintf(w, "Non había resultados rexistrados en %02d/%d.\n", month, year)
+		i18n.Fprintf(w, "Non había resultados rexistrados en %02d/%d.\n", month, year)
 	} else {
-		fmt.Fprintf(w, "✓ Limpado mes %02d/%d: %d resultado(s) eliminado(s).\n", month, year, n)
+		i18n.Fprintf(w, "✓ Limpado mes %02d/%d: %d resultado(s) eliminado(s).\n", month, year, n)
 	}
 	return nil
 }

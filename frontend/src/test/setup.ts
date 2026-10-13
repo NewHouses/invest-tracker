@@ -1,5 +1,13 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+
+import { setLanguage } from '@/i18n'
+
+// Os tests están escritos en galego, pero jsdom simula un navegador en inglés:
+// cada test empeza en galego (os que proban o inglés cámbiano eles mesmos).
+beforeEach(() => {
+  setLanguage('gl')
+})
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

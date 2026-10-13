@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/viewtotalhistory"
 )
 
@@ -122,6 +123,31 @@ func TestRun_PrintsHeader(t *testing.T) {
 	}
 	if !strings.Contains(out, "2 activo(s) · 2 mes(es) con resultado") {
 		t.Errorf("saída non sinala número de activos/meses:\n%s", out)
+	}
+}
+
+func TestRun_EnglishOutput(t *testing.T) {
+	i18n.SetCurrent(i18n.English)
+	defer i18n.SetCurrent(i18n.Galician)
+
+	out, err := runWith(gainSetup(), "")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, want := range []string{
+		"Full history report",
+		"2 asset(s) · 2 month(s) with result",
+		"Total contributions",
+		"Average Return",
+		"Average G/L",
+		"Total dividends",
+		"Monthly Contribution",
+		"Holdings",
+		"Dividends",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output does not contain %q:\n%s", want, out)
+		}
 	}
 }
 

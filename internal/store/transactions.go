@@ -3,9 +3,9 @@ package store
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 func (s *Store) InsertTransaction(t domain.Transaction) (int64, error) {
@@ -27,7 +27,7 @@ func (s *Store) GetTransaction(id int64) (domain.Transaction, error) {
 	).Scan(&t.ID, &t.AssetID, &t.AmountUSD, &t.Month, &t.Year)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Transaction{}, fmt.Errorf("transacción id=%d: %w", id, sql.ErrNoRows)
+			return domain.Transaction{}, i18n.Errorf("transacción id=%d: %w", id, sql.ErrNoRows)
 		}
 		return domain.Transaction{}, err
 	}
@@ -102,7 +102,7 @@ func (s *Store) UpdateTransaction(t domain.Transaction) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("transacción id=%d: %w", t.ID, sql.ErrNoRows)
+		return i18n.Errorf("transacción id=%d: %w", t.ID, sql.ErrNoRows)
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func (s *Store) DeleteTransaction(id int64) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("transacción id=%d: %w", id, sql.ErrNoRows)
+		return i18n.Errorf("transacción id=%d: %w", id, sql.ErrNoRows)
 	}
 	return nil
 }

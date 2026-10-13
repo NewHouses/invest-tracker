@@ -13,6 +13,7 @@ import (
 
 	"invest-tracker/internal/colors"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/money"
 )
 
@@ -123,7 +124,7 @@ func RenderLineWidth(w io.Writer, series []Series, months []domain.YearMonth, ti
 	}
 	first := months[0]
 	last := months[len(months)-1]
-	caption := fmt.Sprintf("%s · %02d/%d → %02d/%d (%d meses)",
+	caption := i18n.Sprintf("%s · %02d/%d → %02d/%d (%d meses)",
 		title, first.Month, first.Year, last.Month, last.Year, len(months))
 
 	plot := asciigraph.PlotMany(data,

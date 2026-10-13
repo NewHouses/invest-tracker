@@ -10,6 +10,7 @@ import (
 
 	"invest-tracker/internal/addasset"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 type fakeSaver struct {
@@ -83,6 +84,27 @@ func TestRun_PrintsConfirmation(t *testing.T) {
 	}
 	if len(saver.saved) != 1 {
 		t.Fatalf("saver.saved tamaño = %d, esperabamos 1", len(saver.saved))
+	}
+}
+
+func TestRun_PrintsEnglishWhenSelected(t *testing.T) {
+	i18n.SetCurrent(i18n.English)
+	defer i18n.SetCurrent(i18n.Galician)
+
+	out, _, err := runWith(validInput)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, want := range []string{
+		"Add new asset",
+		"Investment type:",
+		"Name:",
+		"Amount (USD):",
+		"✓ Asset saved #1",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("saída inglesa non contén %q:\n%s", want, out)
+		}
 	}
 }
 

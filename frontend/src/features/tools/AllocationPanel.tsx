@@ -8,7 +8,8 @@ import { useAssetTypeLabel } from '@/api/meta'
 import type { AssetType } from '@/api/types'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
-import { formatUSD } from '@/lib/format'
+import { t } from '@/i18n'
+import { formatUSD, numberInputSeparators } from '@/lib/format'
 
 const order: AssetType[] = ['accion', 'indice', 'copy_trading', 'fondo']
 
@@ -29,17 +30,17 @@ export function AllocationPanel() {
   const toggleAsset = (type: AssetType, id: number, checked: boolean) => setSelectedAssets((prev) => ({ ...prev, [type]: checked ? [...prev[type], id] : prev[type].filter((assetId) => assetId !== id) }))
   const submit = () => mutation.mutate({ total: typeof total === 'number' ? total : Number(total), selection: selectedTypes.map((type) => ({ type, assetIds: selectedAssets[type] })) })
   if (assets.isError) return <ErrorAlert error={assets.error} />
-  if (!assets.isLoading && (assets.data ?? []).length === 0) return <EmptyState title="Aínda non hai ativos" description="Engade ativos antes de repartir aportes." />
+  if (!assets.isLoading && (assets.data ?? []).length === 0) return <EmptyState title={t('Aínda non hai activos')} description={t('Engade activos antes de repartir aportes.')} />
   return (
     <Stack>
       <Paper withBorder p="md"><Stack>
-        <NumberInput label="Cantidade total (USD)" min={0} value={total} onChange={setTotal} error={field(mutation.error, 'total')} />
+        <NumberInput label={t('Cantidade total (USD)')} min={0} value={total} onChange={setTotal} error={field(mutation.error, 'total')} {...numberInputSeparators()} />
         {field(mutation.error, 'selection') ? <Alert color="red">{field(mutation.error, 'selection')}</Alert> : null}
         {byType.map((entry, index) => <Paper withBorder p="sm" key={entry.type}><Stack gap="xs"><Checkbox label={typeLabel(entry.type)} checked={selectedTypes.includes(entry.type)} onChange={(e) => toggleType(entry.type, e.currentTarget.checked)} />{selectedTypes.includes(entry.type) ? <Stack pl="md">{field(mutation.error, `selection[${index}].assetIds`) ? <Alert color="red">{field(mutation.error, `selection[${index}].assetIds`)}</Alert> : null}{entry.assets.map((asset) => <Checkbox key={asset.id} label={asset.name} checked={selectedAssets[entry.type].includes(asset.id)} onChange={(e) => toggleAsset(entry.type, asset.id, e.currentTarget.checked)} />)}</Stack> : null}</Stack></Paper>)}
-        <Group><Button onClick={submit} loading={mutation.isPending}>Repartir aporte</Button></Group>
+        <Group><Button onClick={submit} loading={mutation.isPending}>{t('Repartir aporte')}</Button></Group>
       </Stack></Paper>
       {mutation.isError ? <ErrorAlert error={mutation.error} /> : null}
-      {mutation.data ? <Paper withBorder p="md"><Stack><Title order={3}>Reparto de aporte mensual: {formatUSD(mutation.data.total)}</Title>{mutation.data.types.map((t) => <Stack key={t.type} gap={2}><Group justify="space-between"><Text fw={700}>{t.label}</Text><Text>{formatUSD(t.amount)}</Text></Group>{t.assets.map((a) => <Group key={a.asset.id} justify="space-between" pl="md"><Text>{a.asset.name}</Text><Text>{formatUSD(a.amount)}</Text></Group>)}</Stack>)}</Stack></Paper> : null}
+      {mutation.data ? <Paper withBorder p="md"><Stack><Title order={3}>{t('Reparto de aporte mensual: {amount}', { amount: formatUSD(mutation.data.total) })}</Title>{mutation.data.types.map((typeResult) => <Stack key={typeResult.type} gap={2}><Group justify="space-between"><Text fw={700}>{typeResult.label}</Text><Text>{formatUSD(typeResult.amount)}</Text></Group>{typeResult.assets.map((assetResult) => <Group key={assetResult.asset.id} justify="space-between" pl="md"><Text>{assetResult.asset.name}</Text><Text>{formatUSD(assetResult.amount)}</Text></Group>)}</Stack>)}</Stack></Paper> : null}
     </Stack>
   )
 }

@@ -2,9 +2,9 @@ package store
 
 import (
 	"database/sql"
-	"fmt"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 // upsertMonthlyResultSQL garda o resultado dun activo nun mes. Só pode haber
@@ -81,7 +81,7 @@ func (s *Store) DeleteMonthlyResult(id int64) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("resultado mensual id=%d: %w", id, sql.ErrNoRows)
+		return i18n.Errorf("resultado mensual id=%d: %w", id, sql.ErrNoRows)
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package viewcharts_test
 
 import (
+	"invest-tracker/internal/i18n"
 	"math"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func TestBuildDistribution_CalculaTotalEtiquetasEPorcentaxes(t *testing.T) {
-	got, err := viewcharts.BuildDistribution(setup())
+	got, err := viewcharts.BuildDistribution(setup(), i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildDistribution: %v", err)
 	}
@@ -28,7 +29,7 @@ func TestBuildAssetEvolution_DevolveSeriesConGaps(t *testing.T) {
 	repo := setup()
 	repo.summaries[sumKey{10, 2026, 5}] = domain.MonthlySummary{TotalInvestedUpTo: 1500}
 
-	got, err := viewcharts.BuildAssetEvolution(repo, repo.assets[0])
+	got, err := viewcharts.BuildAssetEvolution(repo, repo.assets[0], i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAssetEvolution: %v", err)
 	}
@@ -44,7 +45,7 @@ func TestBuildAssetEvolution_DevolveSeriesConGaps(t *testing.T) {
 }
 
 func TestBuildTypeAggregated_AgregaResultadosEAportes(t *testing.T) {
-	got, err := viewcharts.BuildTypeAggregated(setup(), domain.Accion)
+	got, err := viewcharts.BuildTypeAggregated(setup(), domain.Accion, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildTypeAggregated: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestBuildAssetsOfType_CreaUnhaSeriePorActivoConResultado(t *testing.T) {
 	repo.summaries[sumKey{11, 2026, 4}] = domain.MonthlySummary{TotalInvestedUpTo: 600}
 	repo.summaries[sumKey{11, 2026, 5}] = domain.MonthlySummary{TotalInvestedUpTo: 600}
 
-	got, err := viewcharts.BuildAssetsOfType(repo, domain.Accion)
+	got, err := viewcharts.BuildAssetsOfType(repo, domain.Accion, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAssetsOfType: %v", err)
 	}
@@ -78,11 +79,11 @@ func TestBuildAllAssets_CreaSeriesConGapsESaltaActivosSenResultados(t *testing.T
 	repo.assets = append(repo.assets, domain.Asset{ID: 13, Type: domain.Fondo, Name: "Sen resultados"})
 	repo.summaries[sumKey{11, 2026, 5}] = domain.MonthlySummary{TotalInvestedUpTo: 600}
 
-	got, err := viewcharts.BuildAllAssets(repo)
+	got, err := viewcharts.BuildAllAssets(repo, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAllAssets: %v", err)
 	}
-	if !got.HasAssets || got.Title != "Todos os ativos" || len(got.Months) != 2 || len(got.Series) != 3 {
+	if !got.HasAssets || got.Title != "Todos os activos" || len(got.Months) != 2 || len(got.Series) != 3 {
 		t.Fatalf("gráfica inesperada: %+v", got)
 	}
 	if got.Series[1].Label != "MSFT" || got.Series[1].Values[0] != 650 || !math.IsNaN(got.Series[1].Values[1]) {
@@ -94,7 +95,7 @@ func TestBuildAllAssets_CreaSeriesConGapsESaltaActivosSenResultados(t *testing.T
 }
 
 func TestBuildAllAssets_EstadosBaleiros(t *testing.T) {
-	chart, err := viewcharts.BuildAllAssets(&fakeRepo{})
+	chart, err := viewcharts.BuildAllAssets(&fakeRepo{}, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAllAssets sen activos: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestBuildAllAssets_EstadosBaleiros(t *testing.T) {
 
 	repo := setup()
 	repo.allMonths = nil
-	chart, err = viewcharts.BuildAllAssets(repo)
+	chart, err = viewcharts.BuildAllAssets(repo, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAllAssets sen resultados: %v", err)
 	}
@@ -117,7 +118,7 @@ func TestBuildAllTypes_UsaOrdeEstableETenGaps(t *testing.T) {
 	repo := setup()
 	repo.summaries[sumKey{12, 2026, 5}] = domain.MonthlySummary{TotalInvestedUpTo: 2000}
 
-	got, err := viewcharts.BuildAllTypes(repo)
+	got, err := viewcharts.BuildAllTypes(repo, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAllTypes: %v", err)
 	}
@@ -133,7 +134,7 @@ func TestBuildAllTypes_UsaOrdeEstableETenGaps(t *testing.T) {
 }
 
 func TestBuildTotal_SumaResultadosEDividendosAcumulados(t *testing.T) {
-	got, err := viewcharts.BuildTotal(setup())
+	got, err := viewcharts.BuildTotal(setup(), i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildTotal: %v", err)
 	}
@@ -170,7 +171,7 @@ func TestBuildTotal_SumaAporteAcumuladoDeTodosOsActivos(t *testing.T) {
 		dividends: map[divKey]float64{},
 	}
 
-	got, err := viewcharts.BuildTotal(repo)
+	got, err := viewcharts.BuildTotal(repo, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildTotal: %v", err)
 	}
@@ -186,7 +187,7 @@ func TestBuildTotal_SumaAporteAcumuladoDeTodosOsActivos(t *testing.T) {
 }
 
 func TestBuilders_MarcanEstadoBaleiro(t *testing.T) {
-	dist, err := viewcharts.BuildDistribution(&fakeRepo{})
+	dist, err := viewcharts.BuildDistribution(&fakeRepo{}, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildDistribution: %v", err)
 	}
@@ -194,7 +195,7 @@ func TestBuilders_MarcanEstadoBaleiro(t *testing.T) {
 		t.Fatalf("distribución baleira inesperada: %+v", dist)
 	}
 
-	chart, err := viewcharts.BuildAllTypes(&fakeRepo{})
+	chart, err := viewcharts.BuildAllTypes(&fakeRepo{}, i18n.Galician)
 	if err != nil {
 		t.Fatalf("BuildAllTypes: %v", err)
 	}

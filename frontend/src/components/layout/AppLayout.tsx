@@ -2,7 +2,9 @@ import {
   ActionIcon,
   AppShell,
   Burger,
+  Button,
   Group,
+  Menu,
   NavLink as MantineNavLink,
   ScrollArea,
   Text,
@@ -15,8 +17,10 @@ import {
   IconAdjustments,
   IconArrowsExchange,
   IconChartLine,
+  IconCheck,
   IconCoin,
   IconHome,
+  IconLanguage,
   IconListDetails,
   IconMoon,
   IconReportAnalytics,
@@ -27,6 +31,8 @@ import {
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
+
+import { languages, t, tKey, useLanguage } from '@/i18n'
 
 type NavLeaf = {
   label: string
@@ -42,26 +48,59 @@ type NavGroup = {
 
 type NavItem = NavLeaf | NavGroup
 
+// As etiquetas tradúcense ao debuxar o menú, co idioma de cada momento.
 const navItems: NavItem[] = [
-  { label: 'Inicio', to: '/', icon: IconHome },
-  { label: 'Portofolio', to: '/activos', icon: IconWallet },
-  { label: 'Dividendos', to: '/dividendos', icon: IconCoin },
+  { label: tKey('Inicio'), to: '/', icon: IconHome },
+  { label: tKey('Portofolio'), to: '/activos', icon: IconWallet },
+  { label: tKey('Dividendos'), to: '/dividendos', icon: IconCoin },
   {
-    label: 'Operacións',
+    label: tKey('Operacións'),
     icon: IconArrowsExchange,
     children: [
-      { label: 'Transaccións', to: '/transaccions', icon: IconListDetails },
-      { label: 'Resultados', to: '/resultados', icon: IconTrendingUp },
+      { label: tKey('Transaccións'), to: '/transaccions', icon: IconListDetails },
+      { label: tKey('Resultados'), to: '/resultados', icon: IconTrendingUp },
     ],
   },
-  { label: 'Informes', to: '/informes', icon: IconReportAnalytics },
-  { label: 'Gráficas', to: '/graficas', icon: IconChartLine },
-  { label: 'Proxeccións', to: '/proxeccion', icon: IconTimeline },
-  { label: 'Axustes', to: '/axustes', icon: IconAdjustments },
+  { label: tKey('Informes'), to: '/informes', icon: IconReportAnalytics },
+  { label: tKey('Gráficas'), to: '/graficas', icon: IconChartLine },
+  { label: tKey('Proxeccións'), to: '/proxeccion', icon: IconTimeline },
+  { label: tKey('Axustes'), to: '/axustes', icon: IconAdjustments },
 ]
 
 function isActive(pathname: string, to: string) {
   return to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`)
+}
+
+function LanguageMenu() {
+  const { language, setLanguage } = useLanguage()
+  return (
+    <Menu position="bottom-end" shadow="md">
+      <Menu.Target>
+        <Button
+          variant="subtle"
+          color="gray"
+          size="compact-md"
+          leftSection={<IconLanguage size={18} />}
+          aria-label={t('Idioma')}
+          title={t('Idioma')}
+        >
+          {language.toUpperCase()}
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {languages.map((option) => (
+          <Menu.Item
+            key={option.value}
+            lang={option.value}
+            onClick={() => setLanguage(option.value)}
+            rightSection={option.value === language ? <IconCheck size={16} /> : null}
+          >
+            {option.label}
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
+  )
 }
 
 export function AppLayout() {
@@ -80,18 +119,19 @@ export function AppLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Abrir navegación" />
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label={t('Abrir navegación')} />
             <Text fw={700} size="lg" truncate="end">
               Control de Investimentos
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
-            <Tooltip label={computedColorScheme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
+            <LanguageMenu />
+            <Tooltip label={computedColorScheme === 'dark' ? t('Modo claro') : t('Modo escuro')}>
               <ActionIcon
                 variant="subtle"
                 color="gray"
                 onClick={() => setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark')}
-                aria-label="Cambiar esquema de cor"
+                aria-label={t('Cambiar esquema de cor')}
               >
                 {computedColorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
               </ActionIcon>
@@ -109,7 +149,7 @@ export function AppLayout() {
               return (
                 <MantineNavLink
                   key={item.label}
-                  label={item.label}
+                  label={t(item.label)}
                   leftSection={<IconComponent size={18} />}
                   defaultOpened
                   childrenOffset={28}
@@ -120,7 +160,7 @@ export function AppLayout() {
                     return (
                       <MantineNavLink
                         key={child.to}
-                        label={child.label}
+                        label={t(child.label)}
                         leftSection={<ChildIcon size={16} />}
                         active={isActive(location.pathname, child.to)}
                         onClick={() => {
@@ -137,7 +177,7 @@ export function AppLayout() {
             return (
               <MantineNavLink
                 key={item.to}
-                label={item.label}
+                label={t(item.label)}
                 leftSection={<IconComponent size={18} />}
                 active={isActive(location.pathname, item.to)}
                 onClick={() => {

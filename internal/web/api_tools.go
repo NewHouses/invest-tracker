@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/repartoaporte"
 )
 
@@ -77,21 +78,22 @@ type projectionResponseSummary struct {
 }
 
 func (s *Server) toolAllocation(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req allocationRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	selection, fields, err := s.validateAllocation(req)
+	selection, fields, err := s.validateAllocation(req, lang)
 	if err != nil {
 		s.internalError(w, r, err)
 		return
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
-	allocation, err := repartoaporte.Allocate(req.Total, selection)
+	allocation, err := repartoaporte.Allocate(req.Total, selection, lang)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -99,13 +101,13 @@ func (s *Server) toolAllocation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, allocationDTO(allocation))
 }
 
-func (s *Server) validateAllocation(req allocationRequest) ([]repartoaporte.TypeSelection, map[string]string, error) {
+func (s *Server) validateAllocation(req allocationRequest, lang i18n.Lang) ([]repartoaporte.TypeSelection, map[string]string, error) {
 	fields := map[string]string{}
 	if !domain.ValidAmount(req.Total) {
-		fields["total"] = "o total debe ser unha cantidade positiva"
+		fields["total"] = lang.T("o total debe ser unha cantidade positiva")
 	}
 	if len(req.Selection) == 0 {
-		fields["selection"] = "debe seleccionarse polo menos un tipo"
+		fields["selection"] = lang.T("debe seleccionarse polo menos un tipo")
 	}
 
 	assets, err := s.store.ListAssets()
@@ -123,21 +125,21 @@ func (s *Server) validateAllocation(req allocationRequest) ([]repartoaporte.Type
 		typeField := fmt.Sprintf("selection[%d].type", i)
 		assetField := fmt.Sprintf("selection[%d].assetIds", i)
 		if !sel.Type.Valid() {
-			fields[typeField] = "tipo de ativo non válido"
+			fields[typeField] = lang.T("tipo de activo non válido")
 		}
 		if seenTypes[sel.Type] {
-			fields[typeField] = "tipo de ativo duplicado"
+			fields[typeField] = lang.T("tipo de activo duplicado")
 		}
 		seenTypes[sel.Type] = true
 		if len(sel.AssetIDs) == 0 {
-			fields[assetField] = "debe seleccionarse polo menos un ativo"
+			fields[assetField] = lang.T("debe seleccionarse polo menos un activo")
 		}
 		picked := make([]domain.Asset, 0, len(sel.AssetIDs))
 		seenAssets := map[int64]bool{}
 		for _, id := range sel.AssetIDs {
 			asset, ok := byID[id]
 			if !ok || !sel.Type.Valid() || asset.Type != sel.Type || seenAssets[id] {
-				fields[assetField] = "os ativos seleccionados deben existir e pertencer ao tipo indicado"
+				fields[assetField] = lang.T("os activos seleccionados deben existir e pertencer ao tipo indicado")
 				continue
 			}
 			seenAssets[id] = true
@@ -164,20 +166,21 @@ func (s *Server) toolProjectionDefaults(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) toolProjection(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req projectionRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	plan, fields := projectionPlanFromRequest(req)
+	plan, fields := projectionPlanFromRequest(req, lang)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 
 	months, err := domain.ProjectPlan(plan)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadRequest, lang.T(err.Error()))
 		return
 	}
 	resp := projectionResponse{
@@ -210,7 +213,7 @@ func (s *Server) defaultProjectionStart() (domain.YearMonth, bool, error) {
 	return domain.YearMonth{Year: now.Year(), Month: int(now.Month())}, false, nil
 }
 
-func projectionPlanFromRequest(req projectionRequest) (domain.PlanInput, map[string]string) {
+func projectionPlanFromRequest(req projectionRequest, lang i18n.Lang) (domain.PlanInput, map[string]string) {
 	fields := map[string]string{}
 	plan := domain.PlanInput{
 		Years:               req.Years,
@@ -223,56 +226,56 @@ func projectionPlanFromRequest(req projectionRequest) (domain.PlanInput, map[str
 		Rules:               req.Rules,
 	}
 	if req.Start == nil {
-		fields["start"] = "a data de inicio é obrigatoria"
+		fields["start"] = lang.T("a data de inicio é obrigatoria")
 	} else if !req.Start.Valid() {
-		fields["start"] = "a data de inicio non é válida"
+		fields["start"] = lang.T("a data de inicio non é válida")
 	} else {
 		plan.Start = *req.Start
 	}
 	if req.Years < 1 || req.Years > domain.MaxProjectionPlanYears {
-		fields["years"] = fmt.Sprintf("os anos deben estar entre 1 e %d", domain.MaxProjectionPlanYears)
+		fields["years"] = lang.Sprintf("os anos deben estar entre 1 e %d", domain.MaxProjectionPlanYears)
 	}
 	if !finiteNumber(req.InitialInvestment) || req.InitialInvestment < 0 {
-		fields["initialInvestment"] = "o investimento inicial debe ser unha cantidade non negativa"
+		fields["initialInvestment"] = lang.T("o investimento inicial debe ser unha cantidade non negativa")
 	}
 	if !finiteNumber(req.MonthlyReturnPct) || req.MonthlyReturnPct <= domain.MinMonthlyReturnPct {
-		fields["monthlyReturnPct"] = "o retorno mensual debe ser maior ca -100%"
+		fields["monthlyReturnPct"] = lang.T("o retorno mensual debe ser maior ca -100%")
 	}
 	if req.Mode != domain.ProjectionModeContribution && req.Mode != domain.ProjectionModeSalary {
-		fields["mode"] = "o modo debe ser contribution ou salary"
+		fields["mode"] = lang.T("o modo debe ser contribution ou salary")
 	}
 	if req.Mode == domain.ProjectionModeContribution && (!finiteNumber(req.MonthlyContribution) || req.MonthlyContribution < 0) {
-		fields["monthlyContribution"] = "o aporte mensual debe ser unha cantidade non negativa"
+		fields["monthlyContribution"] = lang.T("o aporte mensual debe ser unha cantidade non negativa")
 	}
 	if req.Mode == domain.ProjectionModeSalary {
 		if !finiteNumber(req.AnnualSalary) || req.AnnualSalary < 0 {
-			fields["annualSalary"] = "o salario anual debe ser unha cantidade non negativa"
+			fields["annualSalary"] = lang.T("o salario anual debe ser unha cantidade non negativa")
 		}
 		if !finiteNumber(req.InvestmentRatePct) || req.InvestmentRatePct <= 0 || req.InvestmentRatePct > 100 {
-			fields["investmentRatePct"] = "a porcentaxe de investimento debe estar entre 0 e 100"
+			fields["investmentRatePct"] = lang.T("a porcentaxe de investimento debe estar entre 0 e 100")
 		}
 	}
-	validateGrowthRules(req.Rules, fields)
+	validateGrowthRules(req.Rules, fields, lang)
 	return plan, fields
 }
 
-func validateGrowthRules(rules []domain.GrowthRule, fields map[string]string) {
+func validateGrowthRules(rules []domain.GrowthRule, fields map[string]string, lang i18n.Lang) {
 	if len(rules) > domain.MaxGrowthRules {
-		fields["rules"] = fmt.Sprintf("non se poden definir máis de %d regras", domain.MaxGrowthRules)
+		fields["rules"] = lang.Sprintf("non se poden definir máis de %d regras", domain.MaxGrowthRules)
 	}
 	for i, rule := range rules {
 		prefix := fmt.Sprintf("rules[%d]", i)
 		if rule.Kind != domain.GrowthKindFixed && rule.Kind != domain.GrowthKindPercent {
-			fields[prefix+".kind"] = "o tipo de regra debe ser fixed ou percent"
+			fields[prefix+".kind"] = lang.T("o tipo de regra debe ser fixed ou percent")
 		}
 		if !finiteNumber(rule.Value) || (rule.Kind == domain.GrowthKindPercent && rule.Value <= -100) {
-			fields[prefix+".value"] = "o valor da regra non é válido"
+			fields[prefix+".value"] = lang.T("o valor da regra non é válido")
 		}
 		if rule.EveryMonths < 0 || rule.EveryMonths > domain.MaxRuleEveryMonths {
-			fields[prefix+".everyMonths"] = fmt.Sprintf("a periodicidade debe estar entre 0 e %d meses", domain.MaxRuleEveryMonths)
+			fields[prefix+".everyMonths"] = lang.Sprintf("a periodicidade debe estar entre 0 e %d meses", domain.MaxRuleEveryMonths)
 		}
 		if !rule.From.Valid() {
-			fields[prefix+".from"] = "a data de inicio da regra non é válida"
+			fields[prefix+".from"] = lang.T("a data de inicio da regra non é válida")
 		}
 	}
 }

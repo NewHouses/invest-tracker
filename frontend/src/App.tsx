@@ -1,11 +1,8 @@
 import { MantineProvider, localStorageColorSchemeManager } from '@mantine/core'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { DatesProvider } from '@mantine/dates'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router'
-import dayjs from 'dayjs'
-import 'dayjs/locale/gl'
 
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
@@ -13,10 +10,9 @@ import '@mantine/dates/styles.css'
 import '@mantine/charts/styles.css'
 
 import { ApiError } from '@/api/client'
+import { LanguageProvider } from '@/i18n'
 import { router } from '@/router'
 import { theme } from '@/theme'
-
-dayjs.locale('gl')
 
 const colorSchemeManager = localStorageColorSchemeManager({ key: 'invest-tracker-color-scheme' })
 
@@ -40,14 +36,14 @@ export const queryClient = new QueryClient({
 export function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto" colorSchemeManager={colorSchemeManager}>
-      <DatesProvider settings={{ locale: 'gl', firstDayOfWeek: 1, weekendDays: [0, 6] }}>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
           <ModalsProvider>
             <Notifications position="top-right" />
             <RouterProvider router={router} />
           </ModalsProvider>
-        </QueryClientProvider>
-      </DatesProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
     </MantineProvider>
   )
 }

@@ -2,20 +2,20 @@ package prompts
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 func SelectAsset(r *bufio.Reader, w io.Writer, assets []domain.Asset) (domain.Asset, error) {
-	fmt.Fprintln(w, "Investimentos:")
+	i18n.Fprintln(w, "Investimentos:")
 	for i, a := range assets {
-		fmt.Fprintf(w, "  [%d] %s — %s\n", i+1, a.Type.Display(), a.Name)
+		i18n.Fprintf(w, "  [%d] %s — %s\n", i+1, a.Type.Display(), a.Name)
 	}
 	for {
-		fmt.Fprintf(w, "Selecciona (1-%d): ", len(assets))
+		i18n.Fprintf(w, "Selecciona (1-%d): ", len(assets))
 		line, err := ReadLine(r)
 		if err != nil {
 			return domain.Asset{}, err
@@ -24,6 +24,6 @@ func SelectAsset(r *bufio.Reader, w io.Writer, assets []domain.Asset) (domain.As
 		if perr == nil && idx >= 1 && idx <= len(assets) {
 			return assets[idx-1], nil
 		}
-		fmt.Fprintln(w, "⚠ Selección non válida")
+		i18n.Fprintln(w, "⚠ Selección non válida")
 	}
 }

@@ -36,8 +36,10 @@ func TestReadLine_CancelSentinels(t *testing.T) {
 	cases := []string{
 		":q\n",
 		"cancelar\n",
+		"cancel\n",
 		"  :q  \n",   // espazos
 		"CANCELAR\n", // maiúsculas
+		"CANCEL\n",
 		":Q\n",
 	}
 	for _, in := range cases {

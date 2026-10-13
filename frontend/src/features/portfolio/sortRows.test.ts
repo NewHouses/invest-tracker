@@ -7,7 +7,7 @@ import { sortRows, type PortfolioTableRow, type PortfolioSortKey } from '@/featu
 const asset = (id: number, overrides: Partial<Asset> = {}): Asset => ({
   id,
   type: 'accion',
-  name: `Ativo ${id}`,
+  name: `Activo ${id}`,
   amountUsd: id * 100,
   year: 2026,
   month: id,

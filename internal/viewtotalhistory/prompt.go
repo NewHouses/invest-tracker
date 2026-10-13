@@ -10,6 +10,7 @@ import (
 
 	"invest-tracker/internal/colors"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/money"
 )
 
@@ -50,7 +51,7 @@ type Row struct {
 func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return nil, fmt.Errorf("listando activos: %w", err)
+		return nil, i18n.Errorf("listando activos: %w", err)
 	}
 	var candidates []domain.Asset
 	for _, a := range assets {
@@ -63,7 +64,7 @@ func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 	}
 	months, err := repo.MonthsWithResults()
 	if err != nil {
-		return nil, fmt.Errorf("obtendo meses con resultados: %w", err)
+		return nil, i18n.Errorf("obtendo meses con resultados: %w", err)
 	}
 	for _, ym := range months {
 		if !ym.Before(now) {
@@ -75,7 +76,7 @@ func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 	for _, a := range candidates {
 		sum, err := repo.MonthlySummary(a.ID, now.Year, now.Month)
 		if err != nil {
-			return nil, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+			return nil, i18n.Errorf("calculando resumo de %s: %w", a.Name, err)
 		}
 		totalTx += sum.InvestedInMonth
 		if domain.HasHolding(sum.EstimatedHolding) {
@@ -84,7 +85,7 @@ func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 	}
 	div, err := repo.SumDividends(now.Year, now.Month)
 	if err != nil {
-		return nil, fmt.Errorf("sumando dividendos de %d/%d: %w", now.Month, now.Year, err)
+		return nil, i18n.Errorf("sumando dividendos de %d/%d: %w", now.Month, now.Year, err)
 	}
 	aporte := totalTx - div
 	if fondos <= 0 && aporte == 0 && div == 0 {
@@ -96,7 +97,7 @@ func Current(repo Repo, now domain.YearMonth) (*Row, error) {
 func Build(repo Repo) (History, error) {
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return History{}, fmt.Errorf("listando activos: %w", err)
+		return History{}, i18n.Errorf("listando activos: %w", err)
 	}
 	history := History{AssetCount: len(assets)}
 	if len(assets) == 0 {
@@ -105,7 +106,7 @@ func Build(repo Repo) (History, error) {
 
 	months, err := repo.MonthsWithResults()
 	if err != nil {
-		return History{}, fmt.Errorf("obtendo meses con resultados: %w", err)
+		return History{}, i18n.Errorf("obtendo meses con resultados: %w", err)
 	}
 	if len(months) == 0 {
 		return history, nil
@@ -120,7 +121,7 @@ func Build(repo Repo) (History, error) {
 		for _, a := range assets {
 			sum, err := repo.MonthlySummary(a.ID, ym.Year, ym.Month)
 			if err != nil {
-				return History{}, fmt.Errorf("calculando resumo de %s: %w", a.Name, err)
+				return History{}, i18n.Errorf("calculando resumo de %s: %w", a.Name, err)
 			}
 			totalTx += sum.InvestedInMonth
 			if !sum.HasResult {
@@ -131,7 +132,7 @@ func Build(repo Repo) (History, error) {
 		}
 		div, err := repo.SumDividends(ym.Year, ym.Month)
 		if err != nil {
-			return History{}, fmt.Errorf("sumando dividendos de %d/%d: %w", ym.Month, ym.Year, err)
+			return History{}, i18n.Errorf("sumando dividendos de %d/%d: %w", ym.Month, ym.Year, err)
 		}
 		aporte := totalTx - div
 		result := baseResult + div
@@ -158,7 +159,7 @@ func Build(repo Repo) (History, error) {
 	for _, a := range assets {
 		lifeSum, err := repo.MonthlySummary(a.ID, 9999, 12)
 		if err != nil {
-			return History{}, fmt.Errorf("calculando lifetime de %s: %w", a.Name, err)
+			return History{}, i18n.Errorf("calculando lifetime de %s: %w", a.Name, err)
 		}
 		history.LifetimeAporte += lifeSum.TotalInvestedUpTo
 		// Valor neto de cada activo: último resultado máis aportes e vendas
@@ -180,18 +181,18 @@ func Build(repo Repo) (History, error) {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Reporte histórico completo ---\n")
+	i18n.Fprint(w, "\n--- Reporte histórico completo ---\n")
 
 	history, err := Build(repo)
 	if err != nil {
 		return err
 	}
 	if history.AssetCount == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 	if len(history.Rows) == 0 {
-		fmt.Fprintln(w, "Aínda non hai resultados rexistrados. Engade resultados mensuais coa operación 'Engadir resultado' ou 'Pechar mes'.")
+		i18n.Fprintln(w, "Aínda non hai resultados rexistrados. Engade resultados mensuais coa operación 'Engadir resultado' ou 'Pechar mes'.")
 		return nil
 	}
 
@@ -202,31 +203,31 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 func renderReport(w io.Writer, history History) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Reporte histórico completo · %d activo(s) · %d mes(es) con resultado\n",
+	i18n.Fprintf(w, "  Reporte histórico completo · %d activo(s) · %d mes(es) con resultado\n",
 		history.AssetCount, len(history.Rows))
 	fmt.Fprintln(w, sep)
 
 	twH := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(twH, "  Aporte histórico total\t%s\n", money.USD(history.LifetimeAporte))
+	i18n.Fprintf(twH, "  Aporte histórico total\t%s\n", money.USD(history.LifetimeAporte))
 	if history.HasAverages {
-		fmt.Fprintf(twH, "  Índice Medio\t%+.2f%%\n", history.AvgIndexPct)
-		fmt.Fprintf(twH, "  G/P Media\t%s\n", money.SignedUSD(history.AvgGain))
+		i18n.Fprintf(twH, "  Índice Medio\t%+.2f%%\n", history.AvgIndexPct)
+		i18n.Fprintf(twH, "  G/P Media\t%s\n", money.SignedUSD(history.AvgGain))
 	} else {
-		fmt.Fprintln(twH, "  Índice Medio\t—")
-		fmt.Fprintln(twH, "  G/P Media\t—")
+		i18n.Fprintln(twH, "  Índice Medio\t—")
+		i18n.Fprintln(twH, "  G/P Media\t—")
 	}
 	if history.HasTotalGain {
-		fmt.Fprintf(twH, "  G/P Total\t%s\n", money.SignedUSD(history.TotalGain))
+		i18n.Fprintf(twH, "  G/P Total\t%s\n", money.SignedUSD(history.TotalGain))
 	} else {
-		fmt.Fprintln(twH, "  G/P Total\t—")
+		i18n.Fprintln(twH, "  G/P Total\t—")
 	}
-	fmt.Fprintf(twH, "  Dividendos totais\t%s\n", money.USD(history.TotalDividends))
+	i18n.Fprintf(twH, "  Dividendos totais\t%s\n", money.USD(history.TotalDividends))
 	twH.Flush()
 	fmt.Fprintln(w, sep)
 
 	var tbuf bytes.Buffer
 	twT := tabwriter.NewWriter(&tbuf, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(twT, "  Ano\tMes\tAporte Mensual\tFondos\tÍndice\tG/P\tDividendos\tResultado\t")
+	i18n.Fprintln(twT, "  Ano\tMes\tAporte Mensual\tFondos\tÍndice\tG/P\tDividendos\tResultado\t")
 	for _, row := range history.Rows {
 		var idxStr, gainStr string
 		if row.HasMetrics {

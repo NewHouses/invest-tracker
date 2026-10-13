@@ -1,5 +1,6 @@
 import type { PortfolioRow } from '@/api/portfolio'
 import type { Asset } from '@/api/types'
+import { getLanguage } from '@/i18n'
 
 export type PortfolioSortKey = 'type' | 'name' | 'period' | 'initialAmount' | 'totalInvested' | 'currentValue' | 'gain' | 'gainPct'
 export type SortDirection = 'asc' | 'desc' | null
@@ -46,7 +47,7 @@ function compareValues(a: SortValue, b: SortValue, direction: Exclude<SortDirect
   if (bMissing) return -1
 
   const result = typeof a === 'string' && typeof b === 'string'
-    ? a.localeCompare(b, 'gl', { sensitivity: 'base' })
+    ? a.localeCompare(b, getLanguage(), { sensitivity: 'base' })
     : Number(a) - Number(b)
 
   return direction === 'asc' ? result : -result

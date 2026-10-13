@@ -32,7 +32,7 @@ const distribution: Distribution = {
 }
 
 const allAssetsChart: LineChartDTO = {
-  title: 'Todos os ativos',
+  title: 'Todos os activos',
   hasAssets: true,
   months: [{ year: 2026, month: 1 }, { year: 2026, month: 2 }],
   series: [
@@ -42,15 +42,15 @@ const allAssetsChart: LineChartDTO = {
 }
 
 describe('GraficasPage', () => {
-  it('pide a gráfica de todos os ativos ao seleccionar esa opción', async () => {
+  it('pide a gráfica de todos os activos ao seleccionar esa opción', async () => {
     const calls = installFetch({ '/api/assets': [asset], '/api/charts/distribution': distribution, '/api/charts/assets': allAssetsChart })
     const user = userEvent.setup()
 
     renderWithProviders(<GraficasPage />, { initialEntries: ['/graficas'] })
-    await user.click(await screen.findByRole('button', { name: 'Evolución de todos os ativos' }))
+    await user.click(await screen.findByRole('button', { name: 'Evolución de todos os activos' }))
 
     await waitFor(() => expect(calls.some((call) => call.url === '/api/charts/assets')).toBe(true))
-    expect(screen.getByRole('button', { name: 'Evolución de todos os ativos' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Evolución de todos os activos' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('permite ocultar unha serie desde a lenda', async () => {

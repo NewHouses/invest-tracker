@@ -1,7 +1,6 @@
 import { MantineProvider } from '@mantine/core'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { DatesProvider } from '@mantine/dates'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import type { RenderOptions } from '@testing-library/react'
@@ -9,6 +8,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 
 import { ApiError } from '@/api/client'
+import { LanguageProvider } from '@/i18n'
 import { theme } from '@/theme'
 
 export function createTestQueryClient() {
@@ -34,14 +34,14 @@ type ProvidersProps = {
 export function TestProviders({ children, queryClient = createTestQueryClient(), initialEntries = ['/'] }: ProvidersProps) {
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <DatesProvider settings={{ locale: 'gl', firstDayOfWeek: 1 }}>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
           <ModalsProvider>
             <Notifications />
             <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
           </ModalsProvider>
-        </QueryClientProvider>
-      </DatesProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
     </MantineProvider>
   )
 }

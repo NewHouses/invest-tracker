@@ -20,10 +20,11 @@ type metaResponse struct {
 // registerMetaRoutes rexistra as rutas de metadatos da API.
 func (s *Server) registerMetaRoutes() {
 	s.handleAPI("GET /api/meta", func(w http.ResponseWriter, r *http.Request) {
+		lang := langOf(r)
 		types := domain.AssetTypes()
 		items := make([]metaAssetType, 0, len(types))
 		for _, typ := range types {
-			items = append(items, metaAssetType{Value: typ, Label: typ.Display()})
+			items = append(items, metaAssetType{Value: typ, Label: typ.Label(lang)})
 		}
 		writeJSON(w, http.StatusOK, metaResponse{AssetTypes: items, MinYear: domain.MinYear, MaxYear: domain.MaxYear})
 	})

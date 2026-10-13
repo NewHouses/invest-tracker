@@ -40,12 +40,12 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, r, err)
 		return
 	}
-	evolution, err := viewcharts.BuildTotal(s.store)
+	evolution, err := viewcharts.BuildTotal(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
 	}
-	distribution, err := viewcharts.BuildDistribution(s.store)
+	distribution, err := viewcharts.BuildDistribution(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return

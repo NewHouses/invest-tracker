@@ -18,7 +18,7 @@ func (s *Server) registerChartRoutes() {
 }
 
 func (s *Server) chartDistribution(w http.ResponseWriter, r *http.Request) {
-	dist, err := viewcharts.BuildDistribution(s.store)
+	dist, err := viewcharts.BuildDistribution(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -31,7 +31,7 @@ func (s *Server) chartAsset(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	chart, err := viewcharts.BuildAssetEvolution(s.store, asset)
+	chart, err := viewcharts.BuildAssetEvolution(s.store, asset, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -44,7 +44,7 @@ func (s *Server) chartTypeAggregated(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	chart, err := viewcharts.BuildTypeAggregated(s.store, typ)
+	chart, err := viewcharts.BuildTypeAggregated(s.store, typ, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -57,7 +57,7 @@ func (s *Server) chartTypeAssets(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	chart, err := viewcharts.BuildAssetsOfType(s.store, typ)
+	chart, err := viewcharts.BuildAssetsOfType(s.store, typ, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -66,7 +66,7 @@ func (s *Server) chartTypeAssets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) chartAssets(w http.ResponseWriter, r *http.Request) {
-	chart, err := viewcharts.BuildAllAssets(s.store)
+	chart, err := viewcharts.BuildAllAssets(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -75,7 +75,7 @@ func (s *Server) chartAssets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) chartTypes(w http.ResponseWriter, r *http.Request) {
-	chart, err := viewcharts.BuildAllTypes(s.store)
+	chart, err := viewcharts.BuildAllTypes(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return
@@ -84,7 +84,7 @@ func (s *Server) chartTypes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) chartTotal(w http.ResponseWriter, r *http.Request) {
-	chart, err := viewcharts.BuildTotal(s.store)
+	chart, err := viewcharts.BuildTotal(s.store, langOf(r))
 	if err != nil {
 		s.internalError(w, r, err)
 		return

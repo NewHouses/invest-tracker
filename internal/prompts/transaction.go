@@ -2,20 +2,20 @@ package prompts
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 // SelectTransactionType pide ao usuario que escolla entre Compra (1) ou Venda (2).
 // Devolve isVenda = true se é venda, false se é compra. Re-pregunta ata válido.
 func SelectTransactionType(r *bufio.Reader, w io.Writer) (bool, error) {
-	fmt.Fprintln(w, "Tipo de transacción:")
-	fmt.Fprintln(w, "  [1] Compra")
-	fmt.Fprintln(w, "  [2] Venda")
+	i18n.Fprintln(w, "Tipo de transacción:")
+	i18n.Fprintln(w, "  [1] Compra")
+	i18n.Fprintln(w, "  [2] Venda")
 	for {
-		fmt.Fprint(w, "> ")
+		i18n.Fprint(w, "> ")
 		line, err := ReadLine(r)
 		if err != nil {
 			return false, err
@@ -26,7 +26,7 @@ func SelectTransactionType(r *bufio.Reader, w io.Writer) (bool, error) {
 		case "2":
 			return true, nil
 		}
-		fmt.Fprintln(w, "⚠ Tipo non válido, escolle 1 (compra) ou 2 (venda)")
+		i18n.Fprintln(w, "⚠ Tipo non válido, escolle 1 (compra) ou 2 (venda)")
 	}
 }
 
@@ -47,7 +47,7 @@ func DateNotBefore(r *bufio.Reader, w io.Writer, minMonth, minYear int) (int, in
 		if !date.Before(minDate) {
 			return month, year, nil
 		}
-		fmt.Fprintf(w, "⚠ A transacción non pode ser anterior á data do activo (%02d/%d). Tenta de novo.\n",
+		i18n.Fprintf(w, "⚠ A transacción non pode ser anterior á data do activo (%02d/%d). Tenta de novo.\n",
 			minMonth, minYear)
 	}
 }

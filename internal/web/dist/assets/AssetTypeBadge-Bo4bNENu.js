@@ -1,1 +1,0 @@
-import{U as e}from"./Title-C8WO4dsr.js";import{t}from"./Badge-D-BX2MbY.js";import{t as n}from"./meta-BMd9puUl.js";var r=e(),i={accion:`blue`,indice:`teal`,copy_trading:`orange`,fondo:`grape`};function a(e){return i[e]}function o({type:e,variant:i=`light`,...o}){let s=n();return(0,r.jsx)(t,{color:a(e),variant:i,...o,children:s(e)})}export{o as t};

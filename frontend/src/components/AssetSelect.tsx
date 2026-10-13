@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useAssets } from '@/api/assets'
 import { useAssetTypeLabel } from '@/api/meta'
 import type { Asset, AssetType } from '@/api/types'
+import { t } from '@/i18n'
 
 type AssetSelectProps = {
   value: number | null
@@ -34,8 +35,8 @@ export function AssetSelect({ value, onChange, typeFilter, assets, placeholder, 
       value={value === null ? null : String(value)}
       onChange={(v) => onChange(v === null ? null : Number(v))}
       searchable
-      nothingFoundMessage="Non hai ativos"
-      placeholder={placeholder ?? (assets === undefined && all.isLoading ? 'Cargando…' : 'Escolle un ativo')}
+      nothingFoundMessage={t('Non hai activos')}
+      placeholder={placeholder ?? (assets === undefined && all.isLoading ? t('Cargando…') : t('Escolle un activo'))}
       {...props}
     />
   )

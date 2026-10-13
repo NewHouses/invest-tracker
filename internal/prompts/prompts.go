@@ -3,13 +3,13 @@ package prompts
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"strconv"
 	"strings"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 // ErrCancelled é un sentinel devolto por ReadLine cando o usuario escribe
@@ -39,12 +39,12 @@ func ReadLine(r *bufio.Reader) (string, error) {
 
 func isCancelSentinel(s string) bool {
 	low := strings.ToLower(s)
-	return low == ":q" || low == "cancelar"
+	return low == ":q" || low == "cancelar" || low == "cancel"
 }
 
 func Amount(r *bufio.Reader, w io.Writer) (float64, error) {
 	for {
-		fmt.Fprint(w, "Cantidade (USD): ")
+		i18n.Fprint(w, "Cantidade (USD): ")
 		line, err := ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -53,7 +53,7 @@ func Amount(r *bufio.Reader, w io.Writer) (float64, error) {
 		if perr == nil && domain.ValidAmount(v) {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ca 0")
+		i18n.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ca 0")
 	}
 }
 
@@ -62,7 +62,7 @@ func Amount(r *bufio.Reader, w io.Writer) (float64, error) {
 // ou non numéricos, re-preguntando ata obter un valor válido.
 func NonNegativeAmount(r *bufio.Reader, w io.Writer, label string) (float64, error) {
 	for {
-		fmt.Fprintf(w, "%s: ", label)
+		i18n.Fprintf(w, "%s: ", i18n.T(label))
 		line, err := ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -71,7 +71,7 @@ func NonNegativeAmount(r *bufio.Reader, w io.Writer, label string) (float64, err
 		if perr == nil && domain.ValidNonNegativeAmount(v) {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ou igual a 0")
+		i18n.Fprintln(w, "⚠ Cantidade non válida, debe ser un número maior ou igual a 0")
 	}
 }
 
@@ -80,7 +80,7 @@ func NonNegativeAmount(r *bufio.Reader, w io.Writer, label string) (float64, err
 // valores estritamente maiores ca minPct (expresado tamén en porcentaxe).
 func Percent(r *bufio.Reader, w io.Writer, label string, minPct float64) (float64, error) {
 	for {
-		fmt.Fprintf(w, "%s: ", label)
+		i18n.Fprintf(w, "%s: ", i18n.T(label))
 		line, err := ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -89,7 +89,7 @@ func Percent(r *bufio.Reader, w io.Writer, label string, minPct float64) (float6
 		if perr == nil && v > minPct && !math.IsNaN(v) && !math.IsInf(v, 0) {
 			return v / 100, nil
 		}
-		fmt.Fprintf(w, "⚠ Porcentaxe non válida, debe ser un número maior ca %g%%\n", minPct)
+		i18n.Fprintf(w, "⚠ Porcentaxe non válida, debe ser un número maior ca %g%%\n", minPct)
 	}
 }
 
@@ -101,7 +101,7 @@ func parseDecimal(s string) (float64, error) {
 
 func Month(r *bufio.Reader, w io.Writer) (int, error) {
 	for {
-		fmt.Fprint(w, "Mes (1-12): ")
+		i18n.Fprint(w, "Mes (1-12): ")
 		line, err := ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -110,13 +110,13 @@ func Month(r *bufio.Reader, w io.Writer) (int, error) {
 		if perr == nil && domain.ValidMonth(v) {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Mes non válido, debe estar entre 1 e 12")
+		i18n.Fprintln(w, "⚠ Mes non válido, debe estar entre 1 e 12")
 	}
 }
 
 func Year(r *bufio.Reader, w io.Writer) (int, error) {
 	for {
-		fmt.Fprint(w, "Ano: ")
+		i18n.Fprint(w, "Ano: ")
 		line, err := ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -125,6 +125,6 @@ func Year(r *bufio.Reader, w io.Writer) (int, error) {
 		if perr == nil && domain.ValidYear(v) {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Ano non válido")
+		i18n.Fprintln(w, "⚠ Ano non válido")
 	}
 }

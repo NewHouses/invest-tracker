@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/viewtransactions"
 )
 
@@ -83,6 +84,7 @@ func (s *Server) listAssetTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createTransaction(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req transactionRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -94,7 +96,7 @@ func (s *Server) createTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	id, err := s.store.InsertTransaction(tx)
@@ -107,6 +109,7 @@ func (s *Server) createTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createTransactionBatch(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req transactionBatchRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -120,15 +123,15 @@ func (s *Server) createTransactionBatch(w http.ResponseWriter, r *http.Request) 
 	txs := make([]domain.Transaction, 0, len(req.Items))
 	for i, item := range req.Items {
 		prefix := fmt.Sprintf("items[%d].", i)
-		validateKindAmountDate(fields, prefix, item.Kind, item.AmountUSD, item.Year, item.Month)
+		validateKindAmountDate(fields, lang, prefix, item.Kind, item.AmountUSD, item.Year, item.Month)
 		if assetOK {
-			validateDateNotBefore(fields, prefix+"month", domain.YearMonth{Year: item.Year, Month: item.Month}, asset.Start())
+			validateDateNotBefore(fields, lang, prefix+"month", domain.YearMonth{Year: item.Year, Month: item.Month}, asset.Start())
 		}
 		amount, _ := signedTransactionAmount(item.Kind, item.AmountUSD)
 		txs = append(txs, domain.Transaction{AssetID: req.AssetID, AmountUSD: amount, Year: item.Year, Month: item.Month})
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	ids, err := s.store.InsertTransactions(txs)
@@ -140,9 +143,10 @@ func (s *Server) createTransactionBatch(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) listTransactionMonthAssets(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	assets, err := s.store.ListAssets()
@@ -162,34 +166,35 @@ func (s *Server) listTransactionMonthAssets(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) createTransactionMonth(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req transactionMonthRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	fields := map[string]string{}
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	period := domain.YearMonth{Year: req.Year, Month: req.Month}
 	seen := map[int64]bool{}
 	txs := make([]domain.Transaction, 0, len(req.Items))
 	for i, item := range req.Items {
 		prefix := fmt.Sprintf("items[%d].", i)
-		validateAmount(fields, prefix+"amountUsd", item.AmountUSD)
+		validateAmount(fields, lang, prefix+"amountUsd", item.AmountUSD)
 		asset, ok, failed := s.bodyAsset(w, r, fields, prefix+"assetId", item.AssetID)
 		if failed {
 			return
 		}
 		if seen[item.AssetID] {
-			fields[prefix+"assetId"] = "o ativo está repetido"
+			fields[prefix+"assetId"] = lang.T("o activo está repetido")
 		}
 		seen[item.AssetID] = true
 		if ok && period.Valid() && !asset.CreatedBy(period) {
-			fields[prefix+"assetId"] = "o ativo creouse despois dese mes"
+			fields[prefix+"assetId"] = lang.T("o activo creouse despois dese mes")
 		}
 		txs = append(txs, domain.Transaction{AssetID: item.AssetID, AmountUSD: item.AmountUSD, Year: req.Year, Month: req.Month})
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	ids, err := s.store.InsertTransactions(txs)
@@ -201,6 +206,7 @@ func (s *Server) createTransactionMonth(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) updateTransaction(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	id, err := pathID(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -209,7 +215,7 @@ func (s *Server) updateTransaction(w http.ResponseWriter, r *http.Request) {
 	current, err := s.store.GetTransaction(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "transacción non atopada")
+			writeError(w, http.StatusNotFound, lang.T("transacción non atopada"))
 			return
 		}
 		s.internalError(w, r, err)
@@ -225,20 +231,20 @@ func (s *Server) updateTransaction(w http.ResponseWriter, r *http.Request) {
 	if failed {
 		return
 	}
-	validateKindAmountDate(fields, "", req.Kind, req.AmountUSD, req.Year, req.Month)
+	validateKindAmountDate(fields, lang, "", req.Kind, req.AmountUSD, req.Year, req.Month)
 	if assetOK {
-		validateDateNotBefore(fields, "month", domain.YearMonth{Year: req.Year, Month: req.Month}, asset.Start())
+		validateDateNotBefore(fields, lang, "month", domain.YearMonth{Year: req.Year, Month: req.Month}, asset.Start())
 	}
 	if len(fields) > 0 {
 		delete(fields, "assetId")
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	amount, _ := signedTransactionAmount(req.Kind, req.AmountUSD)
 	updated := domain.Transaction{ID: id, AssetID: current.AssetID, AmountUSD: amount, Year: req.Year, Month: req.Month}
 	if err := s.store.UpdateTransaction(updated); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "transacción non atopada")
+			writeError(w, http.StatusNotFound, lang.T("transacción non atopada"))
 			return
 		}
 		s.internalError(w, r, err)
@@ -248,6 +254,7 @@ func (s *Server) updateTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteTransaction(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	id, err := pathID(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -255,7 +262,7 @@ func (s *Server) deleteTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteTransaction(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "transacción non atopada")
+			writeError(w, http.StatusNotFound, lang.T("transacción non atopada"))
 			return
 		}
 		s.internalError(w, r, err)
@@ -265,13 +272,14 @@ func (s *Server) deleteTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) transactionFromRequest(w http.ResponseWriter, r *http.Request, fields map[string]string, prefix string, assetID int64, kind string, amount float64, year, month int) (domain.Transaction, bool, bool) {
+	lang := langOf(r)
 	asset, assetOK, failed := s.bodyAsset(w, r, fields, prefix+"assetId", assetID)
 	if failed {
 		return domain.Transaction{}, false, true
 	}
-	validateKindAmountDate(fields, prefix, kind, amount, year, month)
+	validateKindAmountDate(fields, lang, prefix, kind, amount, year, month)
 	if assetOK {
-		validateDateNotBefore(fields, prefix+"month", domain.YearMonth{Year: year, Month: month}, asset.Start())
+		validateDateNotBefore(fields, lang, prefix+"month", domain.YearMonth{Year: year, Month: month}, asset.Start())
 	}
 	if len(fields) > 0 {
 		return domain.Transaction{}, false, false
@@ -280,10 +288,10 @@ func (s *Server) transactionFromRequest(w http.ResponseWriter, r *http.Request, 
 	return domain.Transaction{AssetID: assetID, AmountUSD: stored, Year: year, Month: month}, true, false
 }
 
-func validateKindAmountDate(fields map[string]string, prefix, kind string, amount float64, year, month int) {
+func validateKindAmountDate(fields map[string]string, lang i18n.Lang, prefix, kind string, amount float64, year, month int) {
 	if _, ok := signedTransactionAmount(kind, amount); !ok {
-		fields[prefix+"kind"] = "o tipo de transacción debe ser compra ou venda"
+		fields[prefix+"kind"] = lang.T("o tipo de transacción debe ser compra ou venda")
 	}
-	validateAmount(fields, prefix+"amountUsd", amount)
-	validateYearMonth(fields, prefix+"year", prefix+"month", year, month)
+	validateAmount(fields, lang, prefix+"amountUsd", amount)
+	validateYearMonth(fields, lang, prefix+"year", prefix+"month", year, month)
 }

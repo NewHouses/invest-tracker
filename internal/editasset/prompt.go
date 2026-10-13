@@ -2,11 +2,11 @@ package editasset
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -23,14 +23,14 @@ const (
 )
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Editar activo ---\n")
+	i18n.Fprint(w, "\n--- Editar activo ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -39,7 +39,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 
-	fmt.Fprintf(w, "Activo seleccionado: %s — %s (%.2f USD, %02d/%d)\n",
+	i18n.Fprintf(w, "Activo seleccionado: %s — %s (%.2f USD, %02d/%d)\n",
 		chosen.Type.Display(), chosen.Name, chosen.AmountUSD, chosen.Month, chosen.Year)
 
 	field, err := promptFieldChoice(r, w)
@@ -68,10 +68,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		// eses movementos fóra dos totais sen avisar.
 		first, ok, err := repo.FirstMovementMonth(chosen.ID)
 		if err != nil {
-			return fmt.Errorf("comprobando os movementos do activo: %w", err)
+			return i18n.Errorf("comprobando os movementos do activo: %w", err)
 		}
 		if ok && first.Before(domain.YearMonth{Year: y, Month: m}) {
-			fmt.Fprintf(w, "⚠ A data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d). Non se cambiou nada.\n",
+			i18n.Fprintf(w, "⚠ A data non pode ser posterior á primeira transacción ou resultado do activo (%02d/%d). Non se cambiou nada.\n",
 				first.Month, first.Year)
 			return nil
 		}
@@ -86,22 +86,22 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	if err := repo.UpdateAsset(updated); err != nil {
-		return fmt.Errorf("actualizando activo: %w", err)
+		return i18n.Errorf("actualizando activo: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Activo #%d actualizado: %s — %s (%.2f USD, %02d/%d)\n",
+	i18n.Fprintf(w, "✓ Activo #%d actualizado: %s — %s (%.2f USD, %02d/%d)\n",
 		updated.ID, updated.Type.Display(), updated.Name, updated.AmountUSD,
 		updated.Month, updated.Year)
 	return nil
 }
 
 func promptFieldChoice(r *bufio.Reader, w io.Writer) (int, error) {
-	fmt.Fprintln(w, "Que campo queres editar?")
-	fmt.Fprintln(w, "  [1] Nome")
-	fmt.Fprintln(w, "  [2] Data (mes/ano)")
-	fmt.Fprintln(w, "  [3] Cantidade (USD)")
+	i18n.Fprintln(w, "Que campo queres editar?")
+	i18n.Fprintln(w, "  [1] Nome")
+	i18n.Fprintln(w, "  [2] Data (mes/ano)")
+	i18n.Fprintln(w, "  [3] Cantidade (USD)")
 	for {
-		fmt.Fprint(w, "> ")
+		i18n.Fprint(w, "> ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -110,13 +110,13 @@ func promptFieldChoice(r *bufio.Reader, w io.Writer) (int, error) {
 		if perr == nil && v >= 1 && v <= 3 {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Selección non válida, escolle 1-3")
+		i18n.Fprintln(w, "⚠ Selección non válida, escolle 1-3")
 	}
 }
 
 func promptNewName(r *bufio.Reader, w io.Writer) (string, error) {
 	for {
-		fmt.Fprint(w, "Novo nome: ")
+		i18n.Fprint(w, "Novo nome: ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return "", err
@@ -124,6 +124,6 @@ func promptNewName(r *bufio.Reader, w io.Writer) (string, error) {
 		if line != "" {
 			return line, nil
 		}
-		fmt.Fprintln(w, "⚠ O nome non pode estar baleiro")
+		i18n.Fprintln(w, "⚠ O nome non pode estar baleiro")
 	}
 }

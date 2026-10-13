@@ -13,3 +13,6 @@ Control de Investimentos para macOS
 Os datos gárdanse en ~/Library/Application Support/Control de Investimentos
 (investimentos.db). Se xa tiñas unha base de datos, cópiaa alí antes de abrir
 a app.
+
+A aplicación está en galego e en inglés: cambia o idioma co selector da parte
+superior da páxina ou en Axustes.

@@ -2,10 +2,10 @@ package addasset
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -14,7 +14,7 @@ type Saver interface {
 }
 
 func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
-	fmt.Fprint(w, "\n--- Engadir novo activo ---\n")
+	i18n.Fprint(w, "\n--- Engadir novo activo ---\n")
 
 	typ, err := prompts.SelectAssetType(r, w)
 	if err != nil {
@@ -46,17 +46,17 @@ func Run(r *bufio.Reader, w io.Writer, saver Saver) error {
 	}
 	id, err := saver.InsertAsset(a)
 	if err != nil {
-		return fmt.Errorf("gardando activo: %w", err)
+		return i18n.Errorf("gardando activo: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Activo gardado #%d: %s — %s — %.2f USD — %02d/%d\n",
+	i18n.Fprintf(w, "✓ Activo gardado #%d: %s — %s — %.2f USD — %02d/%d\n",
 		id, typ.Display(), name, amount, month, year)
 	return nil
 }
 
 func promptName(r *bufio.Reader, w io.Writer) (string, error) {
 	for {
-		fmt.Fprint(w, "Nome: ")
+		i18n.Fprint(w, "Nome: ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return "", err
@@ -64,6 +64,6 @@ func promptName(r *bufio.Reader, w io.Writer) (string, error) {
 		if line != "" {
 			return line, nil
 		}
-		fmt.Fprintln(w, "⚠ O nome non pode estar baleiro")
+		i18n.Fprintln(w, "⚠ O nome non pode estar baleiro")
 	}
 }

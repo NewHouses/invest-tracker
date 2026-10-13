@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -42,7 +43,7 @@ type AssetAllocation struct {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Repartir aporte mensual ---\n")
+	i18n.Fprint(w, "\n--- Repartir aporte mensual ---\n")
 
 	total, err := prompts.Amount(r, w)
 	if err != nil {
@@ -51,10 +52,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -69,7 +70,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	selection := make([]TypeSelection, 0, len(selectedTypes))
 	for _, t := range selectedTypes {
 		ofType := assetsByType(assets, t)
-		fmt.Fprintf(w, "\n→ %.2f USD a %s\n", amountPerType, t.Display())
+		i18n.Fprintf(w, "\n→ %.2f USD a %s\n", amountPerType, t.Display())
 		selectedAssets, err := promptSelectAssets(r, w, ofType)
 		if err != nil {
 			return err
@@ -77,7 +78,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		selection = append(selection, TypeSelection{Type: t, Assets: selectedAssets})
 	}
 
-	allocation, err := Allocate(total, selection)
+	allocation, err := Allocate(total, selection, i18n.Current())
 	if err != nil {
 		return err
 	}
@@ -100,24 +101,27 @@ func AvailableTypes(assets []domain.Asset) []domain.AssetType {
 	return out
 }
 
-func Allocate(total float64, selection []TypeSelection) (Allocation, error) {
+// Allocate reparte total a partes iguais entre os tipos seleccionados e,
+// dentro de cada tipo, entre os seus activos. As etiquetas e os erros van no
+// idioma lang.
+func Allocate(total float64, selection []TypeSelection, lang i18n.Lang) (Allocation, error) {
 	if total <= 0 || math.IsNaN(total) || math.IsInf(total, 0) {
-		return Allocation{}, fmt.Errorf("a cantidade total debe ser maior ca 0")
+		return Allocation{}, lang.Errorf("a cantidade total debe ser maior ca 0")
 	}
 	if len(selection) == 0 {
-		return Allocation{}, fmt.Errorf("debes seleccionar polo menos un tipo")
+		return Allocation{}, lang.Errorf("debes seleccionar polo menos un tipo")
 	}
 
 	amountPerType := total / float64(len(selection))
 	alloc := Allocation{Total: total, Types: make([]TypeAllocation, 0, len(selection))}
 	for _, sel := range selection {
 		if len(sel.Assets) == 0 {
-			return Allocation{}, fmt.Errorf("o tipo %s non ten activos seleccionados", sel.Type.Display())
+			return Allocation{}, lang.Errorf("o tipo %s non ten activos seleccionados", sel.Type.Label(lang))
 		}
 		amountPerAsset := amountPerType / float64(len(sel.Assets))
 		typeAlloc := TypeAllocation{
 			Type:   sel.Type,
-			Label:  sel.Type.Display(),
+			Label:  sel.Type.Label(lang),
 			Amount: amountPerType,
 			Assets: make([]AssetAllocation, 0, len(sel.Assets)),
 		}
@@ -140,19 +144,19 @@ func assetsByType(assets []domain.Asset, typ domain.AssetType) []domain.Asset {
 }
 
 func promptSelectTypes(r *bufio.Reader, w io.Writer, types []domain.AssetType) ([]domain.AssetType, error) {
-	fmt.Fprintln(w, "\nTipos dispoñibles:")
+	i18n.Fprintln(w, "\nTipos dispoñibles:")
 	for i, t := range types {
-		fmt.Fprintf(w, "  [%d] %s\n", i+1, t.Display())
+		i18n.Fprintf(w, "  [%d] %s\n", i+1, t.Display())
 	}
 	for {
-		fmt.Fprint(w, "Selecciona os tipos (separados por comas, e.g. 1,3): ")
+		i18n.Fprint(w, "Selecciona os tipos (separados por comas, e.g. 1,3): ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return nil, err
 		}
 		idxs, perr := parseIndices(line, len(types))
 		if perr != nil || len(idxs) == 0 {
-			fmt.Fprintln(w, "⚠ Selección non válida (escribe un ou máis números válidos separados por comas)")
+			i18n.Fprintln(w, "⚠ Selección non válida (escribe un ou máis números válidos separados por comas)")
 			continue
 		}
 		out := make([]domain.AssetType, 0, len(idxs))
@@ -165,17 +169,17 @@ func promptSelectTypes(r *bufio.Reader, w io.Writer, types []domain.AssetType) (
 
 func promptSelectAssets(r *bufio.Reader, w io.Writer, ofType []domain.Asset) ([]domain.Asset, error) {
 	for i, a := range ofType {
-		fmt.Fprintf(w, "  [%d] %s\n", i+1, a.Name)
+		i18n.Fprintf(w, "  [%d] %s\n", i+1, a.Name)
 	}
 	for {
-		fmt.Fprint(w, "Selecciona os activos (separados por comas, e.g. 1,2): ")
+		i18n.Fprint(w, "Selecciona os activos (separados por comas, e.g. 1,2): ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return nil, err
 		}
 		idxs, perr := parseIndices(line, len(ofType))
 		if perr != nil || len(idxs) == 0 {
-			fmt.Fprintln(w, "⚠ Selección non válida")
+			i18n.Fprintln(w, "⚠ Selección non válida")
 			continue
 		}
 		out := make([]domain.Asset, 0, len(idxs))
@@ -198,10 +202,10 @@ func parseIndices(input string, max int) ([]int, error) {
 	for _, f := range fields {
 		v, err := strconv.Atoi(f)
 		if err != nil {
-			return nil, fmt.Errorf("non é un número: %s", f)
+			return nil, i18n.Errorf("non é un número: %s", f)
 		}
 		if v < 1 || v > max {
-			return nil, fmt.Errorf("fóra de rango: %d", v)
+			return nil, i18n.Errorf("fóra de rango: %d", v)
 		}
 		if !seen[v] {
 			seen[v] = true
@@ -213,16 +217,16 @@ func parseIndices(input string, max int) ([]int, error) {
 
 func renderReport(w io.Writer, allocation Allocation) {
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Reparto de aporte mensual: %.2f USD\n", allocation.Total)
-	fmt.Fprintln(w, sep)
+	i18n.Fprintln(w, sep)
+	i18n.Fprintf(w, "  Reparto de aporte mensual: %.2f USD\n", allocation.Total)
+	i18n.Fprintln(w, sep)
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	for _, a := range allocation.Types {
-		fmt.Fprintf(tw, "  %s\t%.2f USD\n", a.Label, a.Amount)
+		i18n.Fprintf(tw, "  %s\t%.2f USD\n", a.Label, a.Amount)
 		for _, asset := range a.Assets {
-			fmt.Fprintf(tw, "    %s\t%.2f USD\n", asset.Asset.Name, asset.Amount)
+			i18n.Fprintf(tw, "    %s\t%.2f USD\n", asset.Asset.Name, asset.Amount)
 		}
 	}
 	tw.Flush()
-	fmt.Fprintln(w, sep)
+	i18n.Fprintln(w, sep)
 }

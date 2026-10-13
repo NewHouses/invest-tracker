@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProxeccionPage } from '@/pages/proxeccion/ProxeccionPage'
+import { setLanguage } from '@/i18n'
 import { installFetch, jsonResponse } from '@/test/fetchMock'
 import { renderWithProviders } from '@/test/utils'
 
@@ -38,7 +39,7 @@ describe('ProxeccionPage', () => {
   it('prefire os defaults de data e anos', async () => {
     installFetch({ '/api/tools/projection/defaults': defaults })
     renderWithProviders(<ProxeccionPage />)
-    expect(await screen.findByText('(ativo máis antigo)')).toBeInTheDocument()
+    expect(await screen.findByText('(activo máis antigo)')).toBeInTheDocument()
     expect(screen.getByLabelText('Anos a proxectar')).toHaveValue('20')
   })
 
@@ -50,7 +51,7 @@ describe('ProxeccionPage', () => {
     })
     const user = userEvent.setup()
     renderWithProviders(<ProxeccionPage />)
-    await screen.findByText('(ativo máis antigo)')
+    await screen.findByText('(activo máis antigo)')
     await user.type(screen.getByLabelText('Investimento inicial (USD)'), '1000')
     await user.type(screen.getByLabelText('Retorno mensual esperado (%)'), '1,5')
     await user.type(screen.getByLabelText('Aporte mensual (USD)'), '500')
@@ -113,10 +114,27 @@ describe('ProxeccionPage', () => {
     }))
     const user = userEvent.setup()
     renderWithProviders(<ProxeccionPage />)
-    await screen.findByText('(ativo máis antigo)')
+    await screen.findByText('(activo máis antigo)')
     await user.type(screen.getByLabelText('Aporte mensual (USD)'), '500')
     await user.click(screen.getByRole('button', { name: 'Engadir regra' }))
     await user.click(screen.getByRole('button', { name: 'Calcular proxección' }))
     expect(await screen.findByText('valor inválido')).toBeInTheDocument()
+  })
+
+  it('renderiza a proxección en inglés con formato inglés', async () => {
+    setLanguage('en')
+    installFetch({
+      '/api/tools/projection/defaults': defaults,
+      '/api/tools/projection': () => projectionResponse('contribution'),
+    })
+    const user = userEvent.setup()
+    renderWithProviders(<ProxeccionPage />)
+    expect(await screen.findByText('(oldest asset)')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Initial investment (USD)'), '1000')
+    await user.type(screen.getByLabelText('Expected monthly return (%)'), '1.5')
+    await user.type(screen.getByLabelText('Monthly contribution (USD)'), '500')
+    await user.click(screen.getByRole('button', { name: 'Calculate projection' }))
+    expect(await screen.findByText('Final capital')).toBeInTheDocument()
+    expect(screen.getAllByText(/\$1,522\.50/).length).toBeGreaterThan(0)
   })
 })

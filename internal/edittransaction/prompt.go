@@ -2,11 +2,11 @@ package edittransaction
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -23,14 +23,14 @@ const (
 )
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Editar unha transacción ---\n")
+	i18n.Fprint(w, "\n--- Editar unha transacción ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -41,10 +41,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	txs, err := repo.ListTransactionsByAsset(chosenAsset.ID)
 	if err != nil {
-		return fmt.Errorf("listando transaccións: %w", err)
+		return i18n.Errorf("listando transaccións: %w", err)
 	}
 	if len(txs) == 0 {
-		fmt.Fprintln(w, "Este activo non ten transaccións extras rexistradas.")
+		i18n.Fprintln(w, "Este activo non ten transaccións extras rexistradas.")
 		return nil
 	}
 
@@ -53,7 +53,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 		return err
 	}
 
-	fmt.Fprintf(w, "Transacción seleccionada: %s\n", describeTx(chosenTx))
+	i18n.Fprintf(w, "Transacción seleccionada: %s\n", describeTx(chosenTx))
 
 	field, err := promptFieldChoice(r, w)
 	if err != nil {
@@ -98,20 +98,20 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 
 	if err := repo.UpdateTransaction(updated); err != nil {
-		return fmt.Errorf("actualizando transacción: %w", err)
+		return i18n.Errorf("actualizando transacción: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Transacción #%d actualizada: %s\n", updated.ID, describeTx(updated))
+	i18n.Fprintf(w, "✓ Transacción #%d actualizada: %s\n", updated.ID, describeTx(updated))
 	return nil
 }
 
 func promptTransactionSelection(r *bufio.Reader, w io.Writer, asset domain.Asset, txs []domain.Transaction) (domain.Transaction, error) {
-	fmt.Fprintf(w, "Transaccións de %s — %s:\n", asset.Type.Display(), asset.Name)
+	i18n.Fprintf(w, "Transaccións de %s — %s:\n", asset.Type.Display(), asset.Name)
 	for i, tx := range txs {
-		fmt.Fprintf(w, "  [%d] %s\n", i+1, describeTx(tx))
+		i18n.Fprintf(w, "  [%d] %s\n", i+1, describeTx(tx))
 	}
 	for {
-		fmt.Fprintf(w, "Selecciona a transacción a editar (1-%d): ", len(txs))
+		i18n.Fprintf(w, "Selecciona a transacción a editar (1-%d): ", len(txs))
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return domain.Transaction{}, err
@@ -120,17 +120,17 @@ func promptTransactionSelection(r *bufio.Reader, w io.Writer, asset domain.Asset
 		if perr == nil && idx >= 1 && idx <= len(txs) {
 			return txs[idx-1], nil
 		}
-		fmt.Fprintln(w, "⚠ Selección non válida")
+		i18n.Fprintln(w, "⚠ Selección non válida")
 	}
 }
 
 func promptFieldChoice(r *bufio.Reader, w io.Writer) (int, error) {
-	fmt.Fprintln(w, "Que campo queres editar?")
-	fmt.Fprintln(w, "  [1] Cantidade (USD)")
-	fmt.Fprintln(w, "  [2] Tipo (Compra/Venda)")
-	fmt.Fprintln(w, "  [3] Data (mes/ano)")
+	i18n.Fprintln(w, "Que campo queres editar?")
+	i18n.Fprintln(w, "  [1] Cantidade (USD)")
+	i18n.Fprintln(w, "  [2] Tipo (Compra/Venda)")
+	i18n.Fprintln(w, "  [3] Data (mes/ano)")
 	for {
-		fmt.Fprint(w, "> ")
+		i18n.Fprint(w, "> ")
 		line, err := prompts.ReadLine(r)
 		if err != nil {
 			return 0, err
@@ -139,7 +139,7 @@ func promptFieldChoice(r *bufio.Reader, w io.Writer) (int, error) {
 		if perr == nil && v >= 1 && v <= 3 {
 			return v, nil
 		}
-		fmt.Fprintln(w, "⚠ Selección non válida, escolle 1-3")
+		i18n.Fprintln(w, "⚠ Selección non válida, escolle 1-3")
 	}
 }
 
@@ -151,5 +151,5 @@ func describeTx(tx domain.Transaction) string {
 		amount = -amount
 		label = "VENDA"
 	}
-	return fmt.Sprintf("%02d/%d — %s %.2f USD", tx.Month, tx.Year, label, amount)
+	return i18n.Sprintf("%02d/%d — %s %.2f USD", tx.Month, tx.Year, i18n.T(label), amount)
 }

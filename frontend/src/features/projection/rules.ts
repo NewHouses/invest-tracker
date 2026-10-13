@@ -3,6 +3,7 @@ import type { YearMonth } from '@/api/types'
 import { formatNumber, formatUSD, formatYearMonth } from '@/lib/format'
 import { addMonths } from '@/lib/yearMonth'
 import { parseNumber } from '@/features/shared/formErrors'
+import { t } from '@/i18n'
 
 export type RuleFrequencyUnit = 'once' | 'months' | 'years'
 
@@ -73,19 +74,19 @@ export function formRuleToRule(rule: GrowthRuleFormValue): GrowthRule {
 }
 
 function recurrenceText(rule: GrowthRule) {
-  if (rule.everyMonths === 0) return `unha vez en ${formatYearMonth(rule.from)}`
-  if (rule.everyMonths === 12) return `cada ano desde ${formatYearMonth(rule.from)}`
+  if (rule.everyMonths === 0) return t('unha vez en {period}', { period: formatYearMonth(rule.from) })
+  if (rule.everyMonths === 12) return t('cada ano desde {period}', { period: formatYearMonth(rule.from) })
   if (rule.everyMonths % 12 === 0) {
     const years = rule.everyMonths / 12
-    return `cada ${formatNumber(years, 0)} anos desde ${formatYearMonth(rule.from)}`
+    return t('cada {count} anos desde {period}', { count: formatNumber(years, 0), period: formatYearMonth(rule.from) })
   }
-  return `cada ${formatNumber(rule.everyMonths, 0)} meses desde ${formatYearMonth(rule.from)}`
+  return t('cada {count} meses desde {period}', { count: formatNumber(rule.everyMonths, 0), period: formatYearMonth(rule.from) })
 }
 
 export function describeRule(rule: GrowthRuleFormValue) {
-  if (!rule.from) return 'Escolle desde que mes se aplica a regra'
+  if (!rule.from) return t('Escolle desde que mes se aplica a regra')
   const apiRule = formRuleToRule(rule)
-  if (!Number.isFinite(apiRule.value)) return `Indica o valor da regra (${recurrenceText(apiRule)})`
+  if (!Number.isFinite(apiRule.value)) return t('Indica o valor da regra ({recurrence})', { recurrence: recurrenceText(apiRule) })
   const sign = apiRule.value < 0 ? '−' : '+'
   const abs = Math.abs(apiRule.value)
   const value = apiRule.kind === 'fixed' ? formatUSD(abs) : `${formatNumber(abs, Number.isInteger(abs) ? 0 : 2)} %`

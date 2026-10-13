@@ -2,10 +2,10 @@ package addtransaction
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/prompts"
 )
 
@@ -15,14 +15,14 @@ type Repo interface {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Engadir nova transacción ---\n")
+	i18n.Fprint(w, "\n--- Engadir nova transacción ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -30,7 +30,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "Sobre %s — %s\n", chosen.Type.Display(), chosen.Name)
+	i18n.Fprintf(w, "Sobre %s — %s\n", chosen.Type.Display(), chosen.Name)
 
 	isVenda, err := prompts.SelectTransactionType(r, w)
 	if err != nil {
@@ -61,10 +61,10 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 	}
 	id, err := repo.InsertTransaction(tx)
 	if err != nil {
-		return fmt.Errorf("gardando transacción: %w", err)
+		return i18n.Errorf("gardando transacción: %w", err)
 	}
 
-	fmt.Fprintf(w, "✓ Transacción gardada #%d sobre %s — %s: %s %.2f USD — %02d/%d\n",
-		id, chosen.Type.Display(), chosen.Name, typeLabel, amount, month, year)
+	i18n.Fprintf(w, "✓ Transacción gardada #%d sobre %s — %s: %s %.2f USD — %02d/%d\n",
+		id, chosen.Type.Display(), chosen.Name, i18n.T(typeLabel), amount, month, year)
 	return nil
 }

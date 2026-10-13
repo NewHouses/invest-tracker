@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
@@ -35,14 +36,14 @@ type Totals struct {
 }
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprint(w, "\n--- Transaccións dun activo ---\n")
+	i18n.Fprint(w, "\n--- Transaccións dun activo ---\n")
 
 	assets, err := repo.ListAssets()
 	if err != nil {
-		return fmt.Errorf("listando activos: %w", err)
+		return i18n.Errorf("listando activos: %w", err)
 	}
 	if len(assets) == 0 {
-		fmt.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
+		i18n.Fprintln(w, "Aínda non hai activos. Engade un primeiro coa operación 'Engadir activo'.")
 		return nil
 	}
 
@@ -53,7 +54,7 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 
 	txs, err := repo.ListTransactionsByAsset(chosen.ID)
 	if err != nil {
-		return fmt.Errorf("listando transaccións: %w", err)
+		return i18n.Errorf("listando transaccións: %w", err)
 	}
 
 	rows := BuildRows(chosen, txs)
@@ -120,23 +121,23 @@ func renderTable(w io.Writer, asset domain.Asset, rows []Row) {
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Transaccións de %s — %s\n", asset.Type.Display(), asset.Name)
+	i18n.Fprintf(w, "  Transaccións de %s — %s\n", asset.Type.Display(), asset.Name)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Total: %d entradas (incluíndo a compra inicial)\n", len(rows))
-	fmt.Fprintf(w, "  Compras: %s · Vendas: %s · Neto: %s\n",
+	i18n.Fprintf(w, "  Total: %d entradas (incluíndo a compra inicial)\n", len(rows))
+	i18n.Fprintf(w, "  Compras: %s · Vendas: %s · Neto: %s\n",
 		money.USD(totals.Compra), money.USD(totals.Venda), money.SignedUSD(totals.Neto))
 	fmt.Fprintln(w, sep)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "  ID\tAno\tMes\tCompra/Venda\tCantidade\t")
+	i18n.Fprintln(tw, "  ID\tAno\tMes\tCompra/Venda\tCantidade\t")
 	for _, row := range rows {
 		idStr := fmt.Sprintf("%d", row.ID)
 		if row.IsInitial {
 			idStr = "—"
 		}
-		typeLabel := "COMPRA"
+		typeLabel := i18n.T("COMPRA")
 		if row.IsVenda {
-			typeLabel = "VENDA"
+			typeLabel = i18n.T("VENDA")
 		}
 		fmt.Fprintf(tw, "  %s\t%d\t%d\t%s\t%s\t\n",
 			idStr, row.Year, row.Month, typeLabel, money.USD(row.Amount),

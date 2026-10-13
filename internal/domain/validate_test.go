@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 func TestValidMonth(t *testing.T) {
@@ -201,5 +202,20 @@ func TestJSONTagsAssetAndYearMonth(t *testing.T) {
 	}
 	if decodedDate != date {
 		t.Errorf("YearMonth tras round-trip = %+v, esperabamos %+v", decodedDate, date)
+	}
+}
+
+func TestAssetTypeLabels(t *testing.T) {
+	for _, typ := range domain.AssetTypes() {
+		gl, en := typ.Label(i18n.Galician), typ.Label(i18n.English)
+		if gl == "" || en == "" || gl == en {
+			t.Errorf("%s: galego %q, inglés %q", typ, gl, en)
+		}
+	}
+	if got := domain.Fondo.Label(i18n.English); got != "Fund" {
+		t.Errorf("Fondo en inglés = %q, esperabamos Fund", got)
+	}
+	if got := domain.Accion.Display(); got != "Acción" {
+		t.Errorf("Display co idioma por defecto = %q, esperabamos Acción", got)
 	}
 }

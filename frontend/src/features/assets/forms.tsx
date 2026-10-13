@@ -7,6 +7,8 @@ import type { Asset, AssetType, YearMonth } from '@/api/types'
 import { AssetTypeSelect } from '@/components/AssetTypeSelect'
 import { YearMonthInput } from '@/components/YearMonthInput'
 import { fieldErrorMap, parseNumber } from '@/features/shared/formErrors'
+import { t } from '@/i18n'
+import { numberInputSeparators } from '@/lib/format'
 import { currentYearMonth } from '@/lib/yearMonth'
 
 type AssetFormValues = {
@@ -28,10 +30,10 @@ export function CreateAssetForm({ submitting, error, onSubmit }: CreateAssetForm
   const form = useForm<AssetFormValues>({
     initialValues: { type: null, name: '', amountUsd: '', period: currentYearMonth() },
     validate: {
-      type: (value) => (value ? null : 'Escolle un tipo'),
-      name: (value) => (value.trim() ? null : 'O nome non pode estar baleiro'),
-      amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
-      period: (value) => (value ? null : 'Escolle un mes'),
+      type: (value) => (value ? null : t('Escolle un tipo')),
+      name: (value) => (value.trim() ? null : t('O nome non pode estar baleiro')),
+      amountUsd: (value) => (parseNumber(value) > 0 ? null : t('O importe debe ser maior ca 0')),
+      period: (value) => (value ? null : t('Escolle un mes')),
     },
   })
 
@@ -57,12 +59,12 @@ export function CreateAssetForm({ submitting, error, onSubmit }: CreateAssetForm
       })}
     >
       <Stack>
-        <AssetTypeSelect label="Tipo" required value={form.values.type} onChange={(value) => form.setFieldValue('type', value)} error={form.errors.type} />
-        <TextInput label="Nome" required maxLength={100} {...form.getInputProps('name')} />
-        <NumberInput label="Importe inicial" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
-        <YearMonthInput label="Data inicial" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
+        <AssetTypeSelect label={t('Tipo')} required value={form.values.type} onChange={(value) => form.setFieldValue('type', value)} error={form.errors.type} />
+        <TextInput label={t('Nome')} required maxLength={100} {...form.getInputProps('name')} />
+        <NumberInput label={t('Importe inicial')} required min={0} {...numberInputSeparators()} {...form.getInputProps('amountUsd')} />
+        <YearMonthInput label={t('Data inicial')} required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
         <Group justify="flex-end">
-          <Button type="submit" loading={submitting ?? false}>Gardar ativo</Button>
+          <Button type="submit" loading={submitting ?? false}>{t('Gardar activo')}</Button>
         </Group>
       </Stack>
     </form>
@@ -81,9 +83,9 @@ export function EditAssetForm({ asset, typeLabel, submitting, error, onSubmit }:
   const form = useForm<AssetFormValues>({
     initialValues: { type: asset.type, name: asset.name, amountUsd: asset.amountUsd, period: { year: asset.year, month: asset.month } },
     validate: {
-      name: (value) => (value.trim() ? null : 'O nome non pode estar baleiro'),
-      amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
-      period: (value) => (value ? null : 'Escolle un mes'),
+      name: (value) => (value.trim() ? null : t('O nome non pode estar baleiro')),
+      amountUsd: (value) => (parseNumber(value) > 0 ? null : t('O importe debe ser maior ca 0')),
+      period: (value) => (value ? null : t('Escolle un mes')),
     },
   })
 
@@ -107,12 +109,12 @@ export function EditAssetForm({ asset, typeLabel, submitting, error, onSubmit }:
       })}
     >
       <Stack>
-        <TextInput label="Tipo" value={typeLabel} readOnly />
-        <TextInput label="Nome" required maxLength={100} {...form.getInputProps('name')} />
-        <NumberInput label="Importe inicial" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
-        <YearMonthInput label="Data inicial" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
+        <TextInput label={t('Tipo')} value={typeLabel} readOnly />
+        <TextInput label={t('Nome')} required maxLength={100} {...form.getInputProps('name')} />
+        <NumberInput label={t('Importe inicial')} required min={0} {...numberInputSeparators()} {...form.getInputProps('amountUsd')} />
+        <YearMonthInput label={t('Data inicial')} required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
         <Group justify="flex-end">
-          <Button type="submit" loading={submitting ?? false}>Gardar ativo</Button>
+          <Button type="submit" loading={submitting ?? false}>{t('Gardar activo')}</Button>
         </Group>
       </Stack>
     </form>

@@ -26,11 +26,12 @@ import { AssetHistoryPanel } from '@/features/reports/AssetHistoryPanel'
 import { TransactionForm } from '@/features/transactions/TransactionForm'
 import { RowActions } from '@/features/shared/RowActions'
 import { formatPeriod } from '@/features/shared/PeriodCell'
+import { t } from '@/i18n'
 import { formatYearMonth } from '@/lib/format'
 
 function txKind(row: AssetTransactionRow) {
-  if (row.isInitial) return 'Compra inicial'
-  return row.isVenda ? 'Venda' : 'Compra'
+  if (row.isInitial) return t('Compra inicial')
+  return row.isVenda ? t('Venda') : t('Compra')
 }
 
 export function ActivoDetailPage() {
@@ -48,9 +49,9 @@ export function ActivoDetailPage() {
   const [creatingTx, setCreatingTx] = useState(false)
   const [editingTx, setEditingTx] = useState<AssetTransactionRow | null>(null)
 
-  if (asset.isLoading) return <Loader aria-label="Cargando ativo" />
+  if (asset.isLoading) return <Loader aria-label={t('Cargando activo')} />
   if ((asset.error instanceof ApiError && asset.error.status === 404) || (!asset.isLoading && !asset.data)) {
-    return <EmptyState title="Ativo non atopado" action={<Button component={Link} to="/activos">Volver ao Portofolio</Button>} />
+    return <EmptyState title={t('Activo non atopado')} action={<Button component={Link} to="/activos">{t('Volver ao Portofolio')}</Button>} />
   }
   if (asset.error) return <ErrorAlert error={asset.error} />
 
@@ -62,22 +63,22 @@ export function ActivoDetailPage() {
       <PageHeader
         title={current.name}
         description={`${formatPeriod(current.year, current.month)} · ${typeLabel(current.type)}`}
-        actions={<Button component={Link} to="/activos" variant="light">Volver</Button>}
+        actions={<Button component={Link} to="/activos" variant="light">{t('Volver')}</Button>}
       />
       <Paper withBorder p="md" radius="md">
         <Group gap="md">
           <AssetTypeBadge type={current.type} />
-          <Text>Data inicial: {formatPeriod(current.year, current.month)}</Text>
-          <Text>Importe inicial: <MoneyText amount={current.amountUsd} /></Text>
+          <Text>{t('Data inicial: {period}', { period: formatPeriod(current.year, current.month) })}</Text>
+          <Text>{t('Importe inicial')}: <MoneyText amount={current.amountUsd} /></Text>
         </Group>
       </Paper>
 
       <Tabs defaultValue="historico">
         <Tabs.List>
-          <Tabs.Tab value="historico">Histórico</Tabs.Tab>
-          <Tabs.Tab value="transaccions">Transaccións</Tabs.Tab>
-          <Tabs.Tab value="resultados">Resultados</Tabs.Tab>
-          <Tabs.Tab value="grafica">Gráfica</Tabs.Tab>
+          <Tabs.Tab value="historico">{t('Histórico')}</Tabs.Tab>
+          <Tabs.Tab value="transaccions">{t('Transaccións')}</Tabs.Tab>
+          <Tabs.Tab value="resultados">{t('Resultados')}</Tabs.Tab>
+          <Tabs.Tab value="grafica">{t('Gráfica')}</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="historico" pt="md"><AssetHistoryPanel assetId={current.id} /></Tabs.Panel>
@@ -85,13 +86,13 @@ export function ActivoDetailPage() {
 
         <Tabs.Panel value="transaccions" pt="md">
           <Stack>
-            <Group justify="space-between"><Text fw={600}>Transaccións do ativo</Text><Button onClick={() => setCreatingTx(true)}>Nova transacción</Button></Group>
-            {transactions.isLoading ? <Loader aria-label="Cargando transaccións" /> : null}
+            <Group justify="space-between"><Text fw={600}>{t('Transaccións do activo')}</Text><Button onClick={() => setCreatingTx(true)}>{t('Nova transacción')}</Button></Group>
+            {transactions.isLoading ? <Loader aria-label={t('Cargando transaccións')} /> : null}
             {transactions.error ? <ErrorAlert error={transactions.error} /> : null}
             {transactions.data ? (
               <Paper withBorder radius="md">
                 <Table verticalSpacing="sm">
-                  <Table.Thead><Table.Tr><Table.Th>Data</Table.Th><Table.Th>Tipo</Table.Th><Table.Th>Importe</Table.Th><Table.Th ta="right">Accións</Table.Th></Table.Tr></Table.Thead>
+                  <Table.Thead><Table.Tr><Table.Th>{t('Data')}</Table.Th><Table.Th>{t('Tipo')}</Table.Th><Table.Th>{t('Importe')}</Table.Th><Table.Th ta="right">{t('Accións')}</Table.Th></Table.Tr></Table.Thead>
                   <Table.Tbody>
                     {transactions.data.rows.map((row) => (
                       <Table.Tr key={`${row.isInitial ? 'initial' : 'tx'}-${row.id}`}>
@@ -103,11 +104,11 @@ export function ActivoDetailPage() {
                             <RowActions
                               onEdit={() => setEditingTx(row)}
                               onDelete={() => openConfirmDelete({
-                                title: 'Eliminar transacción',
-                                message: `Eliminarase a transacción de ${formatPeriod(row.year, row.month)}.`,
+                                title: t('Eliminar transacción'),
+                                message: t('Eliminarase a transacción de {period}.', { period: formatPeriod(row.year, row.month) }),
                                 onConfirm: async () => {
                                   await deleteTransaction.mutateAsync(row.id)
-                                  notifications.show({ color: 'green', message: 'Transacción eliminada.' })
+                                  notifications.show({ color: 'green', message: t('Transacción eliminada.') })
                                 },
                               })}
                             />
@@ -117,9 +118,9 @@ export function ActivoDetailPage() {
                     ))}
                   </Table.Tbody>
                   <Table.Tfoot>
-                    <Table.Tr><Table.Th>Total compra</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.compra} /></Table.Th><Table.Th /></Table.Tr>
-                    <Table.Tr><Table.Th>Total venda</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.venda} /></Table.Th><Table.Th /></Table.Tr>
-                    <Table.Tr><Table.Th>Neto</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.neto} /></Table.Th><Table.Th /></Table.Tr>
+                    <Table.Tr><Table.Th>{t('Total compra')}</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.compra} /></Table.Th><Table.Th /></Table.Tr>
+                    <Table.Tr><Table.Th>{t('Total venda')}</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.venda} /></Table.Th><Table.Th /></Table.Tr>
+                    <Table.Tr><Table.Th>{t('Neto')}</Table.Th><Table.Th /><Table.Th><MoneyText amount={transactions.data.totals.neto} /></Table.Th><Table.Th /></Table.Tr>
                   </Table.Tfoot>
                 </Table>
               </Paper>
@@ -129,13 +130,13 @@ export function ActivoDetailPage() {
 
         <Tabs.Panel value="resultados" pt="md">
           <Stack>
-            {results.isLoading ? <Loader aria-label="Cargando resultados" /> : null}
+            {results.isLoading ? <Loader aria-label={t('Cargando resultados')} /> : null}
             {results.error ? <ErrorAlert error={results.error} /> : null}
-            {results.data && results.data.length === 0 ? <EmptyState title="Aínda non hai resultados rexistrados para este ativo." /> : null}
+            {results.data && results.data.length === 0 ? <EmptyState title={t('Aínda non hai resultados rexistrados para este activo.')} /> : null}
             {results.data && results.data.length > 0 ? (
               <Paper withBorder radius="md">
                 <Table verticalSpacing="sm">
-                  <Table.Thead><Table.Tr><Table.Th>Data</Table.Th><Table.Th>Resultado</Table.Th><Table.Th ta="right">Accións</Table.Th></Table.Tr></Table.Thead>
+                  <Table.Thead><Table.Tr><Table.Th>{t('Data')}</Table.Th><Table.Th>{t('Resultado')}</Table.Th><Table.Th ta="right">{t('Accións')}</Table.Th></Table.Tr></Table.Thead>
                   <Table.Tbody>
                     {results.data.map((result) => (
                       <Table.Tr key={result.id}>
@@ -144,11 +145,11 @@ export function ActivoDetailPage() {
                         <Table.Td>
                           <RowActions
                             onDelete={() => openConfirmDelete({
-                              title: 'Eliminar resultado',
-                              message: `Eliminarase o resultado de ${formatPeriod(result.year, result.month)}.`,
+                              title: t('Eliminar resultado'),
+                              message: t('Eliminarase o resultado de {period}.', { period: formatPeriod(result.year, result.month) }),
                               onConfirm: async () => {
                                 await deleteResult.mutateAsync(result.id)
-                                notifications.show({ color: 'green', message: 'Resultado eliminado.' })
+                                notifications.show({ color: 'green', message: t('Resultado eliminado.') })
                               },
                             })}
                           />
@@ -163,7 +164,7 @@ export function ActivoDetailPage() {
         </Tabs.Panel>
       </Tabs>
 
-      <Modal opened={creatingTx} onClose={() => setCreatingTx(false)} title="Nova transacción" transitionProps={{ duration: 0 }}>
+      <Modal opened={creatingTx} onClose={() => setCreatingTx(false)} title={t('Nova transacción')} transitionProps={{ duration: 0 }}>
         {createTransaction.error ? <ErrorAlert error={createTransaction.error} /> : null}
         <TransactionForm
           assetId={current.id}
@@ -172,14 +173,14 @@ export function ActivoDetailPage() {
           onSubmit={async (values) => {
             if (!('assetId' in values)) return
             await createTransaction.mutateAsync(values)
-            notifications.show({ color: 'green', message: 'Transacción gardada.' })
+            notifications.show({ color: 'green', message: t('Transacción gardada.') })
             setCreatingTx(false)
             createTransaction.reset()
           }}
         />
       </Modal>
 
-      <Modal opened={editingTx !== null} onClose={() => setEditingTx(null)} title="Editar transacción" transitionProps={{ duration: 0 }}>
+      <Modal opened={editingTx !== null} onClose={() => setEditingTx(null)} title={t('Editar transacción')} transitionProps={{ duration: 0 }}>
         {editingTx ? (
           <>
             {updateTransaction.error ? <ErrorAlert error={updateTransaction.error} /> : null}
@@ -190,7 +191,7 @@ export function ActivoDetailPage() {
               error={updateTransaction.error}
               onSubmit={async (values) => {
                 await updateTransaction.mutateAsync(values as Parameters<typeof updateTransaction.mutateAsync>[0])
-                notifications.show({ color: 'green', message: 'Transacción actualizada.' })
+                notifications.show({ color: 'green', message: t('Transacción actualizada.') })
                 setEditingTx(null)
                 updateTransaction.reset()
               }}

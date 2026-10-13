@@ -14,6 +14,8 @@ import { openConfirmDelete } from '@/components/ConfirmDelete'
 import { RowActions } from '@/features/shared/RowActions'
 import { fieldErrorMap, parseNumber } from '@/features/shared/formErrors'
 import { formatPeriod } from '@/features/shared/PeriodCell'
+import { t } from '@/i18n'
+import { numberInputSeparators } from '@/lib/format'
 import { currentYearMonth } from '@/lib/yearMonth'
 
 type Values = { amountUsd: number | string; period: YearMonth | null }
@@ -22,8 +24,8 @@ function DividendForm({ submitting, error, onSubmit }: { submitting?: boolean; e
   const form = useForm<Values>({
     initialValues: { amountUsd: '', period: currentYearMonth() },
     validate: {
-      amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
-      period: (value) => (value ? null : 'Escolle un mes'),
+      amountUsd: (value) => (parseNumber(value) > 0 ? null : t('O importe debe ser maior ca 0')),
+      period: (value) => (value ? null : t('Escolle un mes')),
     },
   })
 
@@ -41,9 +43,9 @@ function DividendForm({ submitting, error, onSubmit }: { submitting?: boolean; e
       })}
     >
       <Stack>
-        <NumberInput label="Importe" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
-        <YearMonthInput label="Mes" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
-        <Group justify="flex-end"><Button type="submit" loading={submitting ?? false}>Gardar dividendo</Button></Group>
+        <NumberInput label={t('Importe')} required min={0} {...numberInputSeparators()} {...form.getInputProps('amountUsd')} />
+        <YearMonthInput label={t('Mes')} required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
+        <Group justify="flex-end"><Button type="submit" loading={submitting ?? false}>{t('Gardar dividendo')}</Button></Group>
       </Stack>
     </form>
   )
@@ -59,14 +61,14 @@ export function DividendosPage() {
 
   return (
     <Stack>
-      <PageHeader title="Dividendos" description="Rexistra os dividendos cobrados." actions={<Button onClick={() => setOpened(true)}>Novo dividendo</Button>} />
-      {dividends.isLoading ? <Loader aria-label="Cargando dividendos" /> : null}
+      <PageHeader title={t('Dividendos')} description={t('Rexistra os dividendos cobrados.')} actions={<Button onClick={() => setOpened(true)}>{t('Novo dividendo')}</Button>} />
+      {dividends.isLoading ? <Loader aria-label={t('Cargando dividendos')} /> : null}
       {dividends.error ? <ErrorAlert error={dividends.error} /> : null}
-      {!dividends.isLoading && rows.length === 0 ? <EmptyState title="Aínda non hai dividendos rexistrados." action={<Button onClick={() => setOpened(true)}>Novo dividendo</Button>} /> : null}
+      {!dividends.isLoading && rows.length === 0 ? <EmptyState title={t('Aínda non hai dividendos rexistrados.')} action={<Button onClick={() => setOpened(true)}>{t('Novo dividendo')}</Button>} /> : null}
       {rows.length > 0 ? (
         <Paper withBorder radius="md">
           <Table verticalSpacing="sm">
-            <Table.Thead><Table.Tr><Table.Th>Data</Table.Th><Table.Th>Importe</Table.Th><Table.Th ta="right">Accións</Table.Th></Table.Tr></Table.Thead>
+            <Table.Thead><Table.Tr><Table.Th>{t('Data')}</Table.Th><Table.Th>{t('Importe')}</Table.Th><Table.Th ta="right">{t('Accións')}</Table.Th></Table.Tr></Table.Thead>
             <Table.Tbody>
               {rows.map((dividend) => (
                 <Table.Tr key={dividend.id}>
@@ -75,11 +77,11 @@ export function DividendosPage() {
                   <Table.Td>
                     <RowActions
                       onDelete={() => openConfirmDelete({
-                        title: 'Eliminar dividendo',
-                        message: `Eliminarase o dividendo de ${formatPeriod(dividend.year, dividend.month)}.`,
+                        title: t('Eliminar dividendo'),
+                        message: t('Eliminarase o dividendo de {period}.', { period: formatPeriod(dividend.year, dividend.month) }),
                         onConfirm: async () => {
                           await remove.mutateAsync(dividend.id)
-                          notifications.show({ color: 'green', message: 'Dividendo eliminado.' })
+                          notifications.show({ color: 'green', message: t('Dividendo eliminado.') })
                         },
                       })}
                     />
@@ -87,18 +89,18 @@ export function DividendosPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-            <Table.Tfoot><Table.Tr><Table.Th>Total</Table.Th><Table.Th><MoneyText amount={total} fw={700} /></Table.Th><Table.Th /></Table.Tr></Table.Tfoot>
+            <Table.Tfoot><Table.Tr><Table.Th>{t('Total')}</Table.Th><Table.Th><MoneyText amount={total} fw={700} /></Table.Th><Table.Th /></Table.Tr></Table.Tfoot>
           </Table>
         </Paper>
       ) : null}
-      <Modal opened={opened} onClose={() => setOpened(false)} title="Novo dividendo" transitionProps={{ duration: 0 }}>
+      <Modal opened={opened} onClose={() => setOpened(false)} title={t('Novo dividendo')} transitionProps={{ duration: 0 }}>
         {create.error ? <ErrorAlert error={create.error} /> : null}
         <DividendForm
           submitting={create.isPending}
           error={create.error}
           onSubmit={async (values) => {
             await create.mutateAsync(values)
-            notifications.show({ color: 'green', message: 'Dividendo gardado.' })
+            notifications.show({ color: 'green', message: t('Dividendo gardado.') })
             setOpened(false)
             create.reset()
           }}

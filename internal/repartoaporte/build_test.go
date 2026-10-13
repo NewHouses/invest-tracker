@@ -1,6 +1,7 @@
 package repartoaporte_test
 
 import (
+	"invest-tracker/internal/i18n"
 	"math"
 	"strings"
 	"testing"
@@ -35,7 +36,7 @@ func TestAllocate_RepartePorTipoEActivo(t *testing.T) {
 		{Type: domain.Indice, Assets: []domain.Asset{{ID: 12, Name: "Vanguard"}}},
 	}
 
-	got, err := repartoaporte.Allocate(1000, selection)
+	got, err := repartoaporte.Allocate(1000, selection, i18n.Galician)
 	if err != nil {
 		t.Fatalf("Allocate: %v", err)
 	}
@@ -67,7 +68,7 @@ func TestAllocate_ErrosDeValidacion(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := repartoaporte.Allocate(tc.total, tc.selection)
+			_, err := repartoaporte.Allocate(tc.total, tc.selection, i18n.Galician)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("erro = %v, queremos que conteña %q", err, tc.want)
 			}

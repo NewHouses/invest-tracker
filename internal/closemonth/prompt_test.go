@@ -10,6 +10,7 @@ import (
 
 	"invest-tracker/internal/closemonth"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 type summaryKey struct {
@@ -122,6 +123,28 @@ func TestRun_PrintsAssetCount(t *testing.T) {
 	}
 	if !strings.Contains(out, "2 activo(s) en 04/2026") {
 		t.Errorf("saída non contén o contador:\n%s", out)
+	}
+}
+
+func TestRun_PrintsEnglishWhenSelected(t *testing.T) {
+	i18n.SetCurrent(i18n.English)
+	defer i18n.SetCurrent(i18n.Galician)
+
+	sums := summariesFor(2026, 4, map[int64]float64{10: 1500})
+	out, _, err := runWith(threeAssets, sums, "4\n2026\n1800\n")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, want := range []string{
+		"Close month (results)",
+		"Month (1-12):",
+		"Results will be requested for 1 asset(s) in 04/2026.",
+		"(holding: 1500.00 USD)",
+		"✓ Closed 04/2026: 1 result(s) saved, 0 skipped.",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("saída inglesa non contén %q:\n%s", want, out)
+		}
 	}
 }
 

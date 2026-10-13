@@ -2,9 +2,9 @@ package store
 
 import (
 	"database/sql"
-	"fmt"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 func (s *Store) InsertDividend(d domain.Dividend) (int64, error) {
@@ -48,7 +48,7 @@ func (s *Store) DeleteDividend(id int64) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("dividendo id=%d: %w", id, sql.ErrNoRows)
+		return i18n.Errorf("dividendo id=%d: %w", id, sql.ErrNoRows)
 	}
 	return nil
 }

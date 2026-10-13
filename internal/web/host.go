@@ -15,10 +15,10 @@ func (s *Server) checkHost(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !allowedHost(r.Host, s.hostname) {
 			if isAPIPath(r.URL.Path) {
-				writeError(w, http.StatusForbidden, "enderezo non permitido: usa a IP do equipo ou localhost")
+				writeError(w, http.StatusForbidden, langOf(r).T("enderezo non permitido: usa a IP do equipo ou localhost"))
 				return
 			}
-			http.Error(w, "enderezo non permitido: usa a IP do equipo ou localhost", http.StatusForbidden)
+			http.Error(w, langOf(r).T("enderezo non permitido: usa a IP do equipo ou localhost"), http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -7,6 +7,8 @@ import type { YearMonth } from '@/api/types'
 import { AssetSelect } from '@/components/AssetSelect'
 import { YearMonthInput } from '@/components/YearMonthInput'
 import { fieldErrorMap, parseNumber } from '@/features/shared/formErrors'
+import { t } from '@/i18n'
+import { numberInputSeparators } from '@/lib/format'
 import { currentYearMonth } from '@/lib/yearMonth'
 
 type Values = {
@@ -25,7 +27,7 @@ type TransactionFormProps = {
   onSubmit: (values: TransactionInput | TransactionUpdateInput) => Promise<void> | void
 }
 
-export function TransactionForm({ assetId, initial, submitLabel = 'Gardar transacción', submitting, error, onSubmit }: TransactionFormProps) {
+export function TransactionForm({ assetId, initial, submitLabel, submitting, error, onSubmit }: TransactionFormProps) {
   const form = useForm<Values>({
     initialValues: {
       assetId: assetId ?? null,
@@ -34,9 +36,9 @@ export function TransactionForm({ assetId, initial, submitLabel = 'Gardar transa
       period: initial?.period ?? currentYearMonth(),
     },
     validate: {
-      assetId: (value) => (value ? null : 'Escolle un ativo'),
-      amountUsd: (value) => (parseNumber(value) > 0 ? null : 'O importe debe ser maior ca 0'),
-      period: (value) => (value ? null : 'Escolle un mes'),
+      assetId: (value) => (value ? null : t('Escolle un activo')),
+      amountUsd: (value) => (parseNumber(value) > 0 ? null : t('O importe debe ser maior ca 0')),
+      period: (value) => (value ? null : t('Escolle un mes')),
     },
   })
 
@@ -61,16 +63,16 @@ export function TransactionForm({ assetId, initial, submitLabel = 'Gardar transa
       })}
     >
       <Stack>
-        <AssetSelect label="Ativo" required disabled={assetId !== undefined} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
+        <AssetSelect label={t('Activo')} required disabled={assetId !== undefined} value={form.values.assetId} onChange={(value) => form.setFieldValue('assetId', value)} error={form.errors.assetId} />
         <SegmentedControl
-          aria-label="Tipo de transacción"
-          data={[{ label: 'Compra', value: 'compra' }, { label: 'Venda', value: 'venda' }]}
+          aria-label={t('Tipo de transacción')}
+          data={[{ label: t('Compra'), value: 'compra' }, { label: t('Venda'), value: 'venda' }]}
           {...form.getInputProps('kind')}
         />
-        <NumberInput label="Importe" required min={0} decimalSeparator="," thousandSeparator="." {...form.getInputProps('amountUsd')} />
-        <YearMonthInput label="Mes" required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
+        <NumberInput label={t('Importe')} required min={0} {...numberInputSeparators()} {...form.getInputProps('amountUsd')} />
+        <YearMonthInput label={t('Mes')} required value={form.values.period} onChange={(value) => form.setFieldValue('period', value)} error={form.errors.period} />
         <Group justify="flex-end">
-          <Button type="submit" loading={submitting ?? false}>{submitLabel}</Button>
+          <Button type="submit" loading={submitting ?? false}>{submitLabel ?? t('Gardar transacción')}</Button>
         </Group>
       </Stack>
     </form>

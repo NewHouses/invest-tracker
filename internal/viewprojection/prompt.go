@@ -14,6 +14,7 @@ import (
 	"invest-tracker/internal/charts"
 	"invest-tracker/internal/colors"
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/money"
 	"invest-tracker/internal/prompts"
 )
@@ -29,18 +30,18 @@ const sep = "===================================================================
 const chartWidth = 100
 
 func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
-	fmt.Fprintf(w, "\n--- Proxección a %d anos ---\n", domain.ProjectionYears)
+	i18n.Fprintf(w, "\n--- Proxección a %d anos ---\n", domain.ProjectionYears)
 
 	start, err := resolveStart(r, w, repo)
 	if err != nil {
 		return err
 	}
-	salary, err := prompts.NonNegativeAmount(r, w, "Salario anual inicial (USD)")
+	salary, err := prompts.NonNegativeAmount(r, w, i18n.T("Salario anual inicial (USD)"))
 	if err != nil {
 		return err
 	}
 	monthlyReturn, err := prompts.Percent(r, w,
-		"Retorno mensual esperado (%)", domain.MinMonthlyReturnPct)
+		i18n.T("Retorno mensual esperado (%)"), domain.MinMonthlyReturnPct)
 	if err != nil {
 		return err
 	}
@@ -66,14 +67,14 @@ func Run(r *bufio.Reader, w io.Writer, repo Repo) error {
 func resolveStart(r *bufio.Reader, w io.Writer, repo Repo) (domain.YearMonth, error) {
 	ym, ok, err := repo.FirstInvestmentMonth()
 	if err != nil {
-		return domain.YearMonth{}, fmt.Errorf("obtendo a data de inicio dos investimentos: %w", err)
+		return domain.YearMonth{}, i18n.Errorf("obtendo a data de inicio dos investimentos: %w", err)
 	}
 	if ok {
-		fmt.Fprintf(w, "Data de inicio dos investimentos: %02d/%d (activo máis antigo)\n",
+		i18n.Fprintf(w, "Data de inicio dos investimentos: %02d/%d (activo máis antigo)\n",
 			ym.Month, ym.Year)
 		return ym, nil
 	}
-	fmt.Fprintln(w, "Aínda non hai activos: indica a data de inicio dos investimentos.")
+	i18n.Fprintln(w, "Aínda non hai activos: indica a data de inicio dos investimentos.")
 	month, err := prompts.Month(r, w)
 	if err != nil {
 		return domain.YearMonth{}, err
@@ -94,20 +95,20 @@ func renderReport(w io.Writer, in domain.ProjectionInput, months []domain.Projec
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, sep)
-	fmt.Fprintf(w, "  Proxección a %d anos · %d meses · %02d/%d → %02d/%d\n",
+	i18n.Fprintf(w, "  Proxección a %d anos · %d meses · %02d/%d → %02d/%d\n",
 		domain.ProjectionYears, len(months),
 		first.Date.Month, first.Date.Year, last.Date.Month, last.Date.Year)
 	fmt.Fprintln(w, sep)
 
 	twH := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(twH, "  Salario anual inicial\t%s\n", money.USD(in.AnnualSalary))
-	fmt.Fprintf(twH, "  Retorno mensual esperado\t%+.4f%%\n", in.MonthlyReturn*100)
-	fmt.Fprintf(twH, "  Investimento mensual\t%.4f%% do salario mensual\n", domain.InvestmentRate*100)
-	fmt.Fprintf(twH, "  Subida salarial\t+%.2f%% cada setembro\n", domain.SalaryRaiseRate*100)
-	fmt.Fprintf(twH, "  Salario anual final\t%s\n", money.USD(last.AnnualSalary))
-	fmt.Fprintf(twH, "  Investimento total\t%s\n", money.USD(last.TotalInvested))
-	fmt.Fprintf(twH, "  Ganancias acumuladas\t%s\n", money.SignedUSD(last.TotalGains))
-	fmt.Fprintf(twH, "  Capital final\t%s\n", money.USD(last.TotalCapital))
+	i18n.Fprintf(twH, "  Salario anual inicial\t%s\n", money.USD(in.AnnualSalary))
+	i18n.Fprintf(twH, "  Retorno mensual esperado\t%+.4f%%\n", in.MonthlyReturn*100)
+	i18n.Fprintf(twH, "  Investimento mensual\t%.4f%% do salario mensual\n", domain.InvestmentRate*100)
+	i18n.Fprintf(twH, "  Subida salarial\t+%.2f%% cada setembro\n", domain.SalaryRaiseRate*100)
+	i18n.Fprintf(twH, "  Salario anual final\t%s\n", money.USD(last.AnnualSalary))
+	i18n.Fprintf(twH, "  Investimento total\t%s\n", money.USD(last.TotalInvested))
+	i18n.Fprintf(twH, "  Ganancias acumuladas\t%s\n", money.SignedUSD(last.TotalGains))
+	i18n.Fprintf(twH, "  Capital final\t%s\n", money.USD(last.TotalCapital))
 	twH.Flush()
 	fmt.Fprintln(w, sep)
 
@@ -130,18 +131,18 @@ func renderChart(w io.Writer, months []domain.ProjectionMonth) {
 		gains[i] = m.TotalGains
 	}
 	series := []charts.Series{
-		{Label: "Capital total", Values: capital},
-		{Label: "Investimento acumulado", Values: invested},
-		{Label: "Ganancias acumuladas", Values: gains},
+		{Label: i18n.T("Capital total"), Values: capital},
+		{Label: i18n.T("Investimento acumulado"), Values: invested},
+		{Label: i18n.T("Ganancias acumuladas"), Values: gains},
 	}
-	charts.RenderLineWidth(w, series, dates, "Evolución do patrimonio", chartWidth)
+	charts.RenderLineWidth(w, series, dates, i18n.T("Evolución do patrimonio"), chartWidth)
 	fmt.Fprintln(w)
 }
 
 func renderTable(w io.Writer, months []domain.ProjectionMonth) {
 	var tbuf bytes.Buffer
 	tw := tabwriter.NewWriter(&tbuf, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "  Mes\tData\tSalario anual\tSalario mensual\tInvest. mensual\t"+
+	i18n.Fprintln(tw, "  Mes\tData\tSalario anual\tSalario mensual\tInvest. mensual\t"+
 		"Invest. acumulado\tRendemento\tGanancias acum.\tCapital total\t")
 	for _, m := range months {
 		fmt.Fprintf(tw, "  %d\t%02d/%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",

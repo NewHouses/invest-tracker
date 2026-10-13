@@ -1,1 +1,0 @@
-import{c as e,l as t}from"./format-mA2pdrND.js";import{r as n}from"./index-D__DXBNG.js";function r(){return t({queryKey:e.assets.list,queryFn:({signal:e})=>n(`/api/assets`,{signal:e})})}function i(r){return t({queryKey:e.assets.detail(r??0),queryFn:({signal:e})=>n(`/api/assets/${r}`,{signal:e}),enabled:r!==null&&r>0})}export{r as n,i as t};

@@ -3,9 +3,9 @@ package store
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"invest-tracker/internal/domain"
+	"invest-tracker/internal/i18n"
 )
 
 func (s *Store) InsertAsset(a domain.Asset) (int64, error) {
@@ -28,7 +28,7 @@ func (s *Store) GetAsset(id int64) (domain.Asset, error) {
 	).Scan(&a.ID, &t, &a.Name, &a.AmountUSD, &a.Month, &a.Year)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Asset{}, fmt.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
+			return domain.Asset{}, i18n.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
 		}
 		return domain.Asset{}, err
 	}
@@ -110,7 +110,7 @@ func (s *Store) UpdateAsset(a domain.Asset) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("activo id=%d: %w", a.ID, sql.ErrNoRows)
+		return i18n.Errorf("activo id=%d: %w", a.ID, sql.ErrNoRows)
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func (s *Store) DeleteAsset(id int64) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
+		return i18n.Errorf("activo id=%d: %w", id, sql.ErrNoRows)
 	}
 	return tx.Commit()
 }

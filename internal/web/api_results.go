@@ -48,9 +48,10 @@ func (s *Server) registerResultRoutes() {
 }
 
 func (s *Server) listEligibleResults(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	items, err := closemonth.Eligible(s.store, period.Year, period.Month)
@@ -62,14 +63,15 @@ func (s *Server) listEligibleResults(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createResult(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req resultRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	fields := map[string]string{}
-	validateAmount(fields, "resultUsd", req.ResultUSD)
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	validateAmount(fields, lang, "resultUsd", req.ResultUSD)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	_, assetOK, failed := s.bodyAsset(w, r, fields, "assetId", req.AssetID)
 	if failed {
 		return
@@ -79,11 +81,11 @@ func (s *Server) createResult(w http.ResponseWriter, r *http.Request) {
 			s.internalError(w, r, err)
 			return
 		} else if !ok {
-			fields["assetId"] = "o ativo non ten capital investido nese mes"
+			fields["assetId"] = lang.T("o activo non ten capital investido nese mes")
 		}
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	result := domain.MonthlyResult{AssetID: req.AssetID, ResultUSD: req.ResultUSD, Year: req.Year, Month: req.Month}
@@ -97,13 +99,14 @@ func (s *Server) createResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) closeMonthResults(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	var req closeMonthRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	fields := map[string]string{}
-	validateYearMonth(fields, "year", "month", req.Year, req.Month)
+	validateYearMonth(fields, lang, "year", "month", req.Year, req.Month)
 	eligible := map[int64]bool{}
 	periodValid := domain.YearMonth{Year: req.Year, Month: req.Month}.Valid()
 	if periodValid {
@@ -120,20 +123,20 @@ func (s *Server) closeMonthResults(w http.ResponseWriter, r *http.Request) {
 	results := make([]domain.MonthlyResult, 0, len(req.Items))
 	for i, item := range req.Items {
 		prefix := fmt.Sprintf("items[%d].", i)
-		validateAmount(fields, prefix+"resultUsd", item.ResultUSD)
+		validateAmount(fields, lang, prefix+"resultUsd", item.ResultUSD)
 		if _, ok, failed := s.bodyAsset(w, r, fields, prefix+"assetId", item.AssetID); failed {
 			return
 		} else if ok && periodValid && !eligible[item.AssetID] {
-			fields[prefix+"assetId"] = "o ativo non ten capital investido nese mes"
+			fields[prefix+"assetId"] = lang.T("o activo non ten capital investido nese mes")
 		}
 		if seen[item.AssetID] {
-			fields[prefix+"assetId"] = "o ativo está repetido"
+			fields[prefix+"assetId"] = lang.T("o activo está repetido")
 		}
 		seen[item.AssetID] = true
 		results = append(results, domain.MonthlyResult{AssetID: item.AssetID, ResultUSD: item.ResultUSD, Year: req.Year, Month: req.Month})
 	}
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	ids, err := s.store.InsertMonthlyResults(results)
@@ -158,6 +161,7 @@ func (s *Server) listAssetResults(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteResult(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	id, err := pathID(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -165,7 +169,7 @@ func (s *Server) deleteResult(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteMonthlyResult(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "resultado non atopado")
+			writeError(w, http.StatusNotFound, lang.T("resultado non atopado"))
 			return
 		}
 		s.internalError(w, r, err)
@@ -175,9 +179,10 @@ func (s *Server) deleteResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteResultsByMonth(w http.ResponseWriter, r *http.Request) {
+	lang := langOf(r)
 	period, fields := queryYearMonth(r)
 	if len(fields) > 0 {
-		writeFieldErrors(w, fields)
+		writeFieldErrors(w, lang, fields)
 		return
 	}
 	deleted, err := s.store.DeleteMonthlyResultsByMonth(period.Year, period.Month)

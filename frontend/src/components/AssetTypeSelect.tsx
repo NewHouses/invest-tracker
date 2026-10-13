@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import { useMeta } from '@/api/meta'
 import type { AssetType } from '@/api/types'
+import { t } from '@/i18n'
 
 type AssetTypeSelectProps = {
   value: AssetType | null
@@ -26,7 +27,7 @@ export function AssetTypeSelect({ value, onChange, only, placeholder, ...props }
       data={options}
       value={value}
       onChange={(v) => onChange(options.find((t) => t.value === v)?.value ?? null)}
-      placeholder={placeholder ?? 'Escolle un tipo'}
+      placeholder={placeholder ?? t('Escolle un tipo')}
       {...props}
     />
   )

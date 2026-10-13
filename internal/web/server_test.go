@@ -17,6 +17,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"invest-tracker/internal/i18n"
 	"invest-tracker/internal/store"
 )
 
@@ -330,20 +331,22 @@ func TestMainBadFlag(t *testing.T) {
 }
 
 func TestWriteHelpers(t *testing.T) {
-	rr := httptest.NewRecorder()
-	writeFieldErrors(rr, map[string]string{"year": "mal"})
-	if rr.Code != http.StatusBadRequest {
-		t.Fatalf("código inesperado: %d", rr.Code)
-	}
-	var got apiError
-	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
-		t.Fatalf("JSON inválido: %v", err)
-	}
-	if got.Error != "datos non válidos" || got.Fields["year"] == "" {
-		t.Fatalf("resposta inesperada: %#v", got)
+	for lang, want := range map[i18n.Lang]string{i18n.Galician: "datos non válidos", i18n.English: "invalid data"} {
+		rr := httptest.NewRecorder()
+		writeFieldErrors(rr, lang, map[string]string{"year": "mal"})
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("código inesperado: %d", rr.Code)
+		}
+		var got apiError
+		if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+			t.Fatalf("JSON inválido: %v", err)
+		}
+		if got.Error != want || got.Fields["year"] == "" {
+			t.Fatalf("resposta inesperada en %s: %#v", lang, got)
+		}
 	}
 
-	rr = httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 	writeJSON(rr, http.StatusNoContent, map[string]string{"non": "vai"})
 	if rr.Body.Len() != 0 {
 		t.Fatalf("204 non debe ter corpo: %q", rr.Body.String())

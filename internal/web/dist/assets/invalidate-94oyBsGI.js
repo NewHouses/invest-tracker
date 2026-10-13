@@ -1,1 +1,0 @@
-import{c as e}from"./format-mA2pdrND.js";function t(t){let n=[e.assets.all,e.transactions.all,e.results.all,e.dividends.all,e.reports.all,e.charts.all,e.tools.all,e.portfolio,e.dashboard];return Promise.all(n.map(e=>t.invalidateQueries({queryKey:e})))}export{t};

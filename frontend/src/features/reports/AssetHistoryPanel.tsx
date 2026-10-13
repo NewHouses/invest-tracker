@@ -9,6 +9,7 @@ import { AssetTypeBadge } from '@/components/AssetTypeBadge'
 import { formatPct, formatSignedUSD, formatUSD, formatYearMonth } from '@/lib/format'
 import { useAssetHistoryReport } from '@/api/reports'
 import { KvTable, RowTint } from '@/components/ReportTable'
+import { t } from '@/i18n'
 
 function dash(value: boolean, render: () => string) {
   return value ? render() : '—'
@@ -25,10 +26,10 @@ function AssetTypeSummary({ history }: { history: AssetHistory | TypeHistory }) 
   return (
     <KvTable
       rows={[
-        { label: 'Total Aportado', value: formatUSD(history.totalInvested) },
-        { label: 'Índice Medio Mensual', value: dash(history.hasAverages, () => formatPct(history.avgIndexPct)) },
-        { label: 'Gañanzas/Perdas Medias Mensuais', value: dash(history.hasAverages, () => formatSignedUSD(history.avgGain)) },
-        { label: 'Total Gañanzas/Perdas', value: dash(history.hasTotalGain, () => formatSignedUSD(history.totalGain)) },
+        { label: t('Total Aportado'), value: formatUSD(history.totalInvested) },
+        { label: t('Índice Medio Mensual'), value: dash(history.hasAverages, () => formatPct(history.avgIndexPct)) },
+        { label: t('Gañanzas/Perdas Medias Mensuais'), value: dash(history.hasAverages, () => formatSignedUSD(history.avgGain)) },
+        { label: t('Total Gañanzas/Perdas'), value: dash(history.hasTotalGain, () => formatSignedUSD(history.totalGain)) },
       ]}
     />
   )
@@ -38,7 +39,7 @@ function CurrentMonthCell({ month }: { month: number }) {
   return (
     <Group gap="xs" wrap="nowrap">
       <Text span fs="italic">{month}</Text>
-      <Badge size="xs" variant="light">en curso</Badge>
+      <Badge size="xs" variant="light">{t('en curso')}</Badge>
     </Group>
   )
 }
@@ -46,7 +47,7 @@ function CurrentMonthCell({ month }: { month: number }) {
 function PendingRowsNote() {
   return (
     <Text c="dimmed" size="sm">
-      Aínda non hai resultados rexistrados; móstrase o mes en curso cos importes xa aportados.
+      {t('Aínda non hai resultados rexistrados; móstrase o mes en curso cos importes xa aportados.')}
     </Text>
   )
 }
@@ -71,13 +72,13 @@ function AssetTypeRows({ rows, current }: { rows: HistoryRow[]; current: History
     <Table withTableBorder striped highlightOnHover style={{ whiteSpace: 'nowrap' }}>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>Ano</Table.Th>
-          <Table.Th>Mes</Table.Th>
-          <Table.Th>Aporte Mensual</Table.Th>
-          <Table.Th>No ativo</Table.Th>
-          <Table.Th>Índice</Table.Th>
-          <Table.Th>G/P</Table.Th>
-          <Table.Th>Resultado</Table.Th>
+          <Table.Th>{t('Ano')}</Table.Th>
+          <Table.Th>{t('Mes')}</Table.Th>
+          <Table.Th>{t('Aporte Mensual')}</Table.Th>
+          <Table.Th>{t('No activo')}</Table.Th>
+          <Table.Th>{t('Índice')}</Table.Th>
+          <Table.Th>{t('G/P')}</Table.Th>
+          <Table.Th>{t('Resultado')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -101,14 +102,14 @@ function AssetTypeRows({ rows, current }: { rows: HistoryRow[]; current: History
 
 export function AssetHistoryView({ history }: { history: AssetHistory }) {
   if (history.rows.length === 0 && !history.current) {
-    return <EmptyState title="Aínda non hai resultados rexistrados para este ativo." description="Engade un coa operación 'Engadir resultado'." />
+    return <EmptyState title={t('Aínda non hai resultados rexistrados para este activo.')} description={t("Engade un coa operación 'Engadir resultado'.")} />
   }
   return (
     <Stack>
       <Group>
         <Title order={3}>{history.asset.name}</Title>
         <AssetTypeBadge type={history.asset.type} />
-        <Text c="dimmed">{history.rows.length} mes(es) con resultado</Text>
+        <Text c="dimmed">{t('{count} mes(es) con resultado', { count: history.rows.length })}</Text>
       </Group>
       <AssetTypeSummary history={history} />
       {history.rows.length === 0 ? <PendingRowsNote /> : null}
@@ -119,11 +120,11 @@ export function AssetHistoryView({ history }: { history: AssetHistory }) {
 
 export function TypeHistoryView({ history }: { history: TypeHistory }) {
   const typeLabel = useAssetTypeLabel()
-  if (history.assetCount === 0) return <EmptyState title={`Non hai ativos de tipo ${typeLabel(history.type)}.`} />
-  if (history.rows.length === 0 && !history.current) return <EmptyState title={`Aínda non hai resultados rexistrados para ativos de tipo ${typeLabel(history.type)}.`} />
+  if (history.assetCount === 0) return <EmptyState title={t('Non hai activos de tipo {type}.', { type: typeLabel(history.type) })} />
+  if (history.rows.length === 0 && !history.current) return <EmptyState title={t('Aínda non hai resultados rexistrados para activos de tipo {type}.', { type: typeLabel(history.type) })} />
   return (
     <Stack>
-      <Group><Title order={3}>{typeLabel(history.type)}</Title><Text c="dimmed">{history.assetCount} ativo(s) · {history.rows.length} mes(es) con resultado</Text></Group>
+      <Group><Title order={3}>{typeLabel(history.type)}</Title><Text c="dimmed">{t('{assetCount} activo(s) · {monthCount} mes(es) con resultado', { assetCount: history.assetCount, monthCount: history.rows.length })}</Text></Group>
       <AssetTypeSummary history={history} />
       {history.rows.length === 0 ? <PendingRowsNote /> : null}
       <AssetTypeRows rows={history.rows} current={history.current} />
@@ -147,30 +148,30 @@ function TotalCurrentRow({ row }: { row: TotalHistoryRow }) {
 }
 
 export function TotalHistoryView({ history }: { history: TotalHistory }) {
-  if (history.assetCount === 0 && !history.current) return <EmptyState title="Aínda non hai ativos." description="Engade un primeiro coa operación 'Engadir ativo'." />
-  if (history.rows.length === 0 && !history.current) return <EmptyState title="Aínda non hai resultados rexistrados." description="Engade resultados mensuais coa operación 'Engadir resultado' ou 'Pechar mes'." />
+  if (history.assetCount === 0 && !history.current) return <EmptyState title={t('Aínda non hai activos.')} description={t("Engade un primeiro coa operación 'Engadir activo'.")} />
+  if (history.rows.length === 0 && !history.current) return <EmptyState title={t('Aínda non hai resultados rexistrados.')} description={t("Engade resultados mensuais coa operación 'Engadir resultado' ou 'Pechar mes'.")} />
   return (
     <Stack>
       <KvTable rows={[
-        { label: 'Aporte histórico total', value: formatUSD(history.lifetimeAporte) },
-        { label: 'Índice Medio', value: dash(history.hasAverages, () => formatPct(history.avgIndexPct)) },
-        { label: 'G/P Media', value: dash(history.hasAverages, () => formatSignedUSD(history.avgGain)) },
-        { label: 'G/P Total', value: dash(history.hasTotalGain, () => formatSignedUSD(history.totalGain)) },
-        { label: 'Dividendos totais', value: formatUSD(history.totalDividends) },
+        { label: t('Aporte histórico total'), value: formatUSD(history.lifetimeAporte) },
+        { label: t('Índice Medio'), value: dash(history.hasAverages, () => formatPct(history.avgIndexPct)) },
+        { label: t('G/P Media'), value: dash(history.hasAverages, () => formatSignedUSD(history.avgGain)) },
+        { label: t('G/P Total'), value: dash(history.hasTotalGain, () => formatSignedUSD(history.totalGain)) },
+        { label: t('Dividendos totais'), value: formatUSD(history.totalDividends) },
       ]} />
       {history.rows.length === 0 ? <PendingRowsNote /> : null}
       <Table.ScrollContainer minWidth={720}>
       <Table withTableBorder striped highlightOnHover style={{ whiteSpace: 'nowrap' }}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Ano</Table.Th>
-            <Table.Th>Mes</Table.Th>
-            <Table.Th>Aporte Mensual</Table.Th>
-            <Table.Th>Fondos</Table.Th>
-            <Table.Th>Índice</Table.Th>
-            <Table.Th>G/P</Table.Th>
-            <Table.Th>Dividendos</Table.Th>
-            <Table.Th>Resultado</Table.Th>
+            <Table.Th>{t('Ano')}</Table.Th>
+            <Table.Th>{t('Mes')}</Table.Th>
+            <Table.Th>{t('Aporte Mensual')}</Table.Th>
+            <Table.Th>{t('Fondos')}</Table.Th>
+            <Table.Th>{t('Índice')}</Table.Th>
+            <Table.Th>{t('G/P')}</Table.Th>
+            <Table.Th>{t('Dividendos')}</Table.Th>
+            <Table.Th>{t('Resultado')}</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -194,7 +195,7 @@ export function TotalHistoryView({ history }: { history: TotalHistory }) {
   )
 }
 
-export function LoadingReport() { return <Loader aria-label="Cargando informe" /> }
+export function LoadingReport() { return <Loader aria-label={t('Cargando informe')} /> }
 
 export function ReportCard({ children }: { children: ReactNode }) {
   return <Paper withBorder p="md" radius="md"><Stack>{children}</Stack></Paper>
