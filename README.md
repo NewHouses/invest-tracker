@@ -4,7 +4,7 @@ Ferramenta para o seguimento mensual dunha carteira de investimentos en USD.
 Tes dúas formas de usala, que comparten a mesma base de datos (`investimentos.db`):
 
 - **Interface web**: no navegador do propio ordenador ou desde outros dispositivos
-  da rede local, como o móbil. Está protexida con contrasinal.
+  da rede local, como o móbil. Non ten contrasinal.
 - **Terminal (CLI)**: os menús de texto de sempre.
 
 > `investimentos.db` non se sube a GitHub (está en `.gitignore`): garda ti unha
@@ -64,14 +64,14 @@ Para parar o servidor, preme `Ctrl+C` na consola.
 
 Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú.
 
-## Contrasinal
+## Seguridade
 
-- **Primeiro arranque:** o contrasinal créase no navegador, e por seguridade só
-  desde o propio ordenador (`http://localhost:8080`).
-- **Cambialo:** en *Axustes*. Ao cambialo péchanse as sesións dos demais dispositivos.
-- **Esquecino:** executa `.\invest-tracker.exe web -reset-password` e volve
-  crealo desde o ordenador.
-- A conexión é HTTP simple: úsaa só nunha rede doméstica de confianza.
+- A web non ten contrasinal: mentres o servidor está aberto, calquera dispositivo
+  da túa rede local pode ver e cambiar os datos. Úsaa só nunha rede doméstica de
+  confianza; a conexión é HTTP simple.
+- Só se atenden peticións dirixidas á IP do equipo, a `localhost` ou ao nome do
+  equipo. Así unha páxina web maliciosa non pode chegar aos datos a través do
+  navegador.
 
 ## Acceso desde o móbil
 
@@ -79,7 +79,7 @@ Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú.
 2. A primeira vez, o Firewall de Windows pregunta se permite o acceso:
    acéptao **só para redes privadas**.
 3. No móbil, conectado á mesma wifi, abre o enderezo "Rede local" que mostra a
-   consola e inicia sesión.
+   consola.
 
 ## Desenvolvemento
 
@@ -101,8 +101,7 @@ npm run dev
 - `internal/store`: acceso a SQLite.
 - `internal/<operación>`: unha operación da CLI cada paquete. Exportan funcións
   `Build…` cos cálculos, que comparten a CLI e a web.
-- `internal/web`: servidor HTTP, API JSON (`/api`), autenticación e web embebida
-  (`dist/`).
+- `internal/web`: servidor HTTP, API JSON (`/api`) e web embebida (`dist/`).
 - `frontend/`: React + TypeScript + Mantine (Vite). Compílase en `internal/web/dist`.
 
 ## Tests

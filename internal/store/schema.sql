@@ -38,13 +38,7 @@ CREATE TABLE IF NOT EXISTS dividends (
     created_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS settings (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-    token_hash TEXT    PRIMARY KEY,
-    expires_at INTEGER NOT NULL,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
-);
+-- A web xa non ten contrasinal: bórranse as táboas que gardaban o hash do
+-- contrasinal e as sesións nas bases de datos de versións anteriores.
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS settings;

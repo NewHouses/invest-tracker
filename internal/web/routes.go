@@ -3,7 +3,6 @@ package web
 import "net/http"
 
 func (s *Server) routes() {
-	s.registerAuthRoutes()
 	s.registerMetaRoutes()
 	s.registerAssetRoutes()
 	s.registerTransactionRoutes()
@@ -20,9 +19,5 @@ func (s *Server) routes() {
 }
 
 func (s *Server) handleAPI(pattern string, h http.HandlerFunc) {
-	s.mux.Handle(pattern, s.requireSession(h))
-}
-
-func (s *Server) handlePublic(pattern string, h http.HandlerFunc) {
 	s.mux.HandleFunc(pattern, h)
 }

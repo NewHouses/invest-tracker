@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ApiError, apiFetch } from '@/api/client'
+import { apiFetch } from '@/api/client'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -11,17 +11,17 @@ describe('apiFetch', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        new Response(JSON.stringify({ error: 'Erro de validación', fields: { password: 'Curto' } }), {
+        new Response(JSON.stringify({ error: 'datos non válidos', fields: { amountUsd: 'o importe debe ser un número maior ca 0' } }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         }),
       ),
     )
 
-    await expect(apiFetch('/api/auth/setup', { method: 'POST', body: { password: 'x' } })).rejects.toMatchObject({
+    await expect(apiFetch('/api/dividends', { method: 'POST', body: { amountUsd: 0, year: 2026, month: 10 } })).rejects.toMatchObject({
       status: 400,
-      message: 'Erro de validación',
-      fields: { password: 'Curto' },
+      message: 'datos non válidos',
+      fields: { amountUsd: 'o importe debe ser un número maior ca 0' },
     })
   })
 
@@ -34,25 +34,6 @@ describe('apiFetch', () => {
   it('returns undefined for 204 responses', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 204 })))
 
-    await expect(apiFetch<void>('/api/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
-  })
-
-  it('exposes response headers on ApiError', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        new Response(JSON.stringify({ error: 'Demasiados intentos' }), {
-          status: 429,
-          headers: { 'Retry-After': '10' },
-        }),
-      ),
-    )
-
-    try {
-      await apiFetch('/api/auth/login', { method: 'POST', body: { password: 'x', remember: false } })
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApiError)
-      expect((error as ApiError).headers.get('Retry-After')).toBe('10')
-    }
+    await expect(apiFetch<void>('/api/dividends/1', { method: 'DELETE' })).resolves.toBeUndefined()
   })
 })

@@ -13,7 +13,6 @@ import '@mantine/dates/styles.css'
 import '@mantine/charts/styles.css'
 
 import { ApiError } from '@/api/client'
-import { AuthUnauthorizedListener } from '@/api/auth'
 import { router } from '@/router'
 import { theme } from '@/theme'
 
@@ -45,7 +44,6 @@ export function App() {
         <QueryClientProvider client={queryClient}>
           <ModalsProvider>
             <Notifications position="top-right" />
-            <AuthUnauthorizedListener />
             <RouterProvider router={router} />
           </ModalsProvider>
         </QueryClientProvider>

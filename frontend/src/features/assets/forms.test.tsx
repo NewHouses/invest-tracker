@@ -9,7 +9,7 @@ describe('CreateAssetForm', () => {
   // do obxecto form (novo en cada render) e entraba nun bucle de renders.
   it('amosa os erros de campo do servidor sen entrar nun bucle de renders', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const error = new ApiError('datos non válidos', 400, { name: 'o nome xa existe', month: 'mes non válido' }, new Headers())
+    const error = new ApiError('datos non válidos', 400, { name: 'o nome xa existe', month: 'mes non válido' })
 
     renderWithProviders(<CreateAssetForm error={error} onSubmit={() => {}} />)
 

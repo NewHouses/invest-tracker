@@ -15,16 +15,18 @@ import (
 type Options struct {
 	Logger *log.Logger
 	Now    func() time.Time
+	// Hostname é o nome do equipo que se acepta na cabeceira Host ademais das
+	// IPs e "localhost". Por defecto, o do sistema operativo.
+	Hostname string
 }
 
 type Server struct {
-	store        *store.Store
-	static       fs.FS
-	mux          *http.ServeMux
-	log          *log.Logger
-	now          func() time.Time
-	pbkdf2Iter   int
-	loginLimiter *loginLimiter
+	store    *store.Store
+	static   fs.FS
+	mux      *http.ServeMux
+	log      *log.Logger
+	now      func() time.Time
+	hostname string
 }
 
 func New(st *store.Store, static fs.FS, opts Options) *Server {
@@ -36,14 +38,17 @@ func New(st *store.Store, static fs.FS, opts Options) *Server {
 	if now == nil {
 		now = time.Now
 	}
+	hostname := opts.Hostname
+	if hostname == "" {
+		hostname, _ = os.Hostname()
+	}
 	s := &Server{
-		store:        st,
-		static:       static,
-		mux:          http.NewServeMux(),
-		log:          logger,
-		now:          now,
-		pbkdf2Iter:   defaultPBKDF2Iter,
-		loginLimiter: newLoginLimiter(),
+		store:    st,
+		static:   static,
+		mux:      http.NewServeMux(),
+		log:      logger,
+		now:      now,
+		hostname: hostname,
 	}
 	s.routes()
 	return s
@@ -52,6 +57,7 @@ func New(st *store.Store, static fs.FS, opts Options) *Server {
 func (s *Server) Handler() http.Handler {
 	var h http.Handler = s.mux
 	h = http.NewCrossOriginProtection().Handler(h)
+	h = s.checkHost(h)
 	h = s.securityHeaders(h)
 	h = s.requestLogging(h)
 	h = s.recoverPanic(h)

@@ -2,7 +2,6 @@ import {
   ActionIcon,
   AppShell,
   Burger,
-  Button,
   Group,
   NavLink as MantineNavLink,
   ScrollArea,
@@ -19,7 +18,6 @@ import {
   IconCoin,
   IconHome,
   IconListDetails,
-  IconLogout,
   IconMoon,
   IconReportAnalytics,
   IconSun,
@@ -29,8 +27,6 @@ import {
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
-
-import { useLogout } from '@/api/auth'
 
 type NavLeaf = {
   label: string
@@ -72,15 +68,8 @@ export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure()
   const location = useLocation()
   const navigate = useNavigate()
-  const logout = useLogout()
   const { setColorScheme } = useMantineColorScheme()
   const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
-
-  const handleLogout = () => {
-    logout.mutate(undefined, {
-      onSettled: () => navigate('/login', { replace: true }),
-    })
-  }
 
   return (
     <AppShell
@@ -105,26 +94,6 @@ export function AppLayout() {
                 aria-label="Cambiar esquema de cor"
               >
                 {computedColorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
-              </ActionIcon>
-            </Tooltip>
-            <Button
-              variant="light"
-              leftSection={<IconLogout size={16} />}
-              onClick={handleLogout}
-              loading={logout.isPending}
-              visibleFrom="sm"
-            >
-              Saír
-            </Button>
-            <Tooltip label="Saír">
-              <ActionIcon
-                variant="light"
-                onClick={handleLogout}
-                loading={logout.isPending}
-                aria-label="Saír"
-                hiddenFrom="sm"
-              >
-                <IconLogout size={18} />
               </ActionIcon>
             </Tooltip>
           </Group>

@@ -5,25 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-	"time"
 )
 
-// authCookie crea directamente no store unha sesión válida durante unha hora
-// e devolve a cookie que a representa.
-func authCookie(t *testing.T, s *Server) *http.Cookie {
-	t.Helper()
-	token := "token-de-proba-" + strings.ReplaceAll(t.Name(), "/", "-")
-	if err := s.store.CreateSession(hashToken(token), time.Now().Add(time.Hour)); err != nil {
-		t.Fatalf("CreateSession: %v", err)
-	}
-	return &http.Cookie{Name: sessionCookieName, Value: token}
-}
-
-// doJSON executa unha petición contra o handler completo (con middlewares).
+// doJSON executa unha petición contra o handler completo (con middlewares),
+// dirixida a localhost como o faría o navegador do propio equipo.
 // body pode ser nil, un string (enviado tal cal) ou calquera valor (en JSON).
-func doJSON(t *testing.T, h http.Handler, method, path string, body any, cookie *http.Cookie) *httptest.ResponseRecorder {
+func doJSON(t *testing.T, h http.Handler, method, path string, body any) *httptest.ResponseRecorder {
 	t.Helper()
 	var buf bytes.Buffer
 	switch b := body.(type) {
@@ -36,11 +24,9 @@ func doJSON(t *testing.T, h http.Handler, method, path string, body any, cookie 
 		}
 	}
 	req := httptest.NewRequest(method, path, &buf)
+	req.Host = "localhost:8080"
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
-	}
-	if cookie != nil {
-		req.AddCookie(cookie)
 	}
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -55,30 +41,20 @@ func decodeBody(t *testing.T, rr *httptest.ResponseRecorder, dst any) {
 	}
 }
 
-func TestRequireSession(t *testing.T) {
+// A web xa non ten contrasinal: a API responde sen ningunha sesión.
+func TestAPIWithoutLogin(t *testing.T) {
 	s := testServer(t)
-	s.handleAPI("GET /api/proba-sesion", func(w http.ResponseWriter, r *http.Request) {
+	s.handleAPI("GET /api/proba", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
 	h := s.Handler()
 
-	if rr := doJSON(t, h, http.MethodGet, "/api/proba-sesion", nil, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("sen cookie: código=%d, esperabamos 401", rr.Code)
+	if rr := doJSON(t, h, http.MethodGet, "/api/proba", nil); rr.Code != http.StatusOK {
+		t.Fatalf("sen sesión: código=%d corpo=%s, esperabamos 200", rr.Code, rr.Body.String())
 	}
-	bad := &http.Cookie{Name: sessionCookieName, Value: "inventado"}
-	if rr := doJSON(t, h, http.MethodGet, "/api/proba-sesion", nil, bad); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("cookie descoñecida: código=%d, esperabamos 401", rr.Code)
-	}
-	if rr := doJSON(t, h, http.MethodGet, "/api/proba-sesion", nil, authCookie(t, s)); rr.Code != http.StatusOK {
-		t.Fatalf("sesión válida: código=%d corpo=%s", rr.Code, rr.Body.String())
-	}
-
-	expiredToken := "caducado"
-	if err := s.store.CreateSession(hashToken(expiredToken), time.Now().Add(-time.Minute)); err != nil {
-		t.Fatalf("CreateSession: %v", err)
-	}
-	expired := &http.Cookie{Name: sessionCookieName, Value: expiredToken}
-	if rr := doJSON(t, h, http.MethodGet, "/api/proba-sesion", nil, expired); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("sesión caducada: código=%d, esperabamos 401", rr.Code)
+	for _, path := range []string{"/api/auth/status", "/api/auth/login"} {
+		if rr := doJSON(t, h, http.MethodGet, path, nil); rr.Code != http.StatusNotFound {
+			t.Fatalf("%s: código=%d, esperabamos 404 (xa non hai autenticación)", path, rr.Code)
+		}
 	}
 }

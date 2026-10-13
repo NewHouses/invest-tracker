@@ -3,14 +3,12 @@ import type { ApiErrorBody } from '@/api/types'
 export class ApiError extends Error {
   readonly status: number
   readonly fields: Record<string, string> | undefined
-  readonly headers: Headers
 
-  constructor(message: string, status: number, fields: Record<string, string> | undefined, headers: Headers) {
+  constructor(message: string, status: number, fields: Record<string, string> | undefined) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.fields = fields
-    this.headers = headers
   }
 }
 
@@ -18,23 +16,6 @@ type ApiFetchOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
-}
-
-type UnauthorizedHandler = () => void
-
-const unauthorizedHandlers = new Set<UnauthorizedHandler>()
-
-export function subscribeUnauthorized(handler: UnauthorizedHandler) {
-  unauthorizedHandlers.add(handler)
-  return () => {
-    unauthorizedHandlers.delete(handler)
-  }
-}
-
-function emitUnauthorized() {
-  for (const handler of unauthorizedHandlers) {
-    handler()
-  }
 }
 
 async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
@@ -72,11 +53,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   if (!response.ok) {
     const body = await parseErrorBody(response)
     const message = body.error ?? 'Produciuse un erro ao falar co servidor.'
-    const error = new ApiError(message, response.status, body.fields, response.headers)
-    if (response.status === 401 && !path.startsWith('/api/auth/')) {
-      emitUnauthorized()
-    }
-    throw error
+    throw new ApiError(message, response.status, body.fields)
   }
 
   if (response.status === 204) {

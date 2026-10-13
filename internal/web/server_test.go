@@ -52,7 +52,7 @@ func TestStaticHandler(t *testing.T) {
 
 	t.Run("raíz", func(t *testing.T) {
 		rr := httptest.NewRecorder()
-		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/", nil))
 		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), "inicio web") {
 			t.Fatalf("agardábase index.html, código=%d corpo=%q", rr.Code, rr.Body.String())
 		}
@@ -63,7 +63,7 @@ func TestStaticHandler(t *testing.T) {
 
 	t.Run("activo inmutable", func(t *testing.T) {
 		rr := httptest.NewRecorder()
-		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/assets/app-123.js", nil))
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/assets/app-123.js", nil))
 		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), "ola") {
 			t.Fatalf("agardábase o activo, código=%d corpo=%q", rr.Code, rr.Body.String())
 		}
@@ -74,7 +74,7 @@ func TestStaticHandler(t *testing.T) {
 
 	t.Run("ruta de cliente", func(t *testing.T) {
 		rr := httptest.NewRecorder()
-		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/activos/5", nil))
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/activos/5", nil))
 		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), "inicio web") {
 			t.Fatalf("agardábase index para a ruta SPA, código=%d corpo=%q", rr.Code, rr.Body.String())
 		}
@@ -82,7 +82,7 @@ func TestStaticHandler(t *testing.T) {
 
 	t.Run("sen listado de directorio", func(t *testing.T) {
 		rr := httptest.NewRecorder()
-		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/assets/", nil))
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/assets/", nil))
 		if rr.Code == http.StatusOK && strings.Contains(rr.Body.String(), "app-123.js") {
 			t.Fatalf("non debe amosar listado de directorio: %q", rr.Body.String())
 		}
@@ -93,7 +93,7 @@ func TestStaticHandler(t *testing.T) {
 	for _, p := range []string{"/assets/vello-999.js", "/favicon-inexistente.svg"} {
 		t.Run("ficheiro inexistente "+p, func(t *testing.T) {
 			rr := httptest.NewRecorder()
-			h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, p, nil))
+			h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost"+p, nil))
 			if rr.Code != http.StatusNotFound {
 				t.Fatalf("código=%d, esperabamos 404", rr.Code)
 			}
@@ -114,21 +114,21 @@ func TestNetworkURLs_LoopbackListenerHasNoLANURLs(t *testing.T) {
 
 func TestAPIRoutes(t *testing.T) {
 	s := testServer(t)
-	s.handleAPI("GET /api/privada", func(w http.ResponseWriter, r *http.Request) {
+	s.handleAPI("GET /api/proba", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"ok": "si"})
 	})
 	h := s.Handler()
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/does-not-exist", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/api/does-not-exist", nil))
 	if rr.Code != http.StatusNotFound || !strings.Contains(rr.Body.String(), "recurso non atopado") {
 		t.Fatalf("404 API inesperado: código=%d corpo=%q", rr.Code, rr.Body.String())
 	}
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/privada", nil))
-	if rr.Code != http.StatusUnauthorized || !strings.Contains(rr.Body.String(), "autenticación necesaria") {
-		t.Fatalf("401 API inesperado: código=%d corpo=%q", rr.Code, rr.Body.String())
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/api/proba", nil))
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"ok":"si"`) {
+		t.Fatalf("API sen contrasinal: código=%d corpo=%q", rr.Code, rr.Body.String())
 	}
 }
 
@@ -137,7 +137,7 @@ func TestSecurityHeaders(t *testing.T) {
 	h := s.Handler()
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/", nil))
 	for _, name := range []string{"X-Content-Type-Options", "Referrer-Policy", "X-Frame-Options"} {
 		if rr.Header().Get(name) == "" {
 			t.Fatalf("falta a cabeceira %s", name)
@@ -148,7 +148,7 @@ func TestSecurityHeaders(t *testing.T) {
 	}
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/does-not-exist", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/api/does-not-exist", nil))
 	if rr.Header().Get("X-Content-Type-Options") == "" {
 		t.Fatal("faltan cabeceiras de seguridade na API")
 	}
@@ -159,12 +159,12 @@ func TestSecurityHeaders(t *testing.T) {
 
 func TestCrossOriginProtection(t *testing.T) {
 	s := testServer(t)
-	s.handlePublic("POST /api/publica", func(w http.ResponseWriter, r *http.Request) {
+	s.handleAPI("POST /api/publica", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNoContent, nil)
 	})
 	h := s.Handler()
 
-	req := httptest.NewRequest(http.MethodPost, "http://example.com/api/publica", nil)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/api/publica", nil)
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -172,7 +172,7 @@ func TestCrossOriginProtection(t *testing.T) {
 		t.Fatalf("agardábase 403 para petición cross-site, obtido %d", rr.Code)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "http://example.com/api/publica", nil)
+	req = httptest.NewRequest(http.MethodPost, "http://localhost/api/publica", nil)
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -183,11 +183,11 @@ func TestCrossOriginProtection(t *testing.T) {
 
 func TestRecoverAPI(t *testing.T) {
 	s := testServer(t)
-	s.handlePublic("GET /api/panic", func(w http.ResponseWriter, r *http.Request) {
+	s.handleAPI("GET /api/panic", func(w http.ResponseWriter, r *http.Request) {
 		panic("proba")
 	})
 	rr := httptest.NewRecorder()
-	s.Handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/panic", nil))
+	s.Handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://localhost/api/panic", nil))
 	if rr.Code != http.StatusInternalServerError || !strings.Contains(rr.Body.String(), "erro interno") {
 		t.Fatalf("recuperación inesperada: código=%d corpo=%q", rr.Code, rr.Body.String())
 	}
@@ -198,7 +198,7 @@ func TestDecodeJSON(t *testing.T) {
 		var dst struct {
 			Nome string `json:"nome"`
 		}
-		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"outro":1}`)), &dst)
+		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(`{"outro":1}`)), &dst)
 		if err == nil || !strings.Contains(err.Error(), "campo descoñecido") {
 			t.Fatalf("erro inesperado: %v", err)
 		}
@@ -208,7 +208,7 @@ func TestDecodeJSON(t *testing.T) {
 		var dst struct {
 			Nome string `json:"nome"`
 		}
-		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"nome":"a"} {}`)), &dst)
+		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(`{"nome":"a"} {}`)), &dst)
 		if err == nil || !strings.Contains(err.Error(), "único valor") {
 			t.Fatalf("erro inesperado: %v", err)
 		}
@@ -219,7 +219,7 @@ func TestDecodeJSON(t *testing.T) {
 			Nome string `json:"nome"`
 		}
 		body := `{"nome":"` + strings.Repeat("a", 1<<20) + `"}`
-		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)), &dst)
+		err := decodeJSON(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(body)), &dst)
 		if err == nil || !strings.Contains(err.Error(), "1 MiB") {
 			t.Fatalf("erro inesperado: %v", err)
 		}
@@ -227,25 +227,25 @@ func TestDecodeJSON(t *testing.T) {
 }
 
 func TestPathIDAndQueryYearMonth(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/items/abc", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost/api/items/abc", nil)
 	req.SetPathValue("id", "abc")
 	if _, err := pathID(req, "id"); err == nil {
 		t.Fatal("agardábase erro para id non numérico")
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/api/items/42", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://localhost/api/items/42", nil)
 	req.SetPathValue("id", "42")
 	if id, err := pathID(req, "id"); err != nil || id != 42 {
 		t.Fatalf("id inesperado: %d, %v", id, err)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/api?year=2200&month=13", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://localhost/api?year=2200&month=13", nil)
 	_, fields := queryYearMonth(req)
 	if fields["year"] == "" || fields["month"] == "" {
 		t.Fatalf("faltan erros de campos: %#v", fields)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/api?year=2026&month=10", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://localhost/api?year=2026&month=10", nil)
 	ym, fields := queryYearMonth(req)
 	if len(fields) != 0 || ym.Year != 2026 || ym.Month != 10 {
 		t.Fatalf("YearMonth inesperado: %#v campos=%#v", ym, fields)

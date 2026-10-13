@@ -8,10 +8,7 @@ import (
 func TestAPIMeta(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	if rr := doJSON(t, h, http.MethodGet, "/api/meta", nil, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("sen cookie: código=%d, esperabamos 401", rr.Code)
-	}
-	rr := doJSON(t, h, http.MethodGet, "/api/meta", nil, authCookie(t, s))
+	rr := doJSON(t, h, http.MethodGet, "/api/meta", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("código=%d corpo=%s", rr.Code, rr.Body.String())
 	}

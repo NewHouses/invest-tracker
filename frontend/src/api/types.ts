@@ -51,16 +51,6 @@ export type ApiErrorBody = {
   fields?: Record<string, string>
 }
 
-export type AuthStatusResponse = {
-  setupRequired: boolean
-  authenticated: boolean
-  setupAllowed: boolean
-}
-
-export type AuthenticatedResponse = {
-  authenticated: true
-}
-
 export type MetaResponse = {
   assetTypes: Array<{ value: AssetType; label: string }>
   minYear: number

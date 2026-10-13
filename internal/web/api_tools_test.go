@@ -9,33 +9,13 @@ import (
 	"invest-tracker/internal/repartoaporte"
 )
 
-func authCookieWithServerClock(t *testing.T, s *Server) *http.Cookie {
-	t.Helper()
-	token := "token-tools-" + t.Name()
-	if err := s.store.CreateSession(hashToken(token), s.now().Add(time.Hour)); err != nil {
-		t.Fatalf("CreateSession: %v", err)
-	}
-	return &http.Cookie{Name: sessionCookieName, Value: token}
-}
-
-func TestToolsRequireSession(t *testing.T) {
-	s := testServer(t)
-	if rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/defaults", nil, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("defaults sen sesión: código=%d, esperabamos 401", rr.Code)
-	}
-	if rr := doJSON(t, s.Handler(), http.MethodPost, "/api/tools/projection", projectionRequest{}, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("projection sen sesión: código=%d, esperabamos 401", rr.Code)
-	}
-}
-
 func TestAllocationHappyAndValidation(t *testing.T) {
 	s := testServer(t)
 	a, b := seedSkippedMonth(t, s)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
 	body := allocationRequest{Total: 120, Selection: []allocationSelection{{Type: domain.Accion, AssetIDs: []int64{a.ID, b.ID}}}}
-	rr := doJSON(t, h, http.MethodPost, "/api/tools/allocation", body, cookie)
+	rr := doJSON(t, h, http.MethodPost, "/api/tools/allocation", body)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("allocation: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -46,7 +26,7 @@ func TestAllocationHappyAndValidation(t *testing.T) {
 	}
 
 	bad := allocationRequest{Total: -1, Selection: []allocationSelection{{Type: domain.Indice, AssetIDs: []int64{a.ID}}, {Type: "malo"}}}
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/allocation", bad, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/allocation", bad)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("allocation inválida: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -57,7 +37,7 @@ func TestAllocationHappyAndValidation(t *testing.T) {
 	}
 
 	bad = allocationRequest{Total: 100, Selection: []allocationSelection{{Type: domain.Accion, AssetIDs: []int64{999}}}}
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/allocation", bad, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/allocation", bad)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("assetId descoñecido debe ser 400: código=%d", rr.Code)
 	}
@@ -65,7 +45,7 @@ func TestAllocationHappyAndValidation(t *testing.T) {
 
 func TestProjectionDefaultsWithoutAssets(t *testing.T) {
 	s := fixedClockServer(t, time.Date(2026, 10, 5, 13, 0, 0, 0, time.UTC))
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/defaults", nil, authCookieWithServerClock(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/defaults", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("defaults: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -82,7 +62,7 @@ func TestProjectionDefaultsWithoutAssets(t *testing.T) {
 func TestProjectionDefaultsWithAssets(t *testing.T) {
 	s := fixedClockServer(t, time.Date(2030, 5, 1, 0, 0, 0, 0, time.UTC))
 	seedSkippedMonth(t, s)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/defaults", nil, authCookieWithServerClock(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/defaults", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("defaults con activos: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -95,7 +75,7 @@ func TestProjectionDefaultsWithAssets(t *testing.T) {
 
 func TestProjectionStartRouteRemoved(t *testing.T) {
 	s := testServer(t)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/start", nil, authCookie(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/tools/projection/start", nil)
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("/start debe ser 404: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -104,7 +84,6 @@ func TestProjectionStartRouteRemoved(t *testing.T) {
 func TestProjectionValidation(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 	start := domain.YearMonth{Year: 2026, Month: 1}
 
 	rr := doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{
@@ -119,7 +98,7 @@ func TestProjectionValidation(t *testing.T) {
 			EveryMonths: -1,
 			From:        domain.YearMonth{Year: 0, Month: 1},
 		}},
-	}, cookie)
+	})
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("validación contribution: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -131,7 +110,7 @@ func TestProjectionValidation(t *testing.T) {
 		}
 	}
 
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 1, MonthlyReturnPct: 0, Mode: domain.ProjectionModeSalary, AnnualSalary: -1, InvestmentRatePct: 0, Rules: []domain.GrowthRule{{Kind: domain.GrowthKindPercent, Value: -100, From: start}}}, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 1, MonthlyReturnPct: 0, Mode: domain.ProjectionModeSalary, AnnualSalary: -1, InvestmentRatePct: 0, Rules: []domain.GrowthRule{{Kind: domain.GrowthKindPercent, Value: -100, From: start}}})
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("validación salary: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -146,7 +125,7 @@ func TestProjectionValidation(t *testing.T) {
 	for i := range tooMany {
 		tooMany[i] = domain.GrowthRule{Kind: domain.GrowthKindFixed, From: start}
 	}
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 1, Mode: domain.ProjectionModeContribution, Rules: tooMany}, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 1, Mode: domain.ProjectionModeContribution, Rules: tooMany})
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("validación regras: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -155,14 +134,14 @@ func TestProjectionValidation(t *testing.T) {
 		t.Fatalf("faltou erro rules: %#v", apiErr.Fields)
 	}
 
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", `{"start":{"year":2026,"month":1},"years":1,"mode":"contribution","monthlyReturnPct":0,"extra":1}`, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", `{"start":{"year":2026,"month":1},"years":1,"mode":"contribution","monthlyReturnPct":0,"extra":1}`)
 	if rr.Code != http.StatusBadRequest || !contains(rr.Body.String(), "campo descoñecido") {
 		t.Fatalf("campo descoñecido debe ser 400: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 
 	// Un retorno desorbitado desborda float64: antes respondía 200 co corpo
 	// baleiro porque o JSON non admite Inf.
-	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 60, InitialInvestment: 1000, MonthlyReturnPct: 100000, Mode: domain.ProjectionModeContribution, MonthlyContribution: 100}, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/tools/projection", projectionRequest{Start: &start, Years: 60, InitialInvestment: 1000, MonthlyReturnPct: 100000, Mode: domain.ProjectionModeContribution, MonthlyContribution: 100})
 	if rr.Code != http.StatusBadRequest || !contains(rr.Body.String(), "rango numérico") {
 		t.Fatalf("desbordamento debe ser 400: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -185,7 +164,7 @@ func TestProjectionContributionHappyPath(t *testing.T) {
 			From:        start.AddMonths(6),
 		}},
 	}
-	rr := doJSON(t, s.Handler(), http.MethodPost, "/api/tools/projection", req, authCookie(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodPost, "/api/tools/projection", req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("projection contribution: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -213,7 +192,7 @@ func TestProjectionSalaryHappyPath(t *testing.T) {
 		AnnualSalary:      120000,
 		InvestmentRatePct: 10,
 	}
-	rr := doJSON(t, s.Handler(), http.MethodPost, "/api/tools/projection", req, authCookie(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodPost, "/api/tools/projection", req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("projection salary: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}

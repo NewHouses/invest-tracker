@@ -1,12 +1,9 @@
 import { Center, Loader, Stack, Text, Title } from '@mantine/core'
 import { lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
-import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router'
+import { createBrowserRouter } from 'react-router'
 
-import { useAuthStatus } from '@/api/auth'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { ConfigurarPage } from '@/pages/auth/ConfigurarPage'
-import { LoginPage } from '@/pages/auth/LoginPage'
 
 // As seccións cárganse baixo demanda para que gráficas e informes (Recharts)
 // non engorden o paquete inicial.
@@ -43,19 +40,6 @@ function page(element: ReactNode) {
   return <Suspense fallback={<LoadingScreen />}>{element}</Suspense>
 }
 
-export function RequireAuth() {
-  const location = useLocation()
-  const status = useAuthStatus()
-
-  if (status.isLoading) return <LoadingScreen />
-  if (status.data?.setupRequired) return <Navigate to="/configurar" replace />
-  if (!status.data?.authenticated) {
-    const next = encodeURIComponent(`${location.pathname}${location.search}`)
-    return <Navigate to={`/login?next=${next}`} replace />
-  }
-  return <Outlet />
-}
-
 export function NotFoundPage() {
   return (
     <Center h="60vh">
@@ -68,26 +52,19 @@ export function NotFoundPage() {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/configurar', element: <ConfigurarPage /> },
   {
-    element: <RequireAuth />,
+    element: <AppLayout />,
     children: [
-      {
-        element: <AppLayout />,
-        children: [
-          { index: true, element: page(<InicioPage />) },
-          { path: 'activos', element: page(<ActivosPage />) },
-          { path: 'activos/:id', element: page(<ActivoDetailPage />) },
-          { path: 'transaccions', element: page(<TransaccionsPage />) },
-          { path: 'resultados', element: page(<ResultadosPage />) },
-          { path: 'dividendos', element: page(<DividendosPage />) },
-          { path: 'informes', element: page(<InformesPage />) },
-          { path: 'graficas', element: page(<GraficasPage />) },
-          { path: 'proxeccion', element: page(<ProxeccionPage />) },
-          { path: 'axustes', element: page(<AxustesPage />) },
-        ],
-      },
+      { index: true, element: page(<InicioPage />) },
+      { path: 'activos', element: page(<ActivosPage />) },
+      { path: 'activos/:id', element: page(<ActivoDetailPage />) },
+      { path: 'transaccions', element: page(<TransaccionsPage />) },
+      { path: 'resultados', element: page(<ResultadosPage />) },
+      { path: 'dividendos', element: page(<DividendosPage />) },
+      { path: 'informes', element: page(<InformesPage />) },
+      { path: 'graficas', element: page(<GraficasPage />) },
+      { path: 'proxeccion', element: page(<ProxeccionPage />) },
+      { path: 'axustes', element: page(<AxustesPage />) },
     ],
   },
   { path: '*', element: <NotFoundPage /> },

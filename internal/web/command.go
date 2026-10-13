@@ -21,10 +21,9 @@ import (
 )
 
 type Config struct {
-	Addr          string
-	DBPath        string
-	NoOpen        bool
-	ResetPassword bool
+	Addr   string
+	DBPath string
+	NoOpen bool
 }
 
 var openBrowser = func(url string) error {
@@ -47,7 +46,6 @@ func Main(args []string) int {
 	fs.StringVar(&cfg.Addr, "addr", "0.0.0.0:8080", "enderezo no que escoitar")
 	fs.StringVar(&cfg.DBPath, "db", "./investimentos.db", "ruta da base de datos SQLite")
 	fs.BoolVar(&cfg.NoOpen, "no-open", false, "non abrir o navegador automaticamente")
-	fs.BoolVar(&cfg.ResetPassword, "reset-password", false, "eliminar o contrasinal web e pechar todas as sesións")
 	fs.Usage = func() {
 		fmt.Fprintln(fs.Output(), "Uso: invest-tracker web [opcións]")
 		fmt.Fprintln(fs.Output(), "Opcións:")
@@ -63,19 +61,6 @@ func Main(args []string) int {
 		return 1
 	}
 	defer st.Close()
-
-	if cfg.ResetPassword {
-		if err := st.DeleteSetting(passwordSettingKey); err != nil {
-			fmt.Fprintln(os.Stderr, "non se puido eliminar o contrasinal:", err)
-			return 1
-		}
-		if err := st.DeleteAllSessions(); err != nil {
-			fmt.Fprintln(os.Stderr, "non se puideron pechar as sesións:", err)
-			return 1
-		}
-		fmt.Fprintf(os.Stdout, "Contrasinal eliminado. Ao arrancar o modo web, créao de novo desde este ordenador (http://localhost:%s).\n", portFromAddr(cfg.Addr))
-		return 0
-	}
 
 	ln, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {

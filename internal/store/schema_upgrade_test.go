@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 
 	"invest-tracker/internal/domain"
 	"invest-tracker/internal/store"
@@ -85,19 +85,61 @@ func TestOpen_UpgradesOldSchema(t *testing.T) {
 	if len(assets) != 1 || assets[0].Name != "AAPL" {
 		t.Fatalf("activos tras upgrade = %+v, esperabamos conservar AAPL", assets)
 	}
-	if err := s.SetSetting("password_hash", "hash"); err != nil {
-		t.Fatalf("SetSetting tras upgrade: %v", err)
-	}
-	value, ok, err := s.GetSetting("password_hash")
+}
+
+// A web xa non ten contrasinal: ao abrir unha base de datos dunha versión
+// anterior bórranse as táboas do hash do contrasinal e das sesións, sen tocar
+// os datos.
+func TestOpen_DropsAuthTables(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "auth.db")
+	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
 	if err != nil {
-		t.Fatalf("GetSetting tras upgrade: %v", err)
+		t.Fatalf("sql.Open antigo: %v", err)
 	}
-	if !ok || value != "hash" {
-		t.Fatalf("setting tras upgrade = (%q, %v), queremos hash/true", value, ok)
+	if _, err := db.Exec(oldSchemaSQL + `
+CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+INSERT INTO settings (key, value) VALUES ('password_hash', 'pbkdf2-sha256$600000$c2FsdA==$aGFzaA==');
+INSERT INTO sessions (token_hash, expires_at) VALUES ('abc', 4102444800);
+INSERT INTO assets (type, name, amount_usd, month, year) VALUES ('accion', 'AAPL', 1000, 1, 2026);`); err != nil {
+		_ = db.Close()
+		t.Fatalf("crear esquema con autenticación: %v", err)
 	}
-	if err := s.CreateSession("tok", time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)); err != nil {
-		t.Fatalf("CreateSession tras upgrade: %v", err)
+	if err := db.Close(); err != nil {
+		t.Fatalf("pechar DB antiga: %v", err)
 	}
+
+	s, err := store.Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	assets, err := s.ListAssets()
+	_ = s.Close()
+	if err != nil || len(assets) != 1 || assets[0].Name != "AAPL" {
+		t.Fatalf("activos = %+v, %v; esperabamos conservar AAPL", assets, err)
+	}
+
+	if got := tableNames(t, path); strings.Contains(got, "settings") || strings.Contains(got, "sessions") {
+		t.Fatalf("táboas tras abrir = %s; esperabamos sen settings nin sessions", got)
+	}
+}
+
+// tableNames devolve os nomes das táboas da base de datos, separados por comas.
+func tableNames(t *testing.T, path string) string {
+	t.Helper()
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	defer db.Close()
+	var names string
+	err = db.QueryRow(`SELECT COALESCE(GROUP_CONCAT(name, ','), '') FROM (
+		SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name
+	)`).Scan(&names)
+	if err != nil {
+		t.Fatalf("listando táboas: %v", err)
+	}
+	return names
 }
 
 // As versións anteriores gardaban varias filas para o mesmo activo e mes ao
@@ -185,7 +227,7 @@ func TestOpen_CreatesEmptyDatabaseWhenMissing(t *testing.T) {
 	if err != nil || len(dividends) != 0 {
 		t.Fatalf("dividendos = %+v, %v; esperabamos ningún", dividends, err)
 	}
-	if _, hasPassword, err := s.GetSetting("password_hash"); err != nil || hasPassword {
-		t.Fatalf("contrasinal configurado = %v, %v; esperabamos que non", hasPassword, err)
+	if got, want := tableNames(t, path), "assets,dividends,monthly_results,transactions"; got != want {
+		t.Fatalf("táboas = %s, esperabamos %s", got, want)
 	}
 }

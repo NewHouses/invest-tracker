@@ -9,17 +9,9 @@ import (
 	portfoliodata "invest-tracker/internal/portfolio"
 )
 
-func TestPortfolioRequireSession(t *testing.T) {
-	s := testServer(t)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/portfolio", nil, nil)
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("código=%d, esperabamos 401", rr.Code)
-	}
-}
-
 func TestPortfolioEmptyDB(t *testing.T) {
 	s := fixedClockServer(t, time.Date(2026, 4, 15, 12, 0, 0, 0, time.UTC))
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/portfolio", nil, authCookie(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/portfolio", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("código=%d corpo=%s, esperabamos 200", rr.Code, rr.Body.String())
 	}
@@ -36,7 +28,7 @@ func TestPortfolioEmptyDB(t *testing.T) {
 func TestPortfolioHappyPendingFlags(t *testing.T) {
 	s := fixedClockServer(t, time.Date(2026, 4, 15, 12, 0, 0, 0, time.UTC))
 	seedSkippedMonth(t, s)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/portfolio", nil, authCookie(t, s))
+	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/portfolio", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("código=%d corpo=%s, esperabamos 200", rr.Code, rr.Body.String())
 	}

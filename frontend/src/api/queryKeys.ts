@@ -4,9 +4,6 @@ const ym = (p: YearMonth) => [p.year, p.month] as const
 
 // Prefixos xerárquicos: invalidar ['reports'] refresca todos os informes.
 export const queryKeys = {
-  auth: {
-    status: ['auth', 'status'] as const,
-  },
   meta: ['meta'] as const,
   assets: {
     all: ['assets'] as const,

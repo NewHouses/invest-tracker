@@ -11,17 +11,13 @@ import (
 func TestAPIDividends(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	cookie := authCookie(t, s)
-	if rr := doJSON(t, h, http.MethodGet, "/api/dividends", nil, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("sen cookie: código=%d, esperabamos 401", rr.Code)
-	}
 
-	rr := doJSON(t, h, http.MethodGet, "/api/dividends", nil, cookie)
+	rr := doJSON(t, h, http.MethodGet, "/api/dividends", nil)
 	if rr.Code != http.StatusOK || strings.TrimSpace(rr.Body.String()) != "[]" {
 		t.Fatalf("lista baleira inesperada: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 
-	rr = doJSON(t, h, http.MethodPost, "/api/dividends", map[string]any{"amountUsd": 12.5, "month": 7, "year": 2026}, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/dividends", map[string]any{"amountUsd": 12.5, "month": 7, "year": 2026})
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("crear dividendo: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -35,7 +31,7 @@ func TestAPIDividends(t *testing.T) {
 		t.Fatalf("dividendo non persistido: %#v err=%v", list, err)
 	}
 
-	rr = doJSON(t, h, http.MethodGet, "/api/dividends", nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/dividends", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("lista: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -45,13 +41,13 @@ func TestAPIDividends(t *testing.T) {
 		t.Fatalf("lista inesperada: %#v", got)
 	}
 
-	rr = doJSON(t, h, http.MethodPost, "/api/dividends", map[string]any{"amountUsd": 0, "month": 13, "year": 2200}, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/dividends", map[string]any{"amountUsd": 0, "month": 13, "year": 2200})
 	assertFieldErrors(t, rr, "amountUsd", "month", "year")
 
-	if rr = doJSON(t, h, http.MethodDelete, "/api/dividends/9999", nil, cookie); rr.Code != http.StatusNotFound {
+	if rr = doJSON(t, h, http.MethodDelete, "/api/dividends/9999", nil); rr.Code != http.StatusNotFound {
 		t.Fatalf("delete inexistente: %d", rr.Code)
 	}
-	rr = doJSON(t, h, http.MethodDelete, "/api/dividends/"+itoa(d.ID), nil, cookie)
+	rr = doJSON(t, h, http.MethodDelete, "/api/dividends/"+itoa(d.ID), nil)
 	if rr.Code != http.StatusNoContent || rr.Body.Len() != 0 {
 		t.Fatalf("delete: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}

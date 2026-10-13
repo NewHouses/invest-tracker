@@ -52,19 +52,10 @@ func compactJSON(t *testing.T, b []byte) []byte {
 	return out.Bytes()
 }
 
-func TestReportsRequireSession(t *testing.T) {
-	s := testServer(t)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/reports/total/history", nil, nil)
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("código=%d, esperabamos 401", rr.Code)
-	}
-}
-
 func TestReportsHappyAndParity(t *testing.T) {
 	s := testServer(t)
 	a, _ := seedSkippedMonth(t, s)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
 	cases := []string{
 		"/api/reports/asset/" + jsonID(a.ID) + "/month?year=2026&month=3",
@@ -73,13 +64,13 @@ func TestReportsHappyAndParity(t *testing.T) {
 		"/api/reports/type/accion/history",
 	}
 	for _, path := range cases {
-		rr := doJSON(t, h, http.MethodGet, path, nil, cookie)
+		rr := doJSON(t, h, http.MethodGet, path, nil)
 		if rr.Code != http.StatusOK {
 			t.Fatalf("%s: código=%d corpo=%s", path, rr.Code, rr.Body.String())
 		}
 	}
 
-	rr := doJSON(t, h, http.MethodGet, "/api/reports/total/month?year=2026&month=3", nil, cookie)
+	rr := doJSON(t, h, http.MethodGet, "/api/reports/total/month?year=2026&month=3", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("total/month: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -97,7 +88,7 @@ func TestReportsHappyAndParity(t *testing.T) {
 		t.Fatalf("JSON total/month non coincide\napi=%s\nexp=%s", compactJSON(t, rr.Body.Bytes()), expectedMonthJSON)
 	}
 
-	rr = doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("total/history: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -123,15 +114,14 @@ func TestReportsHappyAndParity(t *testing.T) {
 func TestReportsValidationNotFoundAndEmptySlices(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
-	if rr := doJSON(t, h, http.MethodGet, "/api/reports/asset/999/month?year=2026&month=3", nil, cookie); rr.Code != http.StatusNotFound {
+	if rr := doJSON(t, h, http.MethodGet, "/api/reports/asset/999/month?year=2026&month=3", nil); rr.Code != http.StatusNotFound {
 		t.Fatalf("activo descoñecido: código=%d", rr.Code)
 	}
-	if rr := doJSON(t, h, http.MethodGet, "/api/reports/type/mal/month?year=2026&month=3", nil, cookie); rr.Code != http.StatusBadRequest {
+	if rr := doJSON(t, h, http.MethodGet, "/api/reports/type/mal/month?year=2026&month=3", nil); rr.Code != http.StatusBadRequest {
 		t.Fatalf("tipo inválido: código=%d", rr.Code)
 	}
-	rr := doJSON(t, h, http.MethodGet, "/api/reports/total/month?year=2026", nil, cookie)
+	rr := doJSON(t, h, http.MethodGet, "/api/reports/total/month?year=2026", nil)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("query inválida: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -141,14 +131,14 @@ func TestReportsValidationNotFoundAndEmptySlices(t *testing.T) {
 		t.Fatalf("faltou fields.month: %#v", apiErr)
 	}
 
-	rr = doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("empty total/history: código=%d", rr.Code)
 	}
 	if !bytes.Contains(rr.Body.Bytes(), []byte(`"rows":[]`)) {
 		t.Fatalf("rows debe ser []: %s", rr.Body.String())
 	}
-	rr = doJSON(t, h, http.MethodGet, "/api/reports/type/accion/month?year=2026&month=3", nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/reports/type/accion/month?year=2026&month=3", nil)
 	if !bytes.Contains(rr.Body.Bytes(), []byte(`"assets":[]`)) || !bytes.Contains(rr.Body.Bytes(), []byte(`"active":[]`)) {
 		t.Fatalf("assets/active deben ser []: %s", rr.Body.String())
 	}
@@ -176,9 +166,8 @@ func TestReportHistoryCurrent_MesAberto(t *testing.T) {
 	}
 
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
-	assetRR := doJSON(t, h, http.MethodGet, "/api/reports/asset/"+jsonID(assetID)+"/history", nil, cookie)
+	assetRR := doJSON(t, h, http.MethodGet, "/api/reports/asset/"+jsonID(assetID)+"/history", nil)
 	if assetRR.Code != http.StatusOK {
 		t.Fatalf("asset/history: código=%d corpo=%s", assetRR.Code, assetRR.Body.String())
 	}
@@ -193,7 +182,7 @@ func TestReportHistoryCurrent_MesAberto(t *testing.T) {
 		t.Fatalf("asset current non debe ter métricas: %#v", assetResp.Current)
 	}
 
-	typeRR := doJSON(t, h, http.MethodGet, "/api/reports/type/accion/history", nil, cookie)
+	typeRR := doJSON(t, h, http.MethodGet, "/api/reports/type/accion/history", nil)
 	if typeRR.Code != http.StatusOK {
 		t.Fatalf("type/history: código=%d corpo=%s", typeRR.Code, typeRR.Body.String())
 	}
@@ -205,7 +194,7 @@ func TestReportHistoryCurrent_MesAberto(t *testing.T) {
 	pretoWeb(t, typeResp.Current.Aporte, 100)
 	pretoWeb(t, typeResp.Current.Holding, 1300)
 
-	totalRR := doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil, cookie)
+	totalRR := doJSON(t, h, http.MethodGet, "/api/reports/total/history", nil)
 	if totalRR.Code != http.StatusOK {
 		t.Fatalf("total/history: código=%d corpo=%s", totalRR.Code, totalRR.Body.String())
 	}
@@ -233,7 +222,6 @@ func TestReportHistoryCurrent_NullCandoMesXaTenResultados(t *testing.T) {
 	}
 
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
 	for _, tc := range []struct {
 		path string
@@ -243,7 +231,7 @@ func TestReportHistoryCurrent_NullCandoMesXaTenResultados(t *testing.T) {
 		{"/api/reports/type/accion/history", &typeHistoryResponse{}},
 		{"/api/reports/total/history", &totalHistoryResponse{}},
 	} {
-		rr := doJSON(t, h, http.MethodGet, tc.path, nil, cookie)
+		rr := doJSON(t, h, http.MethodGet, tc.path, nil)
 		if rr.Code != http.StatusOK {
 			t.Fatalf("%s: código=%d corpo=%s", tc.path, rr.Code, rr.Body.String())
 		}

@@ -13,19 +13,14 @@ import (
 func TestAPIAssets(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
-	if rr := doJSON(t, h, http.MethodGet, "/api/assets", nil, nil); rr.Code != http.StatusUnauthorized {
-		t.Fatalf("sen cookie: código=%d, esperabamos 401", rr.Code)
-	}
-
-	rr := doJSON(t, h, http.MethodGet, "/api/assets", nil, cookie)
+	rr := doJSON(t, h, http.MethodGet, "/api/assets", nil)
 	if rr.Code != http.StatusOK || strings.TrimSpace(rr.Body.String()) != "[]" {
 		t.Fatalf("lista baleira inesperada: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 
 	create := map[string]any{"type": "accion", "name": "  ETF Global  ", "amountUsd": 1000.0, "month": 3, "year": 2026}
-	rr = doJSON(t, h, http.MethodPost, "/api/assets", create, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/assets", create)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("crear: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -39,7 +34,7 @@ func TestAPIAssets(t *testing.T) {
 		t.Fatalf("activo non persistido: %#v err=%v", stored, err)
 	}
 
-	rr = doJSON(t, h, http.MethodGet, "/api/assets/"+itoa(asset.ID), nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/assets/"+itoa(asset.ID), nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("get: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -50,7 +45,7 @@ func TestAPIAssets(t *testing.T) {
 	}
 
 	update := map[string]any{"name": "Novo nome", "amountUsd": 1200.0, "month": 4, "year": 2026}
-	rr = doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(asset.ID), update, cookie)
+	rr = doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(asset.ID), update)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("put: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -60,18 +55,18 @@ func TestAPIAssets(t *testing.T) {
 	}
 
 	bad := map[string]any{"type": "raro", "name": " ", "amountUsd": -1, "month": 13, "year": 2200}
-	rr = doJSON(t, h, http.MethodPost, "/api/assets", bad, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/assets", bad)
 	assertFieldErrors(t, rr, "type", "name", "amountUsd", "month", "year")
 
-	rr = doJSON(t, h, http.MethodPost, "/api/assets", `{"type":"accion","name":"A","amountUsd":1,"month":1,"year":2026,"extra":true}`, cookie)
+	rr = doJSON(t, h, http.MethodPost, "/api/assets", `{"type":"accion","name":"A","amountUsd":1,"month":1,"year":2026,"extra":true}`)
 	if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), "campo descoñecido") {
 		t.Fatalf("campo descoñecido: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 
-	if rr = doJSON(t, h, http.MethodGet, "/api/assets/9999", nil, cookie); rr.Code != http.StatusNotFound {
+	if rr = doJSON(t, h, http.MethodGet, "/api/assets/9999", nil); rr.Code != http.StatusNotFound {
 		t.Fatalf("get inexistente: código=%d", rr.Code)
 	}
-	if rr = doJSON(t, h, http.MethodPut, "/api/assets/9999", update, cookie); rr.Code != http.StatusNotFound {
+	if rr = doJSON(t, h, http.MethodPut, "/api/assets/9999", update); rr.Code != http.StatusNotFound {
 		t.Fatalf("put inexistente: código=%d", rr.Code)
 	}
 
@@ -83,7 +78,7 @@ func TestAPIAssets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InsertMonthlyResult: %v", err)
 	}
-	rr = doJSON(t, h, http.MethodDelete, "/api/assets/"+itoa(asset.ID), nil, cookie)
+	rr = doJSON(t, h, http.MethodDelete, "/api/assets/"+itoa(asset.ID), nil)
 	if rr.Code != http.StatusNoContent || rr.Body.Len() != 0 {
 		t.Fatalf("delete: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -93,7 +88,7 @@ func TestAPIAssets(t *testing.T) {
 	if err := s.store.DeleteMonthlyResult(resID); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("o resultado non se borrou en cascada: %v", err)
 	}
-	if rr = doJSON(t, h, http.MethodDelete, "/api/assets/"+itoa(asset.ID), nil, cookie); rr.Code != http.StatusNotFound {
+	if rr = doJSON(t, h, http.MethodDelete, "/api/assets/"+itoa(asset.ID), nil); rr.Code != http.StatusNotFound {
 		t.Fatalf("delete inexistente: código=%d", rr.Code)
 	}
 }
@@ -108,14 +103,13 @@ func itoa(id int64) string {
 func TestAPIAssetsRejectsStartAfterFirstMovement(t *testing.T) {
 	s := testServer(t)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 	assetID := mustAsset(t, s, domain.Asset{Type: domain.Indice, Name: "S&P500", AmountUSD: 1000, Month: 1, Year: 2026})
 	if _, err := s.store.InsertTransaction(domain.Transaction{AssetID: assetID, AmountUSD: 100, Month: 3, Year: 2026}); err != nil {
 		t.Fatalf("InsertTransaction: %v", err)
 	}
 
 	later := map[string]any{"name": "S&P500", "amountUsd": 1000, "month": 4, "year": 2026}
-	rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), later, cookie)
+	rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), later)
 	assertFieldErrors(t, rr, "month")
 	if !strings.Contains(rr.Body.String(), "03/2026") {
 		t.Fatalf("a mensaxe debería indicar o primeiro movemento: %s", rr.Body.String())
@@ -126,7 +120,7 @@ func TestAPIAssetsRejectsStartAfterFirstMovement(t *testing.T) {
 
 	for _, month := range []int{3, 2} {
 		ok := map[string]any{"name": "S&P500", "amountUsd": 1000, "month": month, "year": 2026}
-		if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), ok, cookie); rr.Code != http.StatusOK {
+		if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), ok); rr.Code != http.StatusOK {
 			t.Fatalf("inicio en %02d/2026: código=%d corpo=%s", month, rr.Code, rr.Body.String())
 		}
 	}
@@ -142,7 +136,7 @@ func TestAPIAssetsRejectsStartAfterFirstMovement(t *testing.T) {
 		t.Fatalf("UpdateAsset: %v", err)
 	}
 	rename := map[string]any{"name": "S&P 500", "amountUsd": 1100, "month": 6, "year": 2026}
-	if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), rename, cookie); rr.Code != http.StatusOK {
+	if rr := doJSON(t, h, http.MethodPut, "/api/assets/"+itoa(assetID), rename); rr.Code != http.StatusOK {
 		t.Fatalf("editar sen cambiar a data: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
 }

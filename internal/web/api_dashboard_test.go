@@ -17,21 +17,12 @@ func fixedClockServer(t *testing.T, now time.Time) *Server {
 	return New(testStore(t), testStaticFS(), Options{Logger: log.New(io.Discard, "", 0), Now: func() time.Time { return now }})
 }
 
-func TestDashboardRequireSession(t *testing.T) {
-	s := testServer(t)
-	rr := doJSON(t, s.Handler(), http.MethodGet, "/api/dashboard", nil, nil)
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("código=%d, esperabamos 401", rr.Code)
-	}
-}
-
 func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 	s := fixedClockServer(t, time.Date(2026, 4, 15, 12, 0, 0, 0, time.UTC))
 	a, _ := seedSkippedMonth(t, s)
 	h := s.Handler()
-	cookie := authCookie(t, s)
 
-	rr := doJSON(t, h, http.MethodGet, "/api/dashboard", nil, cookie)
+	rr := doJSON(t, h, http.MethodGet, "/api/dashboard", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("dashboard: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -60,7 +51,7 @@ func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 	if _, err := s.store.InsertMonthlyResult(domain.MonthlyResult{AssetID: a.ID, ResultUSD: 1110, Month: 4, Year: 2026}); err != nil {
 		t.Fatalf("InsertMonthlyResult abril: %v", err)
 	}
-	rr = doJSON(t, h, http.MethodGet, "/api/dashboard", nil, cookie)
+	rr = doJSON(t, h, http.MethodGet, "/api/dashboard", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("dashboard 2: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
@@ -70,7 +61,7 @@ func TestDashboardHappyPendingAndEmptySlices(t *testing.T) {
 	}
 
 	empty := fixedClockServer(t, time.Date(2026, 4, 15, 12, 0, 0, 0, time.UTC))
-	rr = doJSON(t, empty.Handler(), http.MethodGet, "/api/dashboard", nil, authCookie(t, empty))
+	rr = doJSON(t, empty.Handler(), http.MethodGet, "/api/dashboard", nil)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("dashboard baleiro: código=%d corpo=%s", rr.Code, rr.Body.String())
 	}
