@@ -1,1 +1,0 @@
-import{f as e,h as t,m as n,p as r,tt as i}from"./i18n-CJC2W5At.js";var a=i();function o({title:i,description:o,actions:s}){return(0,a.jsxs)(t,{justify:`space-between`,align:`flex-start`,gap:`md`,mb:`lg`,children:[(0,a.jsxs)(r,{gap:4,children:[(0,a.jsx)(e,{order:1,children:i}),o?(0,a.jsx)(n,{c:`dimmed`,children:o}):null]}),s]})}export{o as t};

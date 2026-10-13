@@ -51,10 +51,23 @@ export type ProjectionResponse = {
   }
 }
 
-export type AllocationRequest = { total: number; selection: Array<{ type: AssetType; assetIds: number[] }> }
+export type AllocationNewAsset = { name: string; percent?: number }
+export type AllocationRequest = {
+  total: number
+  // percents: porcentaxe de cada activo de assetIds, na mesma orde. Sen elas
+  // o servidor reparte a partes iguais.
+  selection: Array<{ type: AssetType; assetIds: number[]; percents?: number[]; newAssets: AllocationNewAsset[] }>
+}
 export type Allocation = {
   total: number
-  types: Array<{ type: AssetType; label: string; amount: number; assets: Array<{ asset: Asset; amount: number }> }>
+  types: Array<{
+    type: AssetType
+    label: string
+    percent: number
+    amount: number
+    // new: activo que aínda non se creou (vai con id 0).
+    assets: Array<{ asset: Asset; percent: number; amount: number; new: boolean }>
+  }>
 }
 
 export function useProjectionDefaults() {

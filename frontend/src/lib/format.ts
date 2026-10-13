@@ -74,6 +74,14 @@ export function formatPct(value: number) {
   return `${sign}${formatNumber(Math.abs(value))}${getLanguage() === 'en' ? '%' : ' %'}`
 }
 
+// formatPercent formatea unha porcentaxe sen signo e só coas decimais que
+// fan falta: galego "33,33 %", "12,5 %", "100 %"; inglés "33.33%".
+export function formatPercent(value: number) {
+  const hundredths = Math.round(value * 100)
+  const decimals = hundredths % 100 === 0 ? 0 : hundredths % 10 === 0 ? 1 : 2
+  return `${formatNumber(hundredths / 100, decimals)}${getLanguage() === 'en' ? '%' : ' %'}`
+}
+
 export function formatYearMonth(value: YearMonth) {
   return `${String(value.month).padStart(2, '0')}/${value.year}`
 }

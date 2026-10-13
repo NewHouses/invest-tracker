@@ -1,0 +1,1 @@
+import{d as e,u as t}from"./format-BkgBwrwv.js";import{r as n}from"./index-BO7FS5M6.js";function r(){return e({queryKey:t.assets.list,queryFn:({signal:e})=>n(`/api/assets`,{signal:e})})}function i(r){return e({queryKey:t.assets.detail(r??0),queryFn:({signal:e})=>n(`/api/assets/${r}`,{signal:e}),enabled:r!==null&&r>0})}export{r as n,i as t};

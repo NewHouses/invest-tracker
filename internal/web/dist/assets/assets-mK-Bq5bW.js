@@ -1,1 +1,0 @@
-import{l as e,u as t}from"./format-Cui2acVC.js";import{r as n}from"./index-DamsatYU.js";function r(){return t({queryKey:e.assets.list,queryFn:({signal:e})=>n(`/api/assets`,{signal:e})})}function i(r){return t({queryKey:e.assets.detail(r??0),queryFn:({signal:e})=>n(`/api/assets/${r}`,{signal:e}),enabled:r!==null&&r>0})}export{r as n,i as t};

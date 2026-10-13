@@ -9,11 +9,14 @@ type AssetTypeSelectProps = {
   value: AssetType | null
   onChange: (type: AssetType | null) => void
   label?: ReactNode
+  'aria-label'?: string
   placeholder?: string
   error?: ReactNode
   required?: boolean
   disabled?: boolean
   clearable?: boolean
+  allowDeselect?: boolean
+  w?: number
   // Restrinxe as opcións (p.ex. só os tipos presentes nos activos).
   only?: AssetType[]
 }

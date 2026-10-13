@@ -5,6 +5,7 @@ import {
   formatAxisUSD,
   formatNumber,
   formatPct,
+  formatPercent,
   formatSignedUSD,
   formatUSD,
   formatYearMonth,
@@ -47,6 +48,13 @@ describe('format helpers', () => {
     expect(formatPct(-7.33)).toBe('−7,33 %')
   })
 
+  it('formats plain percentages with only the decimals needed', () => {
+    expect(formatPercent(100)).toBe('100 %')
+    expect(formatPercent(33.333333)).toBe('33,33 %')
+    expect(formatPercent(12.5)).toBe('12,5 %')
+    expect(formatPercent(0)).toBe('0 %')
+  })
+
   it('formats and names months', () => {
     expect(formatYearMonth({ year: 2026, month: 3 })).toBe('03/2026')
     expect(galicianMonthNames[2]).toBe('marzo')
@@ -65,6 +73,7 @@ describe('format helpers', () => {
       expect(formatSignedUSD(12)).toBe('+$12.00')
       expect(formatSignedUSD(-12)).toBe('−$12.00')
       expect(formatPct(-7.33)).toBe('−7.33%')
+      expect(formatPercent(12.5)).toBe('12.5%')
       expect(numberInputSeparators()).toEqual({ decimalSeparator: '.', thousandSeparator: ',' })
     })
 

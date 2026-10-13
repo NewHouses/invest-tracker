@@ -1,0 +1,1 @@
+import{Rt as e,Vt as t}from"./i18n-BXKo0Xk3.js";import{d as n,u as r}from"./format-BkgBwrwv.js";import{r as i}from"./index-BO7FS5M6.js";var a=t(e(),1);function o(){return n({queryKey:r.meta,queryFn:({signal:e})=>i(`/api/meta`,{signal:e}),staleTime:1/0})}function s(){let e=o().data?.assetTypes;return(0,a.useCallback)(t=>e?.find(e=>e.value===t)?.label??t,[e])}export{o as n,s as t};

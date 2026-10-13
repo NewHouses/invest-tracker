@@ -25,6 +25,18 @@ type allocationRequest struct {
 type allocationSelection struct {
 	Type     domain.AssetType `json:"type"`
 	AssetIDs []int64          `json:"assetIds"`
+	// Percents é a porcentaxe do total para cada activo de AssetIDs, na mesma
+	// orde. As porcentaxes son opcionais (sen elas repártese a partes
+	// iguais), pero se se indica algunha hai que indicalas todas.
+	Percents  []float64            `json:"percents"`
+	NewAssets []allocationNewAsset `json:"newAssets"`
+}
+
+// allocationNewAsset é un activo que aínda non se creou: só serve para
+// calcular o reparto da primeira vez que se inclúe.
+type allocationNewAsset struct {
+	Name    string   `json:"name"`
+	Percent *float64 `json:"percent"`
 }
 
 type projectionRequest struct {
@@ -119,11 +131,34 @@ func (s *Server) validateAllocation(req allocationRequest, lang i18n.Lang) ([]re
 		byID[a.ID] = a
 	}
 
+	withPercents := false
+	for _, sel := range req.Selection {
+		withPercents = withPercents || sel.Percents != nil
+		for _, n := range sel.NewAssets {
+			withPercents = withPercents || n.Percent != nil
+		}
+	}
+	percentSum, percentCount, percentsOK := 0.0, 0, true
+	checkPercent := func(key string, p *float64) {
+		switch {
+		case p == nil:
+			fields[key] = lang.T("indica a porcentaxe de cada activo")
+			percentsOK = false
+		case !repartoaporte.ValidPercent(*p):
+			fields[key] = lang.T("a porcentaxe debe estar entre 0 e 100")
+			percentsOK = false
+		default:
+			percentSum += *p
+			percentCount++
+		}
+	}
+
 	selection := make([]repartoaporte.TypeSelection, 0, len(req.Selection))
 	seenTypes := map[domain.AssetType]bool{}
 	for i, sel := range req.Selection {
 		typeField := fmt.Sprintf("selection[%d].type", i)
 		assetField := fmt.Sprintf("selection[%d].assetIds", i)
+		percentsField := fmt.Sprintf("selection[%d].percents", i)
 		if !sel.Type.Valid() {
 			fields[typeField] = lang.T("tipo de activo non válido")
 		}
@@ -131,10 +166,10 @@ func (s *Server) validateAllocation(req allocationRequest, lang i18n.Lang) ([]re
 			fields[typeField] = lang.T("tipo de activo duplicado")
 		}
 		seenTypes[sel.Type] = true
-		if len(sel.AssetIDs) == 0 {
+		if len(sel.AssetIDs) == 0 && len(sel.NewAssets) == 0 {
 			fields[assetField] = lang.T("debe seleccionarse polo menos un activo")
 		}
-		picked := make([]domain.Asset, 0, len(sel.AssetIDs))
+		picked := make([]domain.Asset, 0, len(sel.AssetIDs)+len(sel.NewAssets))
 		seenAssets := map[int64]bool{}
 		for _, id := range sel.AssetIDs {
 			asset, ok := byID[id]
@@ -145,7 +180,33 @@ func (s *Server) validateAllocation(req allocationRequest, lang i18n.Lang) ([]re
 			seenAssets[id] = true
 			picked = append(picked, asset)
 		}
-		selection = append(selection, repartoaporte.TypeSelection{Type: sel.Type, Assets: picked})
+		var percents []float64
+		if withPercents {
+			if len(sel.Percents) != len(sel.AssetIDs) {
+				fields[percentsField] = lang.T("indica a porcentaxe de cada activo")
+				percentsOK = false
+			}
+			for j := range sel.Percents {
+				checkPercent(fmt.Sprintf("%s[%d]", percentsField, j), &sel.Percents[j])
+			}
+			percents = append(percents, sel.Percents...)
+		}
+		// Os activos novos van con ID 0 e o tipo da selección.
+		for k, n := range sel.NewAssets {
+			prefix := fmt.Sprintf("selection[%d].newAssets[%d]", i, k)
+			name := validateName(fields, lang, prefix+".name", n.Name)
+			picked = append(picked, domain.Asset{Type: sel.Type, Name: name})
+			if withPercents {
+				checkPercent(prefix+".percent", n.Percent)
+				if n.Percent != nil {
+					percents = append(percents, *n.Percent)
+				}
+			}
+		}
+		selection = append(selection, repartoaporte.TypeSelection{Type: sel.Type, Assets: picked, Percents: percents})
+	}
+	if withPercents && percentsOK && len(req.Selection) > 0 && !repartoaporte.SumsTo100(percentSum, percentCount) {
+		fields["percents"] = lang.T("as porcentaxes teñen que sumar 100 %")
 	}
 	return selection, fields, nil
 }
