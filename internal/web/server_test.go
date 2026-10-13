@@ -357,3 +357,65 @@ func TestQueryYearMonthMissingValues(t *testing.T) {
 		t.Fatalf("agardábanse erros para parámetros ausentes: %#v", fields)
 	}
 }
+
+// Volver abrir a aplicación cando xa está aberta (p.e. dobre clic outra vez no
+// acceso directo) só abre o navegador, sen erro de porto ocupado.
+func TestMainWhenAlreadyRunningOpensBrowser(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("non se puido abrir listener: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- Run(ctx, testStore(t), ln, Config{NoOpen: true}, io.Discard) }()
+	t.Cleanup(func() { cancel(); <-done })
+	port := listenerPort(ln)
+	waitForHTTP(t, "http://127.0.0.1:"+port+"/api/meta")
+
+	var opened []string
+	orig := openBrowser
+	openBrowser = func(url string) error { opened = append(opened, url); return nil }
+	t.Cleanup(func() { openBrowser = orig })
+
+	if code := Main([]string{"-addr", "127.0.0.1:" + port, "-db", filepath.Join(t.TempDir(), "outra.db")}); code != 0 {
+		t.Fatalf("código=%d, esperabamos 0", code)
+	}
+	if len(opened) != 1 || opened[0] != "http://localhost:"+port {
+		t.Fatalf("navegador abriu %v, esperabamos http://localhost:%s", opened, port)
+	}
+}
+
+// Se o porto o ocupa outro programa, segue sendo un erro.
+func TestMainPortUsedByAnotherProgram(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("non se puido abrir listener: %v", err)
+	}
+	srv := &http.Server{Handler: http.NotFoundHandler()}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+	waitForHTTP(t, "http://"+ln.Addr().String()+"/")
+
+	orig := openBrowser
+	openBrowser = func(string) error { t.Fatal("non debería abrir o navegador"); return nil }
+	t.Cleanup(func() { openBrowser = orig })
+
+	if code := Main([]string{"-addr", ln.Addr().String(), "-db", filepath.Join(t.TempDir(), "outra.db")}); code != 1 {
+		t.Fatalf("código=%d, esperabamos 1", code)
+	}
+}
+
+// waitForHTTP agarda a que url responda (con calquera código HTTP).
+func waitForHTTP(t *testing.T, url string) {
+	t.Helper()
+	for i := 0; i < 40; i++ {
+		resp, err := http.Get(url)
+		if err == nil {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("%s non respondeu a tempo", url)
+}

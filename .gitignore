@@ -23,3 +23,6 @@ frontend/node_modules/
 .idea/
 *.swp
 *~
+
+# Instaladores xerados con build.ps1 -Installers / build.sh --installers
+dist-installers/

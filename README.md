@@ -14,6 +14,40 @@ usala, que comparten a mesma base de datos (`investimentos.db`):
 > (`invest-tracker-web.cmd` en Windows, os `.command` en macOS) usan sempre o
 > cartafol do programa, e ao arrancar móstrase a ruta da base de datos.
 
+## Instalar
+
+Descarga o instalador da túa plataforma desde
+[Releases](https://github.com/NewHouses/invest-tracker/releases), ou xérao ti
+(ver [Crear os instaladores](#crear-os-instaladores)). Non están asinados, así
+que a primeira vez o sistema avisa.
+
+### Windows
+
+1. Executa `ControlInvestimentos-<versión>-windows-setup.exe`. Non pide permisos
+   de administrador: instálase só para o teu usuario.
+2. Se Windows SmartScreen avisa, preme *Máis información* → *Executar de todos
+   modos*.
+3. Abre *Control de Investimentos* desde o menú Inicio ou o escritorio. No menú
+   Inicio tamén están a versión de terminal e o *Cartafol dos datos*.
+
+Os datos gárdanse en `%APPDATA%\Control de Investimentos\investimentos.db`. Ao
+desinstalar (Configuración → Aplicacións) bórrase o programa, pero non os datos.
+
+### macOS
+
+1. Descomprime `ControlInvestimentos-<versión>-macos.zip` e arrastra
+   *Control de Investimentos.app* a Aplicacións.
+2. A primeira vez macOS non a deixa abrir: vai a *Axustes do Sistema →
+   Privacidade e seguranza* e preme *Abrir igualmente* (ou executa
+   `xattr -dr com.apple.quarantine "/Applications/Control de Investimentos.app"`).
+3. Ao abrila aparece unha xanela do Terminal co servidor e ábrese o navegador.
+   Para pechala, preme `Ctrl+C` no Terminal.
+
+Os datos gárdanse en `~/Library/Application Support/Control de Investimentos/investimentos.db`.
+
+> Para levar os datos que xa tes, copia o teu `investimentos.db` a ese cartafol
+> antes de abrir a aplicación instalada.
+
 ## Requisitos para compilar
 
 - [Go](https://go.dev/dl/) 1.25 ou superior.
@@ -48,8 +82,22 @@ Opcións (`build.ps1` / `build.sh`):
 - `-SkipTests` / `--skip-tests`: non executa os tests.
 - `-SkipFrontend` / `--skip-frontend`: reutiliza a web xa compilada.
 - `-CleanInstall` / `--clean-install`: reinstala as dependencias de npm.
+- `-Installers` / `--installers`: xera tamén os instaladores.
 
-## Usar
+## Crear os instaladores
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Installers
+```
+
+Deixa en `dist-installers/` o instalador de Windows (require
+[Inno Setup 6](https://jrsoftware.org/isdl.php)) e a app de macOS en `.zip`. En
+macOS, `./build.sh --installers` xera só a app de macOS. A versión lese do
+ficheiro `VERSION`. As iconas (`installers/windows/app.ico` e
+`installers/macos/AppIcon.icns`) xéranse co deseño do favicon con
+`go run ./installers/icon`.
+
+## Usar desde o repositorio
 
 ### Interface web
 
@@ -123,6 +171,8 @@ npm run dev
   `Build…` cos cálculos, que comparten a CLI e a web.
 - `internal/web`: servidor HTTP, API JSON (`/api`) e web embebida (`dist/`).
 - `frontend/`: React + TypeScript + Mantine (Vite). Compílase en `internal/web/dist`.
+- `installers/`: instalador de Windows (Inno Setup), empaquetado da app de macOS
+  e xerador das iconas.
 
 ## Tests
 

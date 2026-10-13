@@ -1,0 +1,15 @@
+Control de Investimentos para macOS
+===================================
+
+1. Arrastra "Control de Investimentos.app" ao cartafol Aplicacións.
+2. Ábrea con dobre clic. Como a app non está asinada por Apple, a primeira vez
+   macOS non a deixa abrir: vai a Axustes do Sistema > Privacidade e seguranza
+   e preme "Abrir igualmente" (en versións anteriores: clic dereito na app >
+   Abrir). Tamén podes executar no Terminal:
+       xattr -dr com.apple.quarantine "/Applications/Control de Investimentos.app"
+3. Ábrese unha xanela do Terminal co servidor e o navegador coa aplicación.
+   Para pechala, preme Ctrl+C no Terminal.
+
+Os datos gárdanse en ~/Library/Application Support/Control de Investimentos
+(investimentos.db). Se xa tiñas unha base de datos, cópiaa alí antes de abrir
+a app.

@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -66,6 +67,18 @@ func Main(args []string) int {
 	ln, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
 		if isAddrInUse(err) {
+			// Volver abrir a aplicación (p.e. dobre clic outra vez no acceso
+			// directo) non é un erro: abonda con abrir o navegador.
+			localURL := "http://localhost:" + portFromAddr(cfg.Addr)
+			if alreadyRunning(localURL) {
+				fmt.Fprintf(os.Stdout, "Control de Investimentos xa está aberto en %s.\n", localURL)
+				if !cfg.NoOpen {
+					if err := openBrowser(localURL); err != nil {
+						fmt.Fprintln(os.Stderr, "non se puido abrir o navegador:", err)
+					}
+				}
+				return 0
+			}
 			fmt.Fprintf(os.Stderr, "non se pode iniciar o servidor: o porto %s xa está en uso\n", portFromAddr(cfg.Addr))
 		} else {
 			fmt.Fprintln(os.Stderr, "non se pode iniciar o servidor:", err)
@@ -218,4 +231,23 @@ func absPath(p string) string {
 		return abs
 	}
 	return p
+}
+
+// alreadyRunning indica se en baseURL xa responde esta mesma aplicación (e non
+// outro programa que ocupe o porto).
+func alreadyRunning(baseURL string) bool {
+	client := http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(baseURL + "/api/meta")
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	var meta struct {
+		AssetTypes []json.RawMessage `json:"assetTypes"`
+	}
+	err = json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&meta)
+	return err == nil && len(meta.AssetTypes) > 0
 }

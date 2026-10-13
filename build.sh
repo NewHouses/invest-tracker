@@ -6,10 +6,12 @@
 # para Intel), todos coa interface web embebida. Usa o Node portátil de
 # .tools/node se existe; se non, o do sistema (require Node 22.22 ou superior).
 #
-# Uso: ./build.sh [--skip-tests] [--skip-frontend] [--clean-install]
+# Uso: ./build.sh [--skip-tests] [--skip-frontend] [--clean-install] [--installers]
 #   --skip-tests     non executa os tests (nin de Go nin do frontend)
 #   --skip-frontend  reutiliza a web xa compilada en internal/web/dist
 #   --clean-install  reinstala as dependencias do frontend con "npm ci"
+#   --installers     xera tamén a app de macOS en dist-installers (o instalador
+#                    de Windows xérase en Windows con build.ps1 -Installers)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -17,13 +19,15 @@ cd "$(dirname "$0")"
 skip_tests=0
 skip_frontend=0
 clean_install=0
+installers=0
 for arg in "$@"; do
   case "$arg" in
     --skip-tests) skip_tests=1 ;;
     --skip-frontend) skip_frontend=1 ;;
     --clean-install) clean_install=1 ;;
+    --installers) installers=1 ;;
     -h | --help)
-      sed -n '2,13p' "$0"
+      sed -n '2,14p' "$0"
       exit 0
       ;;
     *)
@@ -97,3 +101,8 @@ build darwin amd64 invest-tracker-macos-amd64
 chmod +x invest-tracker-macos-arm64 invest-tracker-macos-amd64
 
 printf '\033[32mListo: invest-tracker.exe, invest-tracker-macos-arm64, invest-tracker-macos-amd64\033[0m\n'
+
+if [ "$installers" -eq 1 ]; then
+  step 'instalador de macOS' go run ./installers/macos
+  echo 'O instalador de Windows xérase en Windows con build.ps1 -Installers (require Inno Setup).'
+fi

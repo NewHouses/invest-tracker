@@ -14,6 +14,9 @@
 
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -SkipTests
+
+.EXAMPLE
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Installers
 #>
 [CmdletBinding()]
 param(
@@ -22,7 +25,10 @@ param(
     # Non recompila o frontend: reutiliza o que xa haxa en internal\web\dist.
     [switch]$SkipFrontend,
     # Reinstala as dependencias do frontend con "npm ci" aínda que xa existan.
-    [switch]$CleanInstall
+    [switch]$CleanInstall,
+    # Xera tamén os instaladores de Windows e macOS en dist-installers
+    # (o de Windows require Inno Setup 6).
+    [switch]$Installers
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,3 +98,22 @@ foreach ($target in $targets) {
 }
 
 Write-Host "Listo: $(($targets | ForEach-Object { $_.Output }) -join ', ')" -ForegroundColor Green
+
+if ($Installers) {
+    Invoke-Step 'instalador de macOS' { go run ./installers/macos }
+
+    $iscc = @(
+        (Get-Command iscc -ErrorAction SilentlyContinue).Source,
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    if (-not $iscc) {
+        throw 'Non se atopou Inno Setup 6 (ISCC.exe): instálao desde https://jrsoftware.org/isdl.php.'
+    }
+    $version = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'VERSION') -Raw).Trim()
+    Invoke-Step 'instalador de Windows' { & $iscc /Qp "/DAppVersion=$version" installers\windows\ControlInvestimentos.iss }
+
+    Write-Host 'Instaladores en dist-installers:' -ForegroundColor Green
+    Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'dist-installers') | ForEach-Object { Write-Host "  $($_.Name)" }
+}
