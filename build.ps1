@@ -3,9 +3,11 @@
     Compila invest-tracker: frontend (lint, tests, build) e Go (vet, tests, build).
 
 .DESCRIPTION
-    Deixa o resultado en invest-tracker.exe, que inclúe a interface web
-    embebida. Usa o Node portátil de .tools\node se existe; se non, o do sistema
-    (require Node 22.22 ou superior).
+    Deixa os binarios para Windows (invest-tracker.exe) e macOS
+    (invest-tracker-macos-arm64 para Apple Silicon e invest-tracker-macos-amd64
+    para Intel), todos coa interface web embebida. Usa o Node portátil de
+    .tools\node se existe; se non, o do sistema (require Node 22.22 ou superior).
+    En macOS ou Linux, usa build.sh.
 
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
@@ -68,6 +70,25 @@ Invoke-Step 'go vet' { go vet ./... }
 if (-not $SkipTests) {
     Invoke-Step 'go test' { go test ./... }
 }
-Invoke-Step 'go build' { go build -o invest-tracker.exe . }
 
-Write-Host 'Listo: invest-tracker.exe' -ForegroundColor Green
+# Binarios que se distribúen no repositorio. -trimpath e -buildvcs=false fan
+# que o mesmo código xere sempre o mesmo binario (e non levan rutas locais);
+# -s -w quitan os símbolos de depuración para que pesen menos.
+$targets = @(
+    @{ GOOS = 'windows'; GOARCH = 'amd64'; Output = 'invest-tracker.exe' },
+    @{ GOOS = 'darwin'; GOARCH = 'arm64'; Output = 'invest-tracker-macos-arm64' },
+    @{ GOOS = 'darwin'; GOARCH = 'amd64'; Output = 'invest-tracker-macos-amd64' }
+)
+foreach ($target in $targets) {
+    $env:GOOS = $target.GOOS
+    $env:GOARCH = $target.GOARCH
+    $env:CGO_ENABLED = '0'
+    try {
+        Invoke-Step "go build $($target.Output)" { go build -trimpath -buildvcs=false -ldflags '-s -w' -o $target.Output . }
+    }
+    finally {
+        Remove-Item Env:GOOS, Env:GOARCH, Env:CGO_ENABLED -ErrorAction SilentlyContinue
+    }
+}
+
+Write-Host "Listo: $(($targets | ForEach-Object { $_.Output }) -join ', ')" -ForegroundColor Green

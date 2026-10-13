@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"invest-tracker/internal/addasset"
 	"invest-tracker/internal/adddividend"
@@ -37,6 +38,11 @@ import (
 	"invest-tracker/internal/web"
 	"invest-tracker/internal/welcome"
 )
+
+// dbPath é a base de datos da CLI, relativa ao cartafol desde o que se executa.
+// Os lanzadores (.cmd en Windows, .command en macOS) entran antes no cartafol
+// do programa.
+const dbPath = "./investimentos.db"
 
 // runOp executa unha operación e amaña o erro: se é ErrCancelled imprime un
 // aviso suave; calquera outro erro vai a stderr cun prefixo descritivo.
@@ -135,7 +141,7 @@ func main() {
 		os.Exit(web.Main(os.Args[2:]))
 	}
 
-	s, err := store.Open("./investimentos.db")
+	s, err := store.Open(dbPath)
 	if err != nil {
 		log.Fatalf("non se pode abrir a base de datos: %v", err)
 	}
@@ -143,6 +149,9 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println(welcome.WelcomeMessage())
+	if abs, err := filepath.Abs(dbPath); err == nil {
+		fmt.Println("(Datos: " + abs + ")")
+	}
 
 	for {
 		topOpts := welcome.TopOptions()

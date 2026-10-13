@@ -1,0 +1,8 @@
+# Os scripts de macOS/Linux deben ter sempre finais de liña LF: con CRLF
+# fallan ("bad interpreter").
+*.sh      text eol=lf
+*.command text eol=lf
+
+# Binarios xa compilados que se distribúen no repositorio.
+*.exe                  binary
+invest-tracker-macos-* binary

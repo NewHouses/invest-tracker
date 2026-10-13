@@ -262,7 +262,7 @@ func TestRun(t *testing.T) {
 	var out bytes.Buffer
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- Run(ctx, st, ln, Config{NoOpen: true}, &out)
+		errCh <- Run(ctx, st, ln, Config{NoOpen: true, DBPath: "investimentos.db"}, &out)
 	}()
 
 	url := "http://" + ln.Addr().String() + "/"
@@ -296,6 +296,11 @@ func TestRun(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Local:      http://localhost:") {
 		t.Fatalf("banner inesperado: %q", out.String())
+	}
+	// A ruta completa da base de datos axuda a ver que datos se están a usar
+	// (en macOS, abrir o binario desde o Finder usaría o cartafol persoal).
+	if abs, _ := filepath.Abs("investimentos.db"); !strings.Contains(out.String(), "Datos:      "+abs) {
+		t.Fatalf("o banner non mostra a ruta da base de datos: %q", out.String())
 	}
 }
 

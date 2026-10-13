@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -97,6 +98,9 @@ func Run(ctx context.Context, st *store.Store, ln net.Listener, cfg Config, out 
 	fmt.Fprintf(out, "  Local:      %s\n", localURL)
 	for _, url := range networkURLs(ln, port) {
 		fmt.Fprintf(out, "  Rede local: %s\n", url)
+	}
+	if cfg.DBPath != "" {
+		fmt.Fprintf(out, "  Datos:      %s\n", absPath(cfg.DBPath))
 	}
 	fmt.Fprintln(out, "Preme Ctrl+C para parar.")
 
@@ -205,4 +209,13 @@ func portFromAddr(addr string) string {
 		return port
 	}
 	return addr
+}
+
+// absPath devolve a ruta absoluta para mostrala ao usuario: así vese onde está
+// a base de datos aínda que se arrancase desde outro cartafol.
+func absPath(p string) string {
+	if abs, err := filepath.Abs(p); err == nil {
+		return abs
+	}
+	return p
 }

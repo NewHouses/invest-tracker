@@ -1,7 +1,8 @@
 # Control de Investimentos
 
 Ferramenta para o seguimento mensual dunha carteira de investimentos en USD.
-Tes dúas formas de usala, que comparten a mesma base de datos (`investimentos.db`):
+Funciona en Windows e en macOS (Apple Silicon e Intel). Tes dúas formas de
+usala, que comparten a mesma base de datos (`investimentos.db`):
 
 - **Interface web**: no navegador do propio ordenador ou desde outros dispositivos
   da rede local, como o móbil. Non ten contrasinal.
@@ -9,42 +10,52 @@ Tes dúas formas de usala, que comparten a mesma base de datos (`investimentos.d
 
 > `investimentos.db` non se sube a GitHub (está en `.gitignore`): garda ti unha
 > copia de seguridade dela. Se non existe, a aplicación créaa baleira ao
-> arrancar, no cartafol desde o que se executa (`invest-tracker-web.cmd` usa
-> sempre o cartafol do programa).
+> arrancar, no cartafol desde o que se executa. Os lanzadores
+> (`invest-tracker-web.cmd` en Windows, os `.command` en macOS) usan sempre o
+> cartafol do programa, e ao arrancar móstrase a ruta da base de datos.
 
 ## Requisitos para compilar
 
 - [Go](https://go.dev/dl/) 1.25 ou superior.
 - Node.js 22.22 ou superior, só para compilar a interface web. Se o Node do
-  sistema é máis antigo, copia un Node 24 LTS portátil en `.tools\node`: o script
-  de compilación úsao automaticamente.
+  sistema é máis antigo, copia un Node 24 LTS portátil en `.tools/node` (en
+  macOS, o contido do `.tar.gz`, co cartafol `bin`): os scripts de compilación
+  úsano automaticamente.
 
 ## Compilar
+
+En Windows:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-O script fai isto, en orde:
-1. Instala as dependencias do frontend se fai falta.
-2. Pasa o lint e os tests do frontend e compílao.
-3. Pasa `go vet` e os tests de Go.
-4. Xera `invest-tracker.exe`, coa web xa embebida.
+En macOS (ou Linux):
 
-Opcións:
-- `-SkipTests`: non executa os tests.
-- `-SkipFrontend`: reutiliza a web xa compilada.
-- `-CleanInstall`: reinstala as dependencias de npm.
+```bash
+./build.sh
+```
+
+Os scripts fan isto, en orde:
+1. Instalan as dependencias do frontend se fai falta.
+2. Pasan o lint e os tests do frontend e compílano.
+3. Pasan `go vet` e os tests de Go.
+4. Xeran os binarios, coa web xa embebida: `invest-tracker.exe` (Windows),
+   `invest-tracker-macos-arm64` (Mac con Apple Silicon) e
+   `invest-tracker-macos-amd64` (Mac con Intel).
+
+Opcións (`build.ps1` / `build.sh`):
+- `-SkipTests` / `--skip-tests`: non executa os tests.
+- `-SkipFrontend` / `--skip-frontend`: reutiliza a web xa compilada.
+- `-CleanInstall` / `--clean-install`: reinstala as dependencias de npm.
 
 ## Usar
 
 ### Interface web
 
-Fai dobre clic en `invest-tracker-web.cmd`, ou executa:
-
-```powershell
-.\invest-tracker.exe web
-```
+- **Windows**: dobre clic en `invest-tracker-web.cmd`, ou `.\invest-tracker.exe web`.
+- **macOS**: dobre clic en `invest-tracker-web.command`, ou
+  `./invest-tracker-macos-arm64 web` (`-amd64` nun Mac con Intel).
 
 Ábrese o navegador en `http://localhost:8080`. A consola mostra tamén os
 enderezos da rede local, por exemplo `http://192.168.1.20:8080`.
@@ -58,11 +69,20 @@ Para parar o servidor, preme `Ctrl+C` na consola.
 
 ### Terminal
 
-```powershell
-.\invest-tracker.exe
-```
+- **Windows**: `.\invest-tracker.exe`
+- **macOS**: dobre clic en `invest-tracker.command`, ou `./invest-tracker-macos-arm64`
+  (`-amd64` nun Mac con Intel).
 
 Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú.
+
+### Primeira vez en macOS
+
+- Se descargaches o proxecto como ZIP en vez de con `git clone`, macOS bloquea
+  os programas descargados («non se pode verificar o programador»). Abre o
+  Terminal no cartafol do proxecto e executa `xattr -dr com.apple.quarantine .`
+  (ou fai clic dereito no `.command` → *Abrir*).
+- Ao arrancar a web, macOS pode preguntar se permites conexións entrantes:
+  acéptao se a queres usar desde o móbil.
 
 ## Seguridade
 
@@ -76,14 +96,14 @@ Escribe `:q` ou `cancelar` en calquera pregunta para volver ao menú.
 ## Acceso desde o móbil
 
 1. Arranca o modo web no ordenador.
-2. A primeira vez, o Firewall de Windows pregunta se permite o acceso:
-   acéptao **só para redes privadas**.
+2. A primeira vez, o firewall pregunta se permite o acceso. En Windows,
+   acéptao **só para redes privadas**; en macOS, permite as conexións entrantes.
 3. No móbil, conectado á mesma wifi, abre o enderezo "Rede local" que mostra a
    consola.
 
 ## Desenvolvemento
 
-Usa dúas terminais:
+Usa dúas terminais (os comandos son iguais en Windows e en macOS):
 
 ```powershell
 # 1) API en Go (porto 8080)
